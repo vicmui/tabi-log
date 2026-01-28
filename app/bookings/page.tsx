@@ -32,7 +32,7 @@ export default function BookingsPage() {
           )) : <div className="text-gray-400 text-sm">暫無預訂資料</div>}
         </div>
         
-        {isModalOpen && <AddBookingModal onClose={()=>setIsModalOpen(false)} onAdd={(b)=>addBooking(trip.id, b)} />}
+        {isModalOpen && <AddBookingModal onClose={()=>setIsModalOpen(false)} onAdd={(b: any) => addBooking(trip.id, b)}
       </main>
     </div>
   );
