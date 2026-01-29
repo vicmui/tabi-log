@@ -5,7 +5,7 @@ import ItineraryList from "@/components/planner/ItineraryList";
 import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -21,6 +21,7 @@ export default function PlannerPage() {
 
   useEffect(() => setIsMounted(true), []);
   const trip = trips.find((t) => t.id === params.id);
+  
   if (!isMounted) return null;
   if (!trip) return <div className="p-10 text-center">找不到旅程</div>;
 
@@ -41,22 +42,25 @@ export default function PlannerPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-white font-sans text-jp-charcoal overflow-hidden">
+    <div className="flex h-screen bg-white font-sans text-jp-charcoal overflow-hidden">
+      {/* Desktop Sidebar */}
       <Sidebar />
       
-      <main className="flex-1 ml-0 md:ml-64 flex flex-col h-[100dvh]"> {/* 使用 100dvh 確保手機全屏 */}
+      <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative">
         
-        {/* ==================== 手機版 Header (Back + Title) ==================== */}
-        <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-30">
+        {/* ==================== 手機版 Header ==================== */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-30">
            <Link href="/" className="text-gray-500"><ArrowLeft size={20}/></Link>
            <h1 className="font-serif font-bold text-lg truncate w-2/3 text-center">{trip.title}</h1>
-           <div className="w-5" /> {/* Spacer */}
+           <div className="w-5" /> 
         </div>
 
-        {/* ==================== 桌面版 左側欄 (保持不變) ==================== */}
-        <div className="hidden md:flex w-64 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col z-20 absolute left-0 top-0 bottom-0 pt-20">
-          <div className="p-6 border-b border-gray-50">
-            <h2 className="font-serif font-bold text-xl leading-tight mb-3 text-jp-charcoal">{trip.title}</h2>
+        {/* ==================== Desktop 左側天數選單 (修正版) ==================== */}
+        {/* 使用 shrink-0 防止被壓縮，hidden md:flex 確保只在電腦顯示 */}
+        <div className="hidden md:flex w-64 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col shrink-0 z-20">
+          <div className="p-6 border-b border-gray-50 sticky top-0 bg-white z-10">
+            <Link href="/" className="flex items-center gap-2 text-xs text-gray-400 hover:text-black mb-4 transition-colors"><ArrowLeft size={12}/> 返回首頁</Link>
+            <h2 className="font-serif font-bold text-xl leading-tight mb-2 text-jp-charcoal">{trip.title}</h2>
             <div className="flex items-center gap-2 text-[10px] text-gray-400 tracking-wider uppercase font-medium">
                <Calendar size={12} /><span>{trip.startDate} — {trip.endDate}</span>
             </div>
@@ -75,8 +79,8 @@ export default function PlannerPage() {
           </div>
         </div>
 
-        {/* ==================== 手機版 天數滑動條 (Horizontal Slider) ==================== */}
-        <div className="md:hidden w-full bg-white border-b border-gray-100 z-20 shadow-sm">
+        {/* ==================== Mobile 天數滑動條 (保持不變) ==================== */}
+        <div className="md:hidden w-full bg-white border-b border-gray-100 z-20 shadow-sm shrink-0">
            <div className="flex overflow-x-auto snap-x hide-scrollbar py-3 px-4 gap-3">
               {trip.dailyItinerary.map((dayItem, index) => (
                  <button 
@@ -95,11 +99,11 @@ export default function PlannerPage() {
            </div>
         </div>
 
-        {/* ==================== 主要內容區 (可捲動) ==================== */}
-        <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth md:pl-64"> 
-          {/* Header 封面 (桌面顯示，手機縮小) */}
+        {/* ==================== 主要內容區 (行程列表) ==================== */}
+        <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full"> 
+          {/* Cover Image */}
           <div className="h-40 md:h-64 relative w-full shrink-0">
-            <Image src={trip.coverImage || ""} alt="Cover" fill className="object-cover" priority />
+            <Image src={trip.coverImage || ""} alt="Cover" fill className="object-cover object-top" priority />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 px-6 md:px-12 pb-4 md:pb-8 pt-20 bg-gradient-to-t from-white to-transparent">
                <div>
@@ -112,7 +116,6 @@ export default function PlannerPage() {
           </div>
 
           <div className="px-4 md:px-12 py-4 md:py-8 max-w-4xl mx-auto min-h-[500px] pb-24">
-            {/* Action Bar */}
             <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-10 pt-2">
                <span className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase hidden md:inline">當日行程</span>
                <div className="flex gap-2 w-full md:w-auto">
