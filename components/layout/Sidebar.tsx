@@ -9,7 +9,7 @@ const MENU_ITEMS = [
   { label: "PLANNER", subLabel: "行程規劃", href: "/planner" },
   { label: "BUDGET", subLabel: "預算分帳", href: "/budget" },
   { label: "PLANNING", subLabel: "行前準備", href: "/planning" },
-  { label: "TOOLBOX", subLabel: "旅行工具", href: "/toolbox" }, // 新增
+  { label: "TOOLBOX", subLabel: "旅行工具", href: "/toolbox" },
   { label: "MEMBERS", subLabel: "成員管理", href: "/members" },
 ];
 
@@ -20,7 +20,8 @@ export default function Sidebar() {
       <div>
         <div className="mb-16">
           <h1 className="font-serif text-2xl tracking-[0.1em] font-bold text-[#333333]">VM&apos;s Build</h1>
-          <p className="text-[10px] text-gray-500 tracking-widest mt-1">TRAVEL ARCHITECT</p>
+          {/* 🔥 這裡改成了中文 */}
+          <p className="text-[10px] text-gray-500 tracking-widest mt-1">自製大阪行手帳</p>
         </div>
         <nav className="space-y-6">
           {MENU_ITEMS.map((item) => {
