@@ -9,6 +9,7 @@ const MENU_ITEMS = [
   { label: "PLANNER", subLabel: "行程規劃", href: "/planner" },
   { label: "BUDGET", subLabel: "預算分帳", href: "/budget" },
   { label: "PLANNING", subLabel: "行前準備", href: "/planning" },
+  { label: "TOOLBOX", subLabel: "旅行工具", href: "/toolbox" }, // 新增
   { label: "MEMBERS", subLabel: "成員管理", href: "/members" },
 ];
 
