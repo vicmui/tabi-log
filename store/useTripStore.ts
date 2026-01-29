@@ -10,7 +10,10 @@ export interface Booking {
 }
 export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightseeing' | 'Shopping' | 'Other';
 export interface Expense {
-  id: string; amount: number; category: ExpenseCategory; itemName: string; note: string; date: string; payerId: string; splitWithIds: string[];
+  id: string; amount: number; category: ExpenseCategory; itemName: string; note: string; date: string; 
+  payerId: string; 
+  splitWithIds: string[]; 
+  customSplit?: Record<string, number>; // 新增：儲存自訂金額 { memberId: amount }
 }
 export type Priority = 'High' | 'Medium' | 'Low';
 export interface PlanItem {
@@ -39,7 +42,6 @@ interface TripState {
   updateActivityOrder: (tripId: string, dayIndex: number, newActivities: Activity[]) => void;
 }
 
-// 預設行李清單項目
 const DEFAULT_PACKING_LIST = [
   "✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包",
   "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡",
@@ -52,7 +54,6 @@ const INITIAL_TRIP: Trip = {
   startDate: "2026-03-20",
   endDate: "2026-03-24",
   status: "planning",
-  // 這裡假設你已經把圖片改名 osaka-cover.jpg 放入 public 了
   coverImage: "/osaka-cover.jpg", 
   budgetTotal: 300000,
   members: [
@@ -66,7 +67,6 @@ const INITIAL_TRIP: Trip = {
      { day: 4, date: "2026-03-23", weather: "Rain", activities: [] },
      { day: 5, date: "2026-03-24", weather: "Cloud", activities: [] }
   ],
-  // 預載清單
   plans: DEFAULT_PACKING_LIST.map((text, i) => ({
     id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false
   }))
@@ -93,6 +93,6 @@ export const useTripStore = create<TripState>()(
       updateActivity: (tripId, dayIndex, activityId, data) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); return { ...trip, dailyItinerary: newItinerary }; }) })),
       updateActivityOrder: (tripId, dayIndex, newActivities) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) })),
     }),
-    { name: 'vm-build-v5', storage: createJSONStorage(() => localStorage) } // 升級版本號強制刷新
+    { name: 'vm-build-v6', storage: createJSONStorage(() => localStorage) }
   )
 );

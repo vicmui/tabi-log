@@ -9,6 +9,7 @@ const notoSerifJP = Noto_Serif_JP({ subsets: ["latin"], weight: ["400", "700"], 
 export const metadata: Metadata = {
   title: "VM's Build | 旅行手帳 APP",
   description: "Travel Planner for VM",
+  manifest: "/manifest.json", // 加入這行
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
