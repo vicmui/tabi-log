@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ⬇️ 加入呢段 */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 :root {
   --foreground-rgb: 51, 51, 51;
   --background-start-rgb: 255, 255, 255;

@@ -1,29 +1,35 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
-import MobileNav from "@/components/layout/MobileNav";
+import { Inter } from "next/font/google"; // 假設你用 Inter，無用可以 ignore
 import "./globals.css";
+import MobileNav from "@/components/MobileNav"; // 記得 import
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], weight: ["300", "400", "500", "700"], variable: "--font-noto-sans" });
-const notoSerifJP = Noto_Serif_JP({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-noto-serif" });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  // 🔥 改名：
-  title: "Osaka Trip (March)",
-  description: "VM's Travel Architect",
-  manifest: "/manifest.json",
-  icons: {
-    icon: '/icon-192.png', // 指向你的圖片
-    apple: '/icon-192.png',
-  }
+  title: "Travel App",
+  description: "My awesome travel planner",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="zh-TW">
-      <body className={`${inter.variable} ${notoSansJP.variable} ${notoSerifJP.variable} font-sans bg-white text-[#333333] antialiased`}>
-        <MobileNav />
-        {children}
+    <html lang="zh-HK">
+      {/* pb-[80px]: 底部留位俾 Navigation Bar + Safe Area */}
+      {/* md:pb-0: 電腦版唔使留位 */}
+      <body className={`${inter.className} bg-gray-50 pb-[80px] md:pb-0`}>
+        
+        <main className="min-h-screen max-w-md mx-auto bg-white shadow-sm md:max-w-full md:shadow-none md:bg-transparent">
+          {children}
+        </main>
+
+        {/* 只在 Mobile 顯示 Bottom Bar */}
+        <div className="md:hidden">
+          <MobileNav />
+        </div>
+        
       </body>
     </html>
   );

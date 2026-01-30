@@ -1,84 +1,61 @@
 "use client";
-import { useState, useEffect } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import clsx from "clsx";
-
-const MENU_ITEMS = [
-  { label: "HOME", subLabel: "首頁", href: "/" },
-  { label: "BOOKINGS", subLabel: "預訂憑證", href: "/bookings" },
-  { label: "PLANNER", subLabel: "行程規劃", href: "/planner" },
-  { label: "BUDGET", subLabel: "預算分帳", href: "/budget" },
-  { label: "PLANNING", subLabel: "行前準備", href: "/planning" },
-  { label: "TOOLBOX", subLabel: "旅行工具", href: "/toolbox" },
-  { label: "MEMBERS", subLabel: "成員管理", href: "/members" },
-];
+import { 
+  Ticket, 
+  Map, 
+  Calculator, 
+  ClipboardCheck, 
+  Briefcase, 
+  Users 
+} from "lucide-react";
 
 export default function MobileNav() {
-  const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
+  // ⚠️ 請檢查這裡的 href 是否對應你專案的實際路徑
+  const navItems = [
+    { name: "預訂", href: "/bookings", icon: Ticket },      // 預訂憑證
+    { name: "行程", href: "/planner", icon: Map },        // 行程規劃
+    { name: "預算", href: "/budget", icon: Calculator },    // 預算分帳
+    { name: "準備", href: "/planning", icon: ClipboardCheck }, // 行前準備
+    { name: "工具", href: "/toolbox", icon: Briefcase },      // 旅行工具
+    { name: "成員", href: "/members", icon: Users },        // 成員管理
+  ];
 
   return (
-    <>
-      <div className="fixed top-4 right-4 z-[60] md:hidden">
-        <button 
-          onClick={() => setIsOpen(true)}
-          className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg border border-gray-100 text-[#333333]"
-        >
-          <Menu size={24} />
-        </button>
+    <nav className="fixed bottom-0 left-0 z-50 w-full bg-white border-t border-gray-100 pb-safe shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
+      {/* Grid-cols-6: 確保6個制平分闊度 */}
+      <div className="grid grid-cols-6 h-[60px] w-full max-w-md mx-auto">
+        {navItems.map((item) => {
+          // 檢查當前路徑是否包含該 item 的 href (或是完全相等，視乎你習慣)
+          // 如果想簡單啲，用 pathname === item.href 都可以
+          const isActive = pathname.startsWith(item.href);
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex flex-col items-center justify-center w-full h-full space-y-[2px] transition-colors duration-200 ${
+                isActive 
+                  ? "text-black" // Active 顏色 (黑色，跟返你截圖風格)
+                  : "text-gray-400 hover:text-gray-500" // Inactive 顏色 (灰色)
+              }`}
+            >
+              <Icon 
+                size={22} // Icon 大小
+                strokeWidth={isActive ? 2 : 1.5} // Active 時粗少少
+                className="mb-0.5"
+              />
+              <span className="text-[10px] font-medium tracking-tight">
+                {item.name}
+              </span>
+            </Link>
+          );
+        })}
       </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-            className="fixed inset-0 z-[70] bg-white flex flex-col md:hidden"
-          >
-            <div className="p-6 flex justify-between items-center border-b border-gray-100">
-               <div>
-                 <h2 className="font-serif text-2xl font-bold text-[#333333] tracking-widest">VM&apos;s Build</h2>
-                 <p className="text-[10px] text-gray-400 tracking-widest uppercase">MENU</p>
-               </div>
-               <button onClick={() => setIsOpen(false)} className="p-2 bg-gray-100 rounded-full">
-                 <X size={24} />
-               </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {MENU_ITEMS.map((item) => {
-                const isActive = pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href;
-                return (
-                  <Link key={item.href} href={item.href} className="block group">
-                    <div className="flex items-center justify-between">
-                       <div>
-                         <span className={clsx("text-2xl font-serif font-bold block", isActive ? "text-[#333333]" : "text-gray-300")}>
-                           {item.label}
-                         </span>
-                         <span className="text-xs text-gray-400 tracking-widest uppercase">{item.subLabel}</span>
-                       </div>
-                       {isActive && <div className="w-2 h-2 bg-[#333333] rounded-full" />}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="p-6 border-t border-gray-100 text-center">
-               <p className="text-[10px] text-gray-300 tracking-widest uppercase">© 2026 VM&apos;s Build</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+    </nav>
   );
 }
