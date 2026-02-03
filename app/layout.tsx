@@ -1,24 +1,44 @@
-import MobileNav from "@/components/layout/MobileNav";import type { Metadata } from "next";
-import { Inter } from "next/font/google"; // 假設你用 Inter，無用可以 ignore
+import type { Metadata } from "next";
+import { Inter, Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
+import MobileNav from "@/components/layout/MobileNav";
 import "./globals.css";
-import MobileNav from "@/components/layout/MobileNav"; // 記得 import
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const notoSansJP = Noto_Sans_JP({ 
+  subsets: ["latin"], 
+  weight: ["300", "400", "500", "700"], 
+  variable: "--font-noto-sans" 
+});
+const notoSerifJP = Noto_Serif_JP({ 
+  subsets: ["latin"], 
+  weight: ["400", "700"], 
+  variable: "--font-noto-serif" 
+});
 
 export const metadata: Metadata = {
-  title: "Travel App",
-  description: "My awesome travel planner",
+  title: "VM's Build",
+  description: "Travel Architect",
+  manifest: "/manifest.json",
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-192.png',
+  }
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="zh-TW">
       <body className={`${inter.variable} ${notoSansJP.variable} ${notoSerifJP.variable} font-sans bg-white text-[#333333] antialiased`}>
-        {/* 主要內容區加入 pb-24 (Padding Bottom) 預留空間俾 Mobile Nav */}
-        <div className="pb-24 md:pb-0"> 
+        {/* 這裡加了 pb-24 防止手機版內容被底部選單遮住 */}
+        <div className="pb-24 md:pb-0">
           {children}
         </div>
         
+        {/* 手機版底部選單 */}
         <MobileNav />
       </body>
     </html>
