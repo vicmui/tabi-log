@@ -10,26 +10,16 @@ export const metadata: Metadata = {
   description: "My awesome travel planner",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-HK">
-      {/* pb-[80px]: 底部留位俾 Navigation Bar + Safe Area */}
-      {/* md:pb-0: 電腦版唔使留位 */}
-      <body className={`${inter.className} bg-gray-50 pb-[80px] md:pb-0`}>
-        
-        <main className="min-h-screen max-w-md mx-auto bg-white shadow-sm md:max-w-full md:shadow-none md:bg-transparent">
+    <html lang="zh-TW">
+      <body className={`${inter.variable} ${notoSansJP.variable} ${notoSerifJP.variable} font-sans bg-white text-[#333333] antialiased`}>
+        {/* 主要內容區加入 pb-24 (Padding Bottom) 預留空間俾 Mobile Nav */}
+        <div className="pb-24 md:pb-0"> 
           {children}
-        </main>
-
-        {/* 只在 Mobile 顯示 Bottom Bar */}
-        <div className="md:hidden">
-          <MobileNav />
         </div>
         
+        <MobileNav />
       </body>
     </html>
   );
