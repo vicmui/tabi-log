@@ -1,111 +1,129 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { X, CheckCircle, Star, Image as ImageIcon } from "lucide-react";
-import { useTripStore } from "@/store/useTripStore";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Utensils, Camera, Train, Bed, ShoppingBag, MapPin, Search } from "lucide-react";
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import clsx from "clsx";
 
-export default function ActivityDetailModal({ tripId, dayIndex, activityId, onClose }: any) {
-  const { trips, updateActivity } = useTripStore();
-  const trip = trips.find(t => t.id === tripId);
-  const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => void;
+}
 
-  // 初始化狀態
-  const [comment, setComment] = useState(activity?.comment || "");
-  const [rating, setRating] = useState(activity?.rating || 0);
+const TYPES = [
+  { type: "Food", icon: Utensils, label: "美食" },
+  { type: "Sightseeing", icon: Camera, label: "景點" },
+  { type: "Shopping", icon: ShoppingBag, label: "購物" },
+  { type: "Transport", icon: Train, label: "交通" },
+  { type: "Hotel", icon: Bed, label: "住宿" },
+  { type: "Other", icon: MapPin, label: "其他" },
+];
 
-  if (!activity) return null;
+export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
+  const [type, setType] = useState("Food");
+  const [time, setTime] = useState("10:00");
+  const [locationName, setLocationName] = useState(""); // 用於手動輸入或 API 結果
+  const [address, setAddress] = useState(""); // 儲存詳細地址
+  const [cost, setCost] = useState(0);
+  const [note, setNote] = useState("");
+  const [isGoogleMode, setIsGoogleMode] = useState(true); // 切換模式
 
-  const handleSave = () => {
-    updateActivity(tripId, dayIndex, activityId, { comment, rating });
-    onClose();
-  };
-
-  const toggleVisited = () => {
-    updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locationName) return;
+    // 將地址自動加到備註中，如果備註是空的
+    const finalNote = note ? note : address ? `地址: ${address}` : "";
+    
+    onSubmit({ type, time, location: locationName, cost, note: finalNote });
+    
+    // Reset
+    setLocationName(""); setAddress(""); setCost(0); setNote(""); onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      
-      {/* Modal 本體 */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }} 
-        animate={{ opacity: 1, scale: 1 }} 
-        className="bg-white w-full max-w-lg relative z-10 shadow-2xl overflow-hidden"
-      >
-        {/* Header 圖片區 */}
-        <div className="h-32 bg-gray-100 relative">
-           {/* 這裡暫時用 Unsplash 圖，之後可以改成顯示活動照片 */}
-           <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2000" className="w-full h-full object-cover opacity-80" />
-           <div className="absolute top-4 right-4">
-             <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white transition-colors">
-               <X size={20}/>
-             </button>
-           </div>
-        </div>
-        
-        <div className="p-8">
-           {/* 標題與打卡按鈕 */}
-           <div className="flex justify-between items-start mb-6">
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white z-[101] shadow-2xl p-8 rounded-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-serif font-bold tracking-widest text-[#333333]">新增活動</h2>
+              <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-black"/></button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* 1. 類型選擇 */}
               <div>
-                <h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span className="bg-gray-100 px-2 py-1 uppercase tracking-wider">{activity.type}</span>
-                  <span>{activity.time}</span>
+                <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-2 uppercase">類別 Category</label>
+                <div className="grid grid-cols-6 gap-2">
+                  {TYPES.map((t) => (
+                    <button key={t.type} type="button" onClick={() => setType(t.type)} 
+                      className={clsx("flex flex-col items-center justify-center py-2 gap-1 rounded-lg transition-all border", 
+                      type === t.type ? "bg-[#333333] text-white border-black" : "bg-white text-gray-400 border-gray-100 hover:border-gray-300")}>
+                      <t.icon size={14} />
+                    </button>
+                  ))}
                 </div>
               </div>
-              <button 
-                onClick={toggleVisited} 
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2 border transition-all text-xs font-bold tracking-wider uppercase", 
-                  activity.isVisited ? "bg-black text-white border-black" : "border-gray-300 text-gray-400 hover:border-black hover:text-black"
-                )}
-              >
-                <CheckCircle size={16} /> {activity.isVisited ? "已打卡" : "未去"}
-              </button>
-           </div>
 
-           {/* 評分 Rating */}
-           <div className="mb-6">
-              <label className="text-[10px] font-bold text-gray-400 tracking-widest uppercase block mb-2">我的評分</label>
-              <div className="flex gap-2">
-                {[1,2,3,4,5].map(star => (
-                  <button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200 hover:text-yellow-200")}>
-                    <Star size={24} fill={star <= rating ? "currentColor" : "none"} />
-                  </button>
-                ))}
+              {/* 2. Google 智能搜尋 / 手動輸入 */}
+              <div>
+                 <div className="flex justify-between items-center mb-2">
+                    <label className="block text-[10px] font-bold text-gray-400 tracking-widest uppercase">地點 Location</label>
+                    <button type="button" onClick={() => setIsGoogleMode(!isGoogleMode)} className="text-[10px] text-blue-500 underline">
+                      {isGoogleMode ? "切換手動輸入" : "使用 Google 搜尋"}
+                    </button>
+                 </div>
+                 
+                 {isGoogleMode && process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ? (
+                   <GooglePlacesAutocomplete
+                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
+                     selectProps={{
+                       placeholder: "搜尋地點 (例如: 清水寺)...",
+                       onChange: (val: any) => {
+                         setLocationName(val.label.split(',')[0]); // 拿第一段做名
+                         setAddress(val.label); // 完整地址
+                       },
+                       styles: {
+                         control: (provided) => ({ ...provided, border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, boxShadow: 'none' }),
+                         placeholder: (provided) => ({ ...provided, fontSize: '14px', color: '#9ca3af' }),
+                       }
+                     }}
+                   />
+                 ) : (
+                   <input type="text" placeholder="輸入地點名稱..." value={locationName} onChange={(e) => setLocationName(e.target.value)} 
+                     className="w-full border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-black transition-colors" autoFocus
+                   />
+                 )}
+                 {address && isGoogleMode && <p className="text-[10px] text-gray-400 mt-1 truncate">{address}</p>}
               </div>
-           </div>
 
-           {/* 感想 Comment */}
-           <div className="mb-6">
-              <label className="text-[10px] font-bold text-gray-400 tracking-widest uppercase block mb-2">旅後回憶 & 筆記</label>
-              <textarea 
-                value={comment} 
-                onChange={e => setComment(e.target.value)}
-                placeholder="寫下你的回憶..."
-                className="w-full h-24 border border-gray-200 p-3 text-sm focus:outline-none focus:border-black resize-none bg-gray-50"
-              />
-           </div>
+              {/* 3. 時間與費用 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                   <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">時間 Time</label>
+                   <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm"/>
+                </div>
+                <div>
+                   <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">預算 (¥)</label>
+                   <input type="number" value={cost||''} onChange={(e) => setCost(Number(e.target.value))} className="w-full border-b border-gray-200 py-2 text-sm" placeholder="0"/>
+                </div>
+              </div>
 
-           {/* 上傳照片按鈕 (模擬) */}
-           <div className="mb-8">
-             <label className="text-[10px] font-bold text-gray-400 tracking-widest uppercase block mb-2">上傳照片</label>
-             <div className="flex gap-2">
-                <button className="w-16 h-16 border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-black hover:text-black transition-colors">
-                   <ImageIcon size={20}/>
-                </button>
-             </div>
-           </div>
+              {/* 4. 備註 */}
+              <div>
+                 <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">備註 Note</label>
+                 <input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm" placeholder="訂位代號 / 必吃清單..."/>
+              </div>
 
-           <button onClick={handleSave} className="w-full bg-[#333333] text-white py-3 text-xs font-bold tracking-[0.2em] uppercase hover:bg-black transition-colors">
-             儲存紀錄
-           </button>
-        </div>
-      </motion.div>
-    </div>
+              <button type="submit" className="w-full bg-[#333333] text-white py-3 rounded-lg text-xs font-bold tracking-[0.2em] hover:bg-black transition-all shadow-lg active:scale-95 uppercase mt-2">
+                確認新增
+              </button>
+            </form>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
