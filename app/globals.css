@@ -30,3 +30,17 @@ input, select, textarea {
 label {
   color: #6B7280;
 }
+
+/* 隱藏捲軸但允許滑動 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* 確保底部導航欄在 iPhone 上唔會太貼底 */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

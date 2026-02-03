@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import MobileNav from "@/components/layout/MobileNav";import type { Metadata } from "next";
 import { Inter } from "next/font/google"; // 假設你用 Inter，無用可以 ignore
 import "./globals.css";
-import MobileNav from "@/components/MobileNav"; // 記得 import
+import MobileNav from "@/components/layout/MobileNav"; // 記得 import
 
 const inter = Inter({ subsets: ["latin"] });
 
