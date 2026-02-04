@@ -4,7 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import ItineraryList from "@/components/planner/ItineraryList";
 import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
-import ShareItinerary from "@/components/planner/ShareItinerary"; // 新增
+import ShareItinerary from "@/components/planner/ShareItinerary";
 import { useTripStore } from "@/store/useTripStore";
 import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon } from "lucide-react";
 import Link from "next/link";
@@ -14,7 +14,7 @@ import clsx from "clsx";
 
 export default function PlannerPage() {
   const params = useParams();
-  const { trips, addActivity } = useTripStore();
+  const { trips, addActivity, addDayToTrip } = useTripStore(); // 引入 addDayToTrip
   const [activeDay, setActiveDay] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,12 +73,16 @@ export default function PlannerPage() {
                 {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-white" />}
               </button>
             ))}
+            {/* 🔥 新增：加日子按鈕 (Desktop) */}
+            <button onClick={() => addDayToTrip(trip.id)} className="w-full py-4 text-xs text-gray-400 hover:text-black hover:bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 uppercase tracking-widest">
+                <Plus size={14}/> 加一天
+            </button>
           </div>
         </div>
 
         {/* Mobile Horizontal Day Selector */}
         <div className="md:hidden w-full bg-white border-b border-gray-100 z-20 shadow-sm shrink-0">
-           <div className="flex overflow-x-auto snap-x hide-scrollbar py-3 px-4 gap-3">
+           <div className="flex overflow-x-auto snap-x hide-scrollbar py-3 px-4 gap-3 items-center">
               {trip.dailyItinerary.map((dayItem, index) => (
                  <button key={dayItem.day} onClick={() => setActiveDay(index)} className={clsx("flex-shrink-0 snap-start flex flex-col items-center justify-center w-16 h-16 rounded-xl border transition-all duration-200", activeDay === index ? "bg-jp-charcoal text-white border-black shadow-md scale-105" : "bg-gray-50 text-gray-400 border-gray-100")}>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Day</span>
@@ -86,12 +90,15 @@ export default function PlannerPage() {
                     <span className="text-[9px] opacity-60 mt-1">{dayItem.weather}</span>
                  </button>
               ))}
+              {/* 🔥 新增：加日子按鈕 (Mobile) */}
+              <button onClick={() => addDayToTrip(trip.id)} className="flex-shrink-0 flex flex-col items-center justify-center w-12 h-16 rounded-xl border border-dashed border-gray-300 text-gray-400 hover:bg-gray-50">
+                  <Plus size={20}/>
+              </button>
            </div>
         </div>
 
         {/* Main Content Area */}
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full"> 
-          {/* Header Image */}
           <div className="h-40 md:h-64 relative w-full shrink-0">
             <Image src={trip.coverImage || ""} alt="Cover" fill className="object-cover object-top" priority />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
@@ -108,12 +115,8 @@ export default function PlannerPage() {
           <div className="px-4 md:px-12 py-4 md:py-8 max-w-4xl mx-auto min-h-[500px] pb-24">
             <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-10 pt-2">
                <span className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase hidden md:inline">當日行程</span>
-               
-               {/* 頂部按鈕群 (水平滑動以適應手機) */}
                <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
-                  {/* 🔥 Share Button (Killer Feature) */}
                   <ShareItinerary elementId="itinerary-capture-area" tripTitle={trip.title} day={`Day${activeDay+1}`} />
-                  
                   <button onClick={handleOpenDayRoute} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:border-black hover:text-black transition-colors bg-white uppercase">
                     <MapIcon size={12} /> 路線
                   </button>
