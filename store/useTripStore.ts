@@ -3,31 +3,58 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Member { id: string; name: string; avatar: string; }
+
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking {
   id: string; type: BookingType; title: string; date: string;
-  details: { checkIn?: string; checkOut?: string; seat?: string; gate?: string; airline?: string; pickupLocation?: string; dropoffLocation?: string; address?: string; price?: number; };
+  details: { 
+    // 通用
+    price?: number; address?: string; fileUrl?: string; note?: string;
+    // 機票專用
+    airline?: string; flightNum?: string; seat?: string; gate?: string; 
+    origin?: string; destination?: string; departTime?: string; arriveTime?: string;
+    // 住宿/租車專用
+    checkIn?: string; checkOut?: string; 
+    pickupLocation?: string; dropoffLocation?: string;
+  };
 }
+
 export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightseeing' | 'Shopping' | 'Other';
 export interface Expense {
-  id: string; amount: number; category: ExpenseCategory; itemName: string; note: string; date: string; payerId: string; splitWithIds: string[]; customSplit?: Record<string, number>; receiptUrl?: string;
+  id: string; amount: number; category: ExpenseCategory; 
+  itemName: string; note: string; date: string; 
+  payerId: string; splitWithIds: string[]; customSplit?: Record<string, number>; receiptUrl?: string;
 }
+
 export type Priority = 'High' | 'Medium' | 'Low';
 export interface PlanItem {
-  id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string;
+  id: string; category: 'Todo' | 'Packing' | 'Shopping'; 
+  text: string; priority: Priority; 
+  location?: string; estimatedCost?: number; 
+  isCompleted: boolean; assigneeId?: string; imageUrl?: string;
 }
+
 export interface Activity {
-  id: string; time: string; type: string; location: string; cost: number; note?: string; rating?: number; comment?: string; isVisited: boolean;
+  id: string; time: string; type: string; location: string; cost: number; 
+  note?: string; rating?: number; comment?: string; isVisited: boolean;
 }
+
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; }
+
 export interface Trip {
-  id: string; title: string; startDate: string; endDate: string; coverImage?: string; status: 'planning' | 'ongoing' | 'completed';
-  members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number;
+  id: string; title: string; startDate: string; endDate: string; 
+  coverImage?: string; status: 'planning' | 'ongoing' | 'completed';
+  members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; 
+  budgetTotal: number;
 }
 
 interface TripState {
   trips: Trip[]; activeTripId: string | null; setActiveTrip: (id: string) => void;
   addTrip: (trip: Omit<Trip, 'id' | 'members' | 'bookings' | 'expenses' | 'plans' | 'dailyItinerary' | 'budgetTotal'>) => void;
+  
+  // 🔥 更新旅程設定 (會自動重算日期)
+  updateTripSettings: (tripId: string, title: string, newStartDate: string, coverImage: string) => void;
+  
   updateTrip: (tripId: string, data: Partial<Trip>) => void;
   updateBudgetTotal: (tripId: string, total: number) => void;
   
@@ -60,7 +87,7 @@ const INITIAL_TRIP: Trip = {
   bookings: [], expenses: [],
   plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false })),
   dailyItinerary: [
-     { day: 1, date: "2026-03-20", weather: "Cloud", activities: [{ id: "d1-1", time: "Check-in", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Check in / 放行李", isVisited: false }, { id: "d1-2", time: "11:00", type: "Shopping", location: "Daimaru Shinsaibashi", cost: 0, note: "大丸心齋橋", isVisited: false }] },
+     { day: 1, date: "2026-03-20", weather: "Cloud", activities: [{ id: "d1-1", time: "Check-in", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Check in / 放行李", isVisited: false }] },
      { day: 2, date: "2026-03-21", weather: "Sun", activities: [] },
      { day: 3, date: "2026-03-22", weather: "Sun", activities: [] },
      { day: 4, date: "2026-03-23", weather: "Rain", activities: [] },
@@ -74,6 +101,37 @@ export const useTripStore = create<TripState>()(
       trips: [INITIAL_TRIP], activeTripId: null,
       setActiveTrip: (id) => set({ activeTripId: id }),
       addTrip: (tripData) => set((state) => ({ trips: [...state.trips, { ...tripData, id: uuidv4(), members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }] })),
+      
+      // 🔥 重點功能：更新設定並重算日期
+      updateTripSettings: (tripId, title, newStartDate, coverImage) => set((state) => ({
+        trips: state.trips.map(t => {
+          if (t.id !== tripId) return t;
+          
+          // 重算所有日子的日期
+          const start = new Date(newStartDate);
+          const newItinerary = t.dailyItinerary.map((day, index) => {
+             const d = new Date(start);
+             d.setDate(start.getDate() + index);
+             return { ...day, date: d.toISOString().split('T')[0] };
+          });
+          
+          // 計算新的結束日期
+          const lastDate = new Date(start);
+          if (newItinerary.length > 0) {
+             lastDate.setDate(start.getDate() + newItinerary.length - 1);
+          }
+
+          return { 
+            ...t, 
+            title, 
+            startDate: newStartDate, 
+            coverImage, 
+            dailyItinerary: newItinerary,
+            endDate: lastDate.toISOString().split('T')[0]
+          };
+        })
+      })),
+
       updateTrip: (tripId, data) => set((state) => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) })),
       updateBudgetTotal: (tripId, total) => set((state) => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, budgetTotal: total } : t) })),
       addBooking: (tripId, booking) => set((state) => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: [...t.bookings, booking] } : t) })),
@@ -89,44 +147,19 @@ export const useTripStore = create<TripState>()(
       updateActivity: (tripId, dayIndex, activityId, data) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); return { ...trip, dailyItinerary: newItinerary }; }) })),
       updateActivityOrder: (tripId, dayIndex, newActivities) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) })),
       deleteActivity: (tripId, dayIndex, activityId) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId); return { ...trip, dailyItinerary: newItinerary }; }) })),
-
-      // 🔥 修復後的新增日期邏輯
-      addDayToTrip: (tripId) => set((state) => ({
-        trips: state.trips.map(trip => {
+      addDayToTrip: (tripId) => set((state) => ({ trips: state.trips.map(trip => { 
           if (trip.id !== tripId) return trip;
-          
+          // 如果沒有行程，從 startDate 開始
           let nextDateStr = trip.startDate;
-          let nextDayNum = 1;
-
-          // 找出目前行程中「最晚」的日期
           if (trip.dailyItinerary.length > 0) {
-             const sortedItinerary = [...trip.dailyItinerary].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-             const lastDay = sortedItinerary[sortedItinerary.length - 1];
-             const lastDate = new Date(lastDay.date);
-             lastDate.setDate(lastDate.getDate() + 1);
-             nextDateStr = lastDate.toISOString().split('T')[0];
-             nextDayNum = trip.dailyItinerary.length + 1;
+             const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1];
+             const d = new Date(lastDay.date); d.setDate(d.getDate() + 1);
+             nextDateStr = d.toISOString().split('T')[0];
           }
-
-          return { 
-            ...trip, 
-            endDate: nextDateStr, 
-            dailyItinerary: [...trip.dailyItinerary, { day: nextDayNum, date: nextDateStr, weather: 'Sun', activities: [] }] 
-          };
-        })
-      })),
-
-      // 🔥 修復後的刪除日期邏輯
-      deleteDayFromTrip: (tripId, dayIndex) => set((state) => ({
-        trips: state.trips.map(trip => {
-          if (trip.id !== tripId) return trip;
-          const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex);
-          // 重新編號 Day 1, 2, 3 (但保留原本日期，或者你可以選擇連日期都重排，這裡選擇只重排 Day Number)
-          const reordered = newItinerary.map((item, idx) => ({ ...item, day: idx + 1 }));
-          return { ...trip, dailyItinerary: reordered };
-        })
-      })),
+          return { ...trip, endDate: nextDateStr, dailyItinerary: [...trip.dailyItinerary, { day: trip.dailyItinerary.length + 1, date: nextDateStr, weather: 'Sun', activities: [] }] };
+      })})),
+      deleteDayFromTrip: (tripId, dayIndex) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) })),
     }),
-    { name: 'vm-build-v10-fixed', storage: createJSONStorage(() => localStorage) } // Version up
+    { name: 'vm-build-v11-booking-ui', storage: createJSONStorage(() => localStorage) }
   )
 );

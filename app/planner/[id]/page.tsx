@@ -6,7 +6,7 @@ import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import ShareItinerary from "@/components/planner/ShareItinerary";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, Trash2, CalendarX } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, Trash2, CalendarX, Settings } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -14,16 +14,32 @@ import clsx from "clsx";
 
 export default function PlannerPage() {
   const params = useParams();
-  const { trips, addActivity, addDayToTrip, deleteDayFromTrip } = useTripStore();
+  const { trips, addActivity, addDayToTrip, deleteDayFromTrip, updateTripSettings } = useTripStore();
   const [activeDay, setActiveDay] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  
+  // Trip Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
 
-  useEffect(() => setIsMounted(true), []);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const trip = trips.find((t) => t.id === params.id);
   
-  // 防止 activeDay 超出範圍 (例如刪除了最後一天)
+  // 初始化設定值
+  useEffect(() => {
+    if (trip) {
+        setEditTitle(trip.title);
+        setEditStartDate(trip.startDate);
+    }
+  }, [trip]);
+
+  // 防止 activeDay 超出範圍
   useEffect(() => {
     if (trip && activeDay >= trip.dailyItinerary.length) {
       setActiveDay(Math.max(0, trip.dailyItinerary.length - 1));
@@ -41,13 +57,16 @@ export default function PlannerPage() {
   };
 
   const handleDeleteDay = () => {
-    if (trip.dailyItinerary.length <= 1) {
-      alert("最少要保留一天行程！");
-      return;
-    }
-    if (confirm(`確定要刪除 Day ${activeDay + 1} (${currentDailyItinerary?.date}) 及其所有行程嗎？`)) {
+    if (trip.dailyItinerary.length <= 1) { alert("最少要保留一天行程！"); return; }
+    if (confirm(`確定要刪除 Day ${activeDay + 1} 及其行程嗎？`)) {
       deleteDayFromTrip(trip.id, activeDay);
     }
+  };
+
+  // 🔥 儲存設定並重算日期
+  const handleSaveSettings = () => {
+      updateTripSettings(trip.id, editTitle, editStartDate, trip.coverImage || "");
+      setIsSettingsOpen(false);
   };
 
   const handleOpenDayRoute = () => {
@@ -63,9 +82,12 @@ export default function PlannerPage() {
     <div className="flex h-screen bg-white font-sans text-jp-charcoal overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative">
+        {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-30">
            <Link href="/" className="text-gray-500"><ArrowLeft size={20}/></Link>
-           <h1 className="font-serif font-bold text-lg truncate w-2/3 text-center">{trip.title}</h1>
+           <button onClick={()=>setIsSettingsOpen(true)} className="font-serif font-bold text-lg truncate w-2/3 text-center flex items-center justify-center gap-2">
+              {trip.title} <Settings size={14} className="text-gray-400"/>
+           </button>
            <div className="w-5" /> 
         </div>
 
@@ -73,7 +95,10 @@ export default function PlannerPage() {
         <div className="hidden md:flex w-64 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col shrink-0 z-20">
           <div className="p-6 border-b border-gray-50 sticky top-0 bg-white z-10">
             <Link href="/" className="flex items-center gap-2 text-xs text-gray-400 hover:text-black mb-4 transition-colors"><ArrowLeft size={12}/> 返回首頁</Link>
-            <h2 className="font-serif font-bold text-xl leading-tight mb-2 text-jp-charcoal">{trip.title}</h2>
+            <div className="flex justify-between items-start">
+               <h2 className="font-serif font-bold text-xl leading-tight mb-2 text-jp-charcoal">{trip.title}</h2>
+               <button onClick={()=>setIsSettingsOpen(true)} className="text-gray-300 hover:text-black"><Settings size={16}/></button>
+            </div>
             <div className="flex items-center gap-2 text-[10px] text-gray-400 tracking-wider uppercase font-medium"><Calendar size={12} /><span>{trip.startDate} — {trip.endDate}</span></div>
           </div>
           <div className="flex-1">
@@ -121,12 +146,8 @@ export default function PlannerPage() {
             <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-10 pt-2">
                <div className="flex items-center gap-3">
                   <span className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase hidden md:inline">當日行程</span>
-                  {/* 🔥 刪除當日按鈕 */}
-                  <button onClick={handleDeleteDay} className="text-red-300 hover:text-red-500 transition-colors" title="刪除這一天">
-                     <CalendarX size={16} />
-                  </button>
+                  <button onClick={handleDeleteDay} className="text-red-300 hover:text-red-500 transition-colors" title="刪除這一天"><CalendarX size={16} /></button>
                </div>
-               
                <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar justify-end">
                   <ShareItinerary elementId="itinerary-capture-area" tripTitle={trip.title} day={`Day${activeDay+1}`} />
                   <button onClick={handleOpenDayRoute} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:border-black hover:text-black transition-colors bg-white uppercase"><MapIcon size={12} /> 路線</button>
@@ -141,6 +162,26 @@ export default function PlannerPage() {
           
           <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} />
           {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
+          
+          {/* 🔥 旅程設定 Modal */}
+          {isSettingsOpen && (
+             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div className="bg-white p-8 w-full max-w-sm shadow-2xl relative">
+                   <h2 className="font-serif font-bold text-xl mb-6">修改旅程設定</h2>
+                   <div className="space-y-4">
+                      <div><label className="text-xs text-gray-400 block mb-1">旅程名稱</label><input className="w-full border-b p-2" value={editTitle} onChange={e=>setEditTitle(e.target.value)}/></div>
+                      <div>
+                          <label className="text-xs text-gray-400 block mb-1">開始日期 (更改會重算所有日子)</label>
+                          <input type="date" className="w-full border-b p-2" value={editStartDate} onChange={e=>setEditStartDate(e.target.value)}/>
+                      </div>
+                   </div>
+                   <div className="flex gap-2 mt-6">
+                      <button onClick={()=>setIsSettingsOpen(false)} className="flex-1 border py-3 text-xs uppercase">取消</button>
+                      <button onClick={handleSaveSettings} className="flex-1 bg-black text-white py-3 text-xs uppercase">儲存</button>
+                   </div>
+                </div>
+             </div>
+          )}
         </div>
       </main>
     </div>
