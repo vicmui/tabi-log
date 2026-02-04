@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 
-// ================= 類型定義 =================
-
 export interface Member { id: string; name: string; avatar: string; }
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking {
@@ -48,8 +46,10 @@ interface TripState {
   addActivity: (tripId: string, dayIndex: number, activity: Omit<Activity, 'id'>) => void;
   updateActivity: (tripId: string, dayIndex: number, activityId: string, data: Partial<Activity>) => void;
   updateActivityOrder: (tripId: string, dayIndex: number, newActivities: Activity[]) => void;
+  deleteActivity: (tripId: string, dayIndex: number, activityId: string) => void; // 新增：刪除單一活動
   
-  addDayToTrip: (tripId: string) => void; // 🔥 新增：加日子功能
+  addDayToTrip: (tripId: string) => void;
+  deleteDayFromTrip: (tripId: string, dayIndex: number) => void; // 新增：刪除整天
 }
 
 const DEFAULT_PACKING_LIST = ["✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包", "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡", "🌂 雨具", "🔌 轉接頭"];
@@ -60,11 +60,11 @@ const INITIAL_TRIP: Trip = {
   bookings: [], expenses: [],
   plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false })),
   dailyItinerary: [
-     { day: 1, date: "2026-03-20", weather: "Cloud", activities: [{ id: "d1-1", time: "Check-in", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Check in / 放行李", isVisited: false }, { id: "d1-2", time: "11:00", type: "Shopping", location: "Daimaru Shinsaibashi", cost: 0, note: "大丸心齋橋", isVisited: false }, { id: "d1-3", time: "12:00", type: "Food", location: "Castella GINSO", cost: 1500, note: "蜂蜜蛋糕", isVisited: false }, { id: "d1-4", time: "13:00", type: "Food", location: "Harbs", cost: 2000, note: "午茶蛋糕", isVisited: false }, { id: "d1-5", time: "12:30", type: "Food", location: "Nishiya", cost: 3000, note: "Booked 12:30", isVisited: false }, { id: "d1-6", time: "16:00", type: "Sightseeing", location: "Osaka Wonder Cruise", cost: 1200, note: "道頓堀遊船", isVisited: false }, { id: "d1-7", time: "17:30", type: "Sightseeing", location: "法善寺横丁 (Hozenji)", cost: 0, note: "不動明王", isVisited: false }, { id: "d1-8", time: "18:00", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "稍作休息", isVisited: false }, { id: "d1-9", time: "18:30", type: "Sightseeing", location: "Harukas 300", cost: 1500, note: "觀景台夜景", isVisited: false }, { id: "d1-10", time: "19:00", type: "Food", location: "蟹松 (Kanimatsu)", cost: 15000, note: "Booked 19:00 北新地", isVisited: false }] },
-     { day: 2, date: "2026-03-21", weather: "Sun", activities: [{ id: "d2-1", time: "09:00", type: "Transport", location: "大阪站中央口", cost: 0, note: "JR Ticket Office", isVisited: false }, { id: "d2-2", time: "10:30", type: "Transport", location: "Kyoto Station", cost: 0, note: "抵達京都", isVisited: false }, { id: "d2-3", time: "11:00", type: "Sightseeing", location: "To-ji Temple (東寺)", cost: 600, note: "五重塔與櫻花", isVisited: false }, { id: "d2-4", time: "12:30", type: "Food", location: "GOKAGO", cost: 1000, note: "Coffee Break", isVisited: false }, { id: "d2-5", time: "13:30", type: "Food", location: "Shoraian (松籟庵)", cost: 6000, note: "Booked 13:30 豆腐料理", isVisited: false }, { id: "d2-6", time: "15:00", type: "Sightseeing", location: "嵐山人力車 (Ebisuya)", cost: 4000, note: "體驗", isVisited: false }, { id: "d2-7", time: "16:30", type: "Food", location: "eXcafe Kyoto", cost: 1500, note: "Arashiyama Main Store", isVisited: false }, { id: "d2-8", time: "18:00", type: "Transport", location: "Kyoto Station", cost: 0, note: "返回大阪", isVisited: false }, { id: "d2-9", time: "20:15", type: "Food", location: "Sumibiyakitori Ikoka", cost: 5000, note: "Booked 20:15 串燒", isVisited: false }, { id: "d2-10", time: "22:00", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Back to Hotel", isVisited: false }] },
-     { day: 3, date: "2026-03-22", weather: "Sun", activities: [{ id: "d3-1", time: "10:00", type: "Food", location: "epais 阪神梅田店", cost: 2000, note: "炸豬排", isVisited: false }, { id: "d3-2", time: "10:30", type: "Food", location: "Eel Nakasho", cost: 3000, note: "Booked", isVisited: false }, { id: "d3-3", time: "10:30", type: "Food", location: "Harukoma (春駒本店)", cost: 3000, note: "排隊", isVisited: false }, { id: "d3-4", time: "13:00", type: "Sightseeing", location: "大阪城公園", cost: 600, note: "賞櫻", isVisited: false }, { id: "d3-5", time: "14:30", type: "Sightseeing", location: "西之丸庭園", cost: 200, note: "庭園", isVisited: false }, { id: "d3-6", time: "16:00", type: "Shopping", location: "Namba Parks", cost: 0, note: "Shopping", isVisited: false }, { id: "d3-7", time: "17:30", type: "Shopping", location: "Supreme Osaka", cost: 0, note: "Shopping", isVisited: false }, { id: "d3-8", time: "18:30", type: "Food", location: "Le Pineau Kitahorie", cost: 1000, note: "甜點", isVisited: false }, { id: "d3-9", time: "19:00", type: "Food", location: "Mochisho Shizuku", cost: 800, note: "和菓子", isVisited: false }, { id: "d3-10", time: "19:15", type: "Food", location: "San Bettei Kitashinchi", cost: 8000, note: "Shabushabu", isVisited: false }, { id: "d3-11", time: "21:30", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Back", isVisited: false }] },
-     { day: 4, date: "2026-03-23", weather: "Rain", activities: [{ id: "d4-1", time: "11:00", type: "Food", location: "Ramen KUON", cost: 1200, note: "需預約", isVisited: false }, { id: "d4-2", time: "13:00", type: "Sightseeing", location: "鶴見綠地公園", cost: 0, note: "賞櫻", isVisited: false }, { id: "d4-3", time: "15:30", type: "Shopping", location: "LaLaport 門真", cost: 0, note: "Outlet", isVisited: false }, { id: "d4-4", time: "19:15", type: "Food", location: "Tempura tentomi", cost: 10000, note: "天婦羅", isVisited: false }, { id: "d4-5", time: "21:30", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Back", isVisited: false }] },
-     { day: 5, date: "2026-03-24", weather: "Cloud", activities: [{ id: "d5-1", time: "10:00", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Check out", isVisited: false }, { id: "d5-2", time: "11:00", type: "Sightseeing", location: "中之島美術館", cost: 1800, note: "NAKKA", isVisited: false }, { id: "d5-3", time: "12:00", type: "Food", location: "小麥之麵神", cost: 1200, note: "KITTE大阪", isVisited: false }, { id: "d5-4", time: "14:00", type: "Shopping", location: "Grand Front Osaka", cost: 0, note: "Shopping", isVisited: false }, { id: "d5-5", time: "15:00", type: "Food", location: "grenier", cost: 800, note: "下午茶", isVisited: false }, { id: "d5-6", time: "16:00", type: "Shopping", location: "Umeda LOFT", cost: 0, note: "Shopping", isVisited: false }, { id: "d5-7", time: "17:00", type: "Shopping", location: "Hankyu", cost: 0, note: "百貨公司", isVisited: false }, { id: "d5-8", time: "18:00", type: "Sightseeing", location: "GRAND GREEN OSAKA", cost: 0, note: "新地標", isVisited: false }] }
+     { day: 1, date: "2026-03-20", weather: "Cloud", activities: [{ id: "d1-1", time: "Check-in", type: "Hotel", location: "Zentis Osaka", cost: 0, note: "Check in / 放行李", isVisited: false }, { id: "d1-2", time: "11:00", type: "Shopping", location: "Daimaru Shinsaibashi", cost: 0, note: "大丸心齋橋", isVisited: false }] },
+     { day: 2, date: "2026-03-21", weather: "Sun", activities: [] },
+     { day: 3, date: "2026-03-22", weather: "Sun", activities: [] },
+     { day: 4, date: "2026-03-23", weather: "Rain", activities: [] },
+     { day: 5, date: "2026-03-24", weather: "Cloud", activities: [] }
   ]
 };
 
@@ -89,28 +89,38 @@ export const useTripStore = create<TripState>()(
       updateActivity: (tripId, dayIndex, activityId, data) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); return { ...trip, dailyItinerary: newItinerary }; }) })),
       updateActivityOrder: (tripId, dayIndex, newActivities) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) })),
       
-      // 🔥 新增：加日子邏輯
+      // 🔥 新增：刪除單一活動 (配合 Swipe to Delete)
+      deleteActivity: (tripId, dayIndex, activityId) => set((state) => ({
+        trips: state.trips.map(trip => {
+          if (trip.id !== tripId) return trip;
+          const newItinerary = [...trip.dailyItinerary];
+          newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId);
+          return { ...trip, dailyItinerary: newItinerary };
+        })
+      })),
+
       addDayToTrip: (tripId) => set((state) => ({
         trips: state.trips.map(trip => {
           if (trip.id !== tripId) return trip;
           const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1];
           const lastDate = new Date(lastDay.date);
           const nextDate = new Date(lastDate);
-          nextDate.setDate(lastDate.getDate() + 1); // 加一日
-          
-          const nextDateStr = nextDate.toISOString().split('T')[0];
-          
-          return {
-            ...trip,
-            endDate: nextDateStr, // 更新旅程結束日期
-            dailyItinerary: [
-              ...trip.dailyItinerary,
-              { day: lastDay.day + 1, date: nextDateStr, weather: 'Sun', activities: [] }
-            ]
-          };
+          nextDate.setDate(lastDate.getDate() + 1);
+          return { ...trip, endDate: nextDate.toISOString().split('T')[0], dailyItinerary: [...trip.dailyItinerary, { day: lastDay.day + 1, date: nextDate.toISOString().split('T')[0], weather: 'Sun', activities: [] }] };
+        })
+      })),
+
+      // 🔥 新增：刪除整天 (Delete Day)
+      deleteDayFromTrip: (tripId, dayIndex) => set((state) => ({
+        trips: state.trips.map(trip => {
+          if (trip.id !== tripId) return trip;
+          const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex);
+          // 重新排序 Day 1, 2, 3...
+          const reorderedItinerary = newItinerary.map((day, idx) => ({ ...day, day: idx + 1 }));
+          return { ...trip, dailyItinerary: reorderedItinerary };
         })
       })),
     }),
-    { name: 'vm-build-final-v2', storage: createJSONStorage(() => localStorage) } // Update version
+    { name: 'vm-build-v9-swipe', storage: createJSONStorage(() => localStorage) } // Update version to force refresh
   )
 );
