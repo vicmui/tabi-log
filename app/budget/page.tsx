@@ -212,9 +212,19 @@ export default function BudgetPage() {
            </div>
 
            {/* 列表與圖表 */}
-           <div className="lg:col-span-2 space-y-8">
-              <div className="flex gap-8 items-center h-64 bg-white p-6 border border-gray-100">
-                 <div className="w-1/2 h-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} innerRadius={60} outerRadius={80} dataKey="value">{chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CAT_CONFIG[entry.name as ExpenseCategory]?.color} stroke="none"/>)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+<div className="lg:col-span-2 space-y-8">
+   <div className="flex flex-col md:flex-row gap-8 items-center bg-white p-6 border border-gray-100">
+      {/* 🔥 修改這裡：給它明確的高度 h-[250px] 和寬度 */}
+      <div className="w-full md:w-1/2 h-[250px]">
+         <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+               <Pie data={chartData} innerRadius={60} outerRadius={80} dataKey="value">
+                  {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CAT_CONFIG[entry.name as ExpenseCategory]?.color} stroke="none"/>)}
+               </Pie>
+               <Tooltip />
+            </PieChart>
+         </ResponsiveContainer>
+      </div>
                  <div className="w-1/2 space-y-3">{Object.keys(catStats).map(cat => { const percent = Math.round((catStats[cat]/totalSpent)*100); const conf = CAT_CONFIG[cat as ExpenseCategory]; return (<div key={cat}><div className="flex justify-between text-xs mb-1"><span className="flex items-center gap-2"><conf.icon size={12} color={conf.color}/> {conf.label}</span><span>{percent}%</span></div><div className="h-1 bg-gray-100 w-full"><div className="h-full" style={{width: `${percent}%`, backgroundColor: conf.color}}/></div></div>)})}</div>
               </div>
               <div className="space-y-2">
