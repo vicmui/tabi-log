@@ -46,10 +46,10 @@ interface TripState {
   addActivity: (tripId: string, dayIndex: number, activity: Omit<Activity, 'id'>) => void;
   updateActivity: (tripId: string, dayIndex: number, activityId: string, data: Partial<Activity>) => void;
   updateActivityOrder: (tripId: string, dayIndex: number, newActivities: Activity[]) => void;
-  deleteActivity: (tripId: string, dayIndex: number, activityId: string) => void; // 新增：刪除單一活動
+  deleteActivity: (tripId: string, dayIndex: number, activityId: string) => void;
   
   addDayToTrip: (tripId: string) => void;
-  deleteDayFromTrip: (tripId: string, dayIndex: number) => void; // 新增：刪除整天
+  deleteDayFromTrip: (tripId: string, dayIndex: number) => void;
 }
 
 const DEFAULT_PACKING_LIST = ["✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包", "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡", "🌂 雨具", "🔌 轉接頭"];
@@ -88,39 +88,45 @@ export const useTripStore = create<TripState>()(
       addActivity: (tripId, dayIndex, activity) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (!newItinerary[dayIndex]) return trip; newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); return { ...trip, dailyItinerary: newItinerary }; }) })),
       updateActivity: (tripId, dayIndex, activityId, data) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); return { ...trip, dailyItinerary: newItinerary }; }) })),
       updateActivityOrder: (tripId, dayIndex, newActivities) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) })),
-      
-      // 🔥 新增：刪除單一活動 (配合 Swipe to Delete)
-      deleteActivity: (tripId, dayIndex, activityId) => set((state) => ({
-        trips: state.trips.map(trip => {
-          if (trip.id !== tripId) return trip;
-          const newItinerary = [...trip.dailyItinerary];
-          newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId);
-          return { ...trip, dailyItinerary: newItinerary };
-        })
-      })),
+      deleteActivity: (tripId, dayIndex, activityId) => set((state) => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId); return { ...trip, dailyItinerary: newItinerary }; }) })),
 
+      // 🔥 修復後的新增日期邏輯
       addDayToTrip: (tripId) => set((state) => ({
         trips: state.trips.map(trip => {
           if (trip.id !== tripId) return trip;
-          const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1];
-          const lastDate = new Date(lastDay.date);
-          const nextDate = new Date(lastDate);
-          nextDate.setDate(lastDate.getDate() + 1);
-          return { ...trip, endDate: nextDate.toISOString().split('T')[0], dailyItinerary: [...trip.dailyItinerary, { day: lastDay.day + 1, date: nextDate.toISOString().split('T')[0], weather: 'Sun', activities: [] }] };
+          
+          let nextDateStr = trip.startDate;
+          let nextDayNum = 1;
+
+          // 找出目前行程中「最晚」的日期
+          if (trip.dailyItinerary.length > 0) {
+             const sortedItinerary = [...trip.dailyItinerary].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+             const lastDay = sortedItinerary[sortedItinerary.length - 1];
+             const lastDate = new Date(lastDay.date);
+             lastDate.setDate(lastDate.getDate() + 1);
+             nextDateStr = lastDate.toISOString().split('T')[0];
+             nextDayNum = trip.dailyItinerary.length + 1;
+          }
+
+          return { 
+            ...trip, 
+            endDate: nextDateStr, 
+            dailyItinerary: [...trip.dailyItinerary, { day: nextDayNum, date: nextDateStr, weather: 'Sun', activities: [] }] 
+          };
         })
       })),
 
-      // 🔥 新增：刪除整天 (Delete Day)
+      // 🔥 修復後的刪除日期邏輯
       deleteDayFromTrip: (tripId, dayIndex) => set((state) => ({
         trips: state.trips.map(trip => {
           if (trip.id !== tripId) return trip;
           const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex);
-          // 重新排序 Day 1, 2, 3...
-          const reorderedItinerary = newItinerary.map((day, idx) => ({ ...day, day: idx + 1 }));
-          return { ...trip, dailyItinerary: reorderedItinerary };
+          // 重新編號 Day 1, 2, 3 (但保留原本日期，或者你可以選擇連日期都重排，這裡選擇只重排 Day Number)
+          const reordered = newItinerary.map((item, idx) => ({ ...item, day: idx + 1 }));
+          return { ...trip, dailyItinerary: reordered };
         })
       })),
     }),
-    { name: 'vm-build-v9-swipe', storage: createJSONStorage(() => localStorage) } // Update version to force refresh
+    { name: 'vm-build-v10-fixed', storage: createJSONStorage(() => localStorage) } // Version up
   )
 );
