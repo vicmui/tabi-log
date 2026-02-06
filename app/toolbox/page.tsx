@@ -8,7 +8,9 @@ export default function ToolboxPage() {
   const [jpy, setJpy] = useState<string>("");
   const [hkd, setHkd] = useState<string>("");
   const [rate, setRate] = useState(0.052);
-  const { trips } = useTripStore(); 
+  
+  // 🔥 引入 importData 函數
+  const { trips, importData } = useTripStore(); 
   const [importStatus, setImportStatus] = useState("");
 
   const handleJpyChange = (val: string) => {
@@ -45,18 +47,11 @@ export default function ToolboxPage() {
       try {
         const json = JSON.parse(event.target?.result as string);
         if (Array.isArray(json)) {
-          // 🔥 關鍵修正：這裡必須對應 store/useTripStore.ts 裡面的 name
-          // 目前最新版是 'vm-build-final-v2'
-          const STORAGE_KEY = 'vm-build-final-v2'; 
+          // 🔥 關鍵修正：直接呼叫 Store 的 action
+          importData(json);
           
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
-              state: { trips: json, activeTripId: json[0]?.id || null }, 
-              version: 0 
-          }));
-          
-          setImportStatus("匯入成功！正在重新整理...");
-          // 稍微延遲讓 LocalStorage 寫入完成
-          setTimeout(() => window.location.reload(), 500);
+          setImportStatus("匯入成功！資料已更新。");
+          // 不需要 reload，因為 React 狀態更新後畫面會自動變
         } else {
           setImportStatus("格式錯誤：檔案不是有效的行程資料。");
         }
