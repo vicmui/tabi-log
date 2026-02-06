@@ -1,44 +1,38 @@
-import type { Metadata } from "next";
+"use client";
+import { useEffect } from "react";
 import { Inter, Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
 import MobileNav from "@/components/layout/MobileNav";
+import { useTripStore } from "@/store/useTripStore"; // 引入 Store
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const notoSansJP = Noto_Sans_JP({ 
-  subsets: ["latin"], 
-  weight: ["300", "400", "500", "700"], 
-  variable: "--font-noto-sans" 
-});
-const notoSerifJP = Noto_Serif_JP({ 
-  subsets: ["latin"], 
-  weight: ["400", "700"], 
-  variable: "--font-noto-serif" 
-});
+const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], weight: ["300", "400", "500", "700"], variable: "--font-noto-sans" });
+const notoSerifJP = Noto_Serif_JP({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-noto-serif" });
 
-export const metadata: Metadata = {
-  title: "VM's Build",
-  description: "Travel Architect",
-  manifest: "/manifest.json",
-  icons: {
-    icon: '/icon-192.png',
-    apple: '/icon-192.png',
-  }
-};
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const { loadTripsFromCloud, isSyncing } = useTripStore();
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+  // 🔥 APP 啟動時下載資料
+  useEffect(() => {
+    loadTripsFromCloud();
+  }, []);
+
   return (
     <html lang="zh-TW">
+      <head>
+        <title>VM&apos;s Build</title>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icon-192.png" />
+      </head>
       <body className={`${inter.variable} ${notoSansJP.variable} ${notoSerifJP.variable} font-sans bg-white text-[#333333] antialiased`}>
-        {/* 這裡加了 pb-24 防止手機版內容被底部選單遮住 */}
+        {/* 同步指示燈 (可選) */}
+        {isSyncing && (
+           <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />
+        )}
+        
         <div className="pb-24 md:pb-0">
           {children}
         </div>
-        
-        {/* 手機版底部選單 */}
         <MobileNav />
       </body>
     </html>
