@@ -111,11 +111,23 @@ export const useTripStore = create<TripState>()(
       },
 
       // 🔥 2. Cloud Save
-      saveTripToCloud: async (trip: Trip) => {
-          set({ isSyncing: true });
-          await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() });
-          set({ isSyncing: false });
-      },
+  saveTripToCloud: async (trip: Trip) => {
+      set({ isSyncing: true });
+      const { error } = await supabase.from('trips').upsert({
+          id: trip.id,
+          title: trip.title,
+          content: trip,
+          updated_at: new Date().toISOString()
+      });
+      
+      if (error) {
+          console.error("Upload Error:", error);
+          alert(`同步失敗！請檢查網絡或 Supabase 設定。\n錯誤訊息: ${error.message}`);
+      } else {
+          console.log("Upload Success!");
+      }
+      set({ isSyncing: false });
+  },
 
       // 🔥 3. Subscribe
       subscribeToTrip: (tripId: string) => {
