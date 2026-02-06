@@ -1,12 +1,12 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  // 🔥 重點在這裡：我加了 "./src/**/*.{...}" 以防萬一
+  // 🔥 重點：這裡告訴 Tailwind 去掃描所有可能的資料夾
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/**/*.{js,ts,jsx,tsx,mdx}", // 加多這一行保命
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}", // 以防萬一你有 src
   ],
   theme: {
     extend: {
@@ -16,8 +16,8 @@ const config: Config = {
       },
       colors: {
         jp: {
-          black: "#111111",
-          charcoal: "#333333",
+          black: "#333333", // 深灰字
+          charcoal: "#333333", 
           gray: "#F0F0F0",
           accent: "#000000",
         }
