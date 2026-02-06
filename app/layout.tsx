@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { Inter, Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
 import MobileNav from "@/components/layout/MobileNav";
-import { useTripStore } from "@/store/useTripStore"; // 引入 Store
+import { useTripStore } from "@/store/useTripStore";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -10,12 +10,15 @@ const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], weight: ["300", "400", "50
 const notoSerifJP = Noto_Serif_JP({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-noto-serif" });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const { loadTripsFromCloud, isSyncing } = useTripStore();
+  // 🔥 改用 selector 寫法，防止 Store 未準備好時 Crash
+  const loadTripsFromCloud = useTripStore((state) => state.loadTripsFromCloud);
+  const isSyncing = useTripStore((state) => state.isSyncing);
 
-  // 🔥 APP 啟動時下載資料
   useEffect(() => {
-    loadTripsFromCloud();
-  }, []);
+    if (loadTripsFromCloud) {
+        loadTripsFromCloud();
+    }
+  }, [loadTripsFromCloud]);
 
   return (
     <html lang="zh-TW">
@@ -25,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/icon-192.png" />
       </head>
       <body className={`${inter.variable} ${notoSansJP.variable} ${notoSerifJP.variable} font-sans bg-white text-[#333333] antialiased`}>
-        {/* 同步指示燈 (可選) */}
+        {/* 同步指示燈 */}
         {isSyncing && (
            <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />
         )}
