@@ -5,26 +5,29 @@ import { useTripStore } from "@/store/useTripStore";
 import { User, Plus, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 
-export default function MembersPage() {
-  const { trips, activeTripId, updateTrip } = useTripStore();
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+// ... imports ...
 
+export default function MembersPage() {
+  const { trips, activeTripId, updateTrip, isSyncing } = useTripStore();
+  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
   const [newName, setNewName] = useState("");
   const getRandomAvatar = (seed: string) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
 
-  if (!trip) return null;
+  // 🔥 修正：白畫面防護
+  if (!trip) {
+    return (
+      <div className="flex min-h-screen bg-white font-sans text-[#333333]">
+        <Sidebar />
+        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
+           <div className="text-center text-gray-400">
+              {isSyncing ? "成員資料同步中..." : "請先建立旅程"}
+           </div>
+        </main>
+      </div>
+    );
+  }
 
-  const handleAddMember = () => {
-    if (!newName) return;
-    const newMember = {
-      id: uuidv4(),
-      name: newName,
-      avatar: getRandomAvatar(newName)
-    };
-    const updatedMembers = [...trip.members, newMember];
-    updateTrip(trip.id, { members: updatedMembers });
-    setNewName("");
-  };
+  // ... handleAddMember, handleDeleteMember, return JSX 保持不變 ...
 
   const handleDeleteMember = (id: string) => {
     if (confirm("確定要刪除這位成員嗎？相關的記帳紀錄可能會受影響。")) {

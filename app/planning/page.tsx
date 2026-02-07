@@ -6,9 +6,8 @@ import { CheckCircle2, Circle, Image as ImageIcon, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 
 export default function PlanningPage() {
-  const { trips, activeTripId, addPlanItem, togglePlanItem, deletePlanItem } = useTripStore();
+  const { trips, activeTripId, addPlanItem, togglePlanItem, deletePlanItem, isSyncing } = useTripStore();
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
-  
   const [activeTab, setActiveTab] = useState("Packing");
   const [text, setText] = useState("");
   const [priority, setPriority] = useState<Priority>("Medium");
@@ -17,7 +16,18 @@ export default function PlanningPage() {
   const [assignee, setAssignee] = useState("");
   const [imageUrl, setImageUrl] = useState(""); // 新增：圖片網址
 
-  if (!trip) return null;
+    if (!trip) {
+    return (
+      <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
+        <Sidebar />
+        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
+           <div className="text-center text-gray-400">
+              {isSyncing ? "清單同步中..." : "暫無旅程"}
+           </div>
+        </main>
+      </div>
+    );
+  }
   const currentItems = trip.plans.filter(p => p.category === activeTab);
   const tabNames: Record<string, string> = { Packing: "行李清單", Todo: "待辦事項", Shopping: "購物清單" };
   const priorityColor = { High: "text-red-500", Medium: "text-yellow-500", Low: "text-blue-500" };

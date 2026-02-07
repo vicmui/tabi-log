@@ -15,9 +15,32 @@ const CAT_CONFIG: Record<ExpenseCategory, { label: string; color: string; icon: 
   Other: { label: "其他", color: "#64748B", icon: MapPin },
 };
 
+// ... imports ...
+
 export default function BudgetPage() {
-  const { trips, activeTripId, addExpense, updateExpense, deleteExpense, updateBudgetTotal } = useTripStore();
+  const { trips, activeTripId, addExpense, updateExpense, deleteExpense, updateBudgetTotal, isSyncing } = useTripStore();
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+
+  // ... 狀態定義 ...
+  const [itemName, setItemName] = useState("");
+  // ... (其他 state)
+
+  // 🔥 修正：白畫面防護
+  if (!trip) {
+    return (
+      <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
+        <Sidebar />
+        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
+           <div className="text-center text-gray-400">
+              {isSyncing ? "資料讀取中..." : "暫無旅程資料"}
+           </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ... 之後的計算邏輯 (totalSpent, debts, handleAdd...) 全部保持不變 ...
+  // ... return JSX 保持不變 ...
 
   // 狀態
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);

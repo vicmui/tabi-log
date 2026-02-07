@@ -6,13 +6,26 @@ import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2 }
 import { v4 as uuidv4 } from 'uuid';
 
 export default function BookingsPage() {
-  const { trips, activeTripId, addBooking, updateBooking, deleteBooking } = useTripStore();
+  const { trips, activeTripId, addBooking, updateBooking, deleteBooking, isSyncing } = useTripStore();
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!trip) return null;
+  // 🔥 修正：不要 return null，改為顯示 Loading 或提示
+  if (!trip) {
+    return (
+      <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
+        <Sidebar />
+        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
+           <div className="text-center text-gray-400">
+              {isSyncing ? "資料同步中..." : "未選擇旅程，請先在首頁新增行程"}
+           </div>
+        </main>
+      </div>
+    );
+  }
 
+  // ... 下面的 return 保持不變 ...
   const handleEdit = (booking: Booking) => { setEditingBooking(booking); setIsModalOpen(true); };
   const handleDelete = (id: string) => { if(confirm("確定要刪除此預訂嗎？")) deleteBooking(trip.id, id); };
 
@@ -20,13 +33,14 @@ export default function BookingsPage() {
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 bg-gray-50 min-h-screen">
+        {/* ... 內容保持不變 ... */}
         <header className="mb-10 flex justify-between items-end">
           <div><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1><p className="text-xs text-gray-400 tracking-widest uppercase">Bookings & Tickets</p></div>
           <button onClick={()=>{setEditingBooking(null); setIsModalOpen(true)}} className="bg-jp-charcoal text-white px-4 py-2 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black"><Plus size={14}/> 新增預訂</button>
         </header>
 
         <div className="grid grid-cols-1 gap-6 max-w-3xl mx-auto">
-          {trip.bookings.length > 0 ? trip.bookings.map((booking) => (
+          {trip.bookings && trip.bookings.length > 0 ? trip.bookings.map((booking) => (
             <BookingCard key={booking.id} booking={booking} onEdit={()=>handleEdit(booking)} onDelete={()=>handleDelete(booking.id)} />
           )) : <div className="text-gray-400 text-sm text-center py-20">暫無預訂資料</div>}
         </div>
