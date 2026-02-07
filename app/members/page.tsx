@@ -25,7 +25,6 @@ export default function MembersPage() {
         </main>
       </div>
     );
-  }
 
   // ... handleAddMember, handleDeleteMember, return JSX 保持不變 ...
 
