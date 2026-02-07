@@ -44,7 +44,6 @@ export default function BudgetPage() {
 
   // 狀態
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-  const [itemName, setItemName] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("Food");
   const [date, setDate] = useState("");
