@@ -1,122 +1,91 @@
 "use client";
-import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
-import { useTripStore, Priority } from "@/store/useTripStore";
-import { CheckCircle2, Circle, Image as ImageIcon, Trash2 } from "lucide-react";
-import { v4 as uuidv4 } from 'uuid';
+import EditTripModal from "@/components/dashboard/EditTripModal"; // 新增
+import { useTripStore } from "@/store/useTripStore";
+import { Plus, Settings, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { differenceInDays, parseISO } from "date-fns";
+import Link from "next/link";
 
-export default function PlanningPage() {
-  const { trips, activeTripId, addPlanItem, togglePlanItem, deletePlanItem, isSyncing } = useTripStore();
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
-  const [activeTab, setActiveTab] = useState("Packing");
-  const [text, setText] = useState("");
-  const [priority, setPriority] = useState<Priority>("Medium");
-  const [location, setLocation] = useState("");
-  const [estimatedCost, setEstimatedCost] = useState("");
-  const [assignee, setAssignee] = useState("");
-  const [imageUrl, setImageUrl] = useState(""); // 新增：圖片網址
+export default function Home() {
+  const { trips, addTrip, deleteTrip } = useTripStore();
+  const [isMounted, setIsMounted] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<any>(null); // 儲存要編輯的旅程
 
-    if (!trip) {
-    return (
-      <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
-        <Sidebar />
-        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
-           <div className="text-center text-gray-400">
-              {isSyncing ? "清單同步中..." : "暫無旅程"}
-           </div>
-        </main>
-      </div>
-    );
-  }
-  const currentItems = trip.plans.filter(p => p.category === activeTab);
-  const tabNames: Record<string, string> = { Packing: "行李清單", Todo: "待辦事項", Shopping: "購物清單" };
-  const priorityColor = { High: "text-red-500", Medium: "text-yellow-500", Low: "text-blue-500" };
+  useEffect(() => setIsMounted(true), []);
 
-  const handleAdd = () => {
-     if(!text) return;
-     addPlanItem(trip.id, {
-         id: uuidv4(), category: activeTab as any, text, priority, location, 
-         estimatedCost: activeTab==='Shopping' ? Number(estimatedCost) : undefined, 
-         isCompleted: false, assigneeId: assignee, imageUrl
-     });
-     setText(""); setLocation(""); setEstimatedCost(""); setAssignee(""); setImageUrl("");
-  };
+  if (!isMounted) return <div className="animate-pulse">Loading...</div>;
 
-  // 模擬上傳圖片 (實際需要 Backend，這裡用 Prompt 讓用戶貼網址，或用預設圖)
-  const handleUploadImage = () => {
-      const url = prompt("請輸入圖片網址 (URL):", "https://placehold.co/150x150/png?text=Item");
-      if(url) setImageUrl(url);
+  const handleAddTrip = () => {
+    const title = prompt("請輸入旅程名稱 (例如：2026 東京賞櫻)：");
+    if (!title) return;
+    addTrip({
+      title: title,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+      status: "planning",
+      coverImage: "https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2000&auto=format&fit=crop"
+    });
   };
 
   return (
-    <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
+    <div className="flex min-h-screen bg-white">
       <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12">
-        <header className="mb-10"><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">行前準備</h1></header>
-        
-        <div className="flex gap-8 border-b border-gray-100 mb-8">
-           {['Packing','Todo','Shopping'].map(t => (
-               <button key={t} onClick={()=>setActiveTab(t)} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase ${activeTab===t?'border-b-2 border-black':'text-gray-300'}`}>{tabNames[t]}</button>
-           ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-           {currentItems.map(item => {
-               const assigned = trip.members.find(m=>m.id === item.assigneeId);
-               return (
-               <div key={item.id} className="p-4 border border-gray-100 bg-white hover:shadow-md transition-shadow relative group">
-                  <div className="flex justify-between items-start mb-2">
-                     <button onClick={()=>togglePlanItem(trip.id, item.id)}>{item.isCompleted ? <CheckCircle2 size={20}/> : <Circle size={20}/>}</button>
-                     <span className={`text-[10px] uppercase font-bold ${priorityColor[item.priority]}`}>{item.priority}</span>
-                  </div>
-                  
-                  {/* 購物清單縮圖 */}
-                  {item.category === 'Shopping' && item.imageUrl && (
-                      <div className="w-full h-32 mb-3 bg-gray-50 rounded-md overflow-hidden border border-gray-100">
-                          <img src={item.imageUrl} className="w-full h-full object-cover" />
-                      </div>
-                  )}
-
-                  <p className={`font-medium ${item.isCompleted?'line-through text-gray-300':''}`}>{item.text}</p>
-                  {item.location && <p className="text-xs text-gray-400 mt-1">@ {item.location}</p>}
-                  {item.estimatedCost && <p className="text-xs text-gray-400 mt-1">預算: ¥{item.estimatedCost}</p>}
-                  
-                  {assigned && (
-                      <div className="mt-3 flex items-center gap-2 bg-gray-50 p-1 rounded-full w-fit pr-2">
-                          <img src={assigned.avatar} className="w-5 h-5 rounded-full"/>
-                          <span className="text-[10px] text-gray-500">{assigned.name}</span>
-                      </div>
-                  )}
-
-                  <button onClick={() => deletePlanItem(trip.id, item.id)} className="absolute top-4 right-2 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-opacity">
-                      <Trash2 size={16} />
-                  </button>
-               </div>
-           )})}
-           
-           <div className="border border-dashed border-gray-300 p-4 bg-gray-50">
-              <input value={text} onChange={e=>setText(e.target.value)} placeholder="項目名稱..." className="w-full bg-transparent border-b mb-3 text-sm p-1"/>
-              {activeTab === 'Shopping' && (
-                  <>
-                    <input value={location} onChange={e=>setLocation(e.target.value)} placeholder="購買地點..." className="w-full bg-transparent border-b mb-3 text-sm p-1"/>
-                    <input type="number" value={estimatedCost} onChange={e=>setEstimatedCost(e.target.value)} placeholder="預算 (¥)..." className="w-full bg-transparent border-b mb-3 text-sm p-1"/>
-                    <button onClick={handleUploadImage} className="text-xs text-blue-500 mb-3 flex items-center gap-1"><ImageIcon size={12}/> {imageUrl ? "已選擇圖片" : "加入圖片 (URL)"}</button>
-                  </>
-              )}
-              <div className="flex gap-2 mb-3">
-                 {['High','Medium','Low'].map(p=>(<button key={p} onClick={()=>setPriority(p as any)} className={`text-[10px] border px-2 ${priority===p?'bg-black text-white':'bg-white'}`}>{p}</button>))}
-              </div>
-              <div className="flex gap-2 mb-4">
-                 <span className="text-[10px] text-gray-400 flex items-center">指派:</span>
-                 {trip.members.map(m => (
-                    <button key={m.id} onClick={()=>setAssignee(m.id === assignee ? "" : m.id)} className={`w-6 h-6 rounded-full border ${assignee===m.id ? 'border-black scale-110' : 'border-transparent opacity-50'}`}>
-                       <img src={m.avatar} className="w-full h-full rounded-full"/>
-                    </button>
-                 ))}
-              </div>
-              <button onClick={handleAdd} className="w-full bg-black text-white py-2 text-xs uppercase">新增</button>
+      <main className="flex-1 p-8 ml-0 md:ml-64">
+        <div className="flex justify-between items-center mb-12 mt-4">
+           <div>
+             <h1 className="text-4xl font-light tracking-ut-wide text-jp-black uppercase">我的旅程</h1>
+             <p className="text-gray-400 mt-2 text-xs tracking-widest uppercase">My Voyages</p>
            </div>
+           <button onClick={handleAddTrip} className="bg-jp-black text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 text-xs tracking-widest uppercase rounded">
+             <Plus size={16} /> 新增旅程
+           </button>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {trips.map((trip) => {
+                const daysLeft = differenceInDays(parseISO(trip.startDate), new Date());
+                const totalActs = trip.dailyItinerary.reduce((acc, day) => acc + day.activities.length, 0);
+                const visitedActs = trip.dailyItinerary.reduce((acc, day) => acc + day.activities.filter(a=>a.isVisited).length, 0);
+                const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0;
+
+                return (
+                  <div key={trip.id} className="relative group cursor-pointer bg-white border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden h-[360px] flex flex-col">
+                      <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
+
+                      <div className="h-1/2 w-full relative overflow-hidden">
+                          <img src={trip.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"/>
+                          <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full">
+                              {daysLeft > 0 ? `還有 ${daysLeft} 天` : "進行中"}
+                          </div>
+                          {/* 🔥 編輯/刪除按鈕 */}
+                          <div className="absolute top-4 right-4 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={()=>setEditingTrip(trip)} className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"><Settings size={14}/></button>
+                              <button onClick={()=>deleteTrip(trip.id)} className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 text-red-500"><Trash2 size={14}/></button>
+                          </div>
+                      </div>
+                      <div className="p-6 flex flex-col justify-between flex-1">
+                          <div>
+                              <h3 className="text-xl font-medium mb-1 tracking-wide">{trip.title}</h3>
+                              <p className="text-xs text-gray-400 font-light tracking-widest">{trip.startDate} — {trip.endDate}</p>
+                          </div>
+                          <div>
+                              <div className="flex justify-between text-[10px] text-gray-400 mb-1 uppercase tracking-widest"><span>進度</span><span>{progress}%</span></div>
+                              <div className="h-1 bg-gray-100 w-full"><div className="h-full bg-jp-black" style={{width: `${progress}%`}}/></div>
+                          </div>
+                      </div>
+                  </div>
+                )
+            })}
+        </div>
+
+        {/* 編輯旅程 Modal */}
+        {editingTrip && (
+            <EditTripModal 
+              trip={editingTrip}
+              onClose={() => setEditingTrip(null)}
+            />
+        )}
       </main>
     </div>
   );
