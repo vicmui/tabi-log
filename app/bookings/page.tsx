@@ -1,48 +1,42 @@
 "use client";
 import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
+import TripSwitcher from "@/components/layout/TripSwitcher"; // 🔥 加入 Switcher
 import { useTripStore, Booking, BookingType } from "@/store/useTripStore";
 import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 
 export default function BookingsPage() {
-  const { trips, activeTripId, addBooking, updateBooking, deleteBooking, isSyncing } = useTripStore();
+  const { trips, activeTripId, addBooking, updateBooking, deleteBooking } = useTripStore();
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 🔥 修正：不要 return null，改為顯示 Loading 或提示
-  if (!trip) {
-    return (
-      <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
-        <Sidebar />
-        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
-           <div className="text-center text-gray-400">
-              {isSyncing ? "資料同步中..." : "未選擇旅程，請先在首頁新增行程"}
-           </div>
-        </main>
-      </div>
-    );
-  }
+  if (!trip) return <div className="p-12 text-center text-gray-400 animate-pulse">載入中...</div>;
 
-  // ... 下面的 return 保持不變 ...
   const handleEdit = (booking: Booking) => { setEditingBooking(booking); setIsModalOpen(true); };
   const handleDelete = (id: string) => { if(confirm("確定要刪除此預訂嗎？")) deleteBooking(trip.id, id); };
 
   return (
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 bg-gray-50 min-h-screen">
-        {/* ... 內容保持不變 ... */}
+      <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 bg-gray-50 min-h-screen pb-24">
         <header className="mb-10 flex justify-between items-end">
-          <div><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1><p className="text-xs text-gray-400 tracking-widest uppercase">Bookings & Tickets</p></div>
-          <button onClick={()=>{setEditingBooking(null); setIsModalOpen(true)}} className="bg-jp-charcoal text-white px-4 py-2 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black"><Plus size={14}/> 新增預訂</button>
+          <div>
+             <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1>
+             <div className="flex items-center gap-4">
+                <p className="text-xs text-gray-400 tracking-widest uppercase">Bookings & Tickets</p>
+                <span className="text-gray-300">|</span>
+                <TripSwitcher /> {/* 🔥 Switcher 在此 */}
+             </div>
+          </div>
+          <button onClick={()=>{setEditingBooking(null); setIsModalOpen(true)}} className="bg-jp-charcoal text-white px-4 py-2 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black rounded"><Plus size={14}/> 新增預訂</button>
         </header>
 
         <div className="grid grid-cols-1 gap-6 max-w-3xl mx-auto">
           {trip.bookings && trip.bookings.length > 0 ? trip.bookings.map((booking) => (
             <BookingCard key={booking.id} booking={booking} onEdit={()=>handleEdit(booking)} onDelete={()=>handleDelete(booking.id)} />
-          )) : <div className="text-gray-400 text-sm text-center py-20">暫無預訂資料</div>}
+          )) : <div className="text-gray-400 text-sm text-center py-20">此旅程暫無預訂資料</div>}
         </div>
         
         {isModalOpen && <BookingModal initialData={editingBooking} onClose={()=>setIsModalOpen(false)} onSave={(b: Booking) => { if(editingBooking) updateBooking(trip.id, editingBooking.id, b); else addBooking(trip.id, b); }} />}
@@ -138,51 +132,24 @@ function BookingModal({ onClose, onSave, initialData }: any) {
     onClose();
   };
 
-  // 🔥 這裡改用中文對照表
-  const TYPE_LABELS: Record<BookingType, string> = { 
-    Flight: "機票", 
-    Hotel: "住宿", 
-    Rental: "租車", 
-    Ticket: "票券" 
-  };
+  const TYPE_LABELS: Record<BookingType, string> = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };
 
   return (
      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
         <div className="bg-white p-6 w-full max-w-md shadow-2xl relative rounded-xl max-h-[90vh] overflow-y-auto">
            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X size={20}/></button>
            <h2 className="font-serif font-bold text-xl mb-6">{initialData ? "編輯預訂" : "新增預訂"}</h2>
-           
-           {/* 按鈕改用中文顯示 */}
            <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
-              {(Object.keys(TYPE_LABELS) as BookingType[]).map((t) => (
-                  <button 
-                    key={t} 
-                    onClick={() => setType(t)} 
-                    className={`flex-shrink-0 px-3 py-1 text-xs border rounded-full transition-colors ${type === t ? 'bg-black text-white' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    {TYPE_LABELS[t]}
-                  </button>
-              ))}
+              {(Object.keys(TYPE_LABELS) as BookingType[]).map((t) => (<button key={t} onClick={()=>setType(t)} className={`flex-shrink-0 px-3 py-1 text-xs border rounded-full transition-colors ${type===t?'bg-black text-white':'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{TYPE_LABELS[t]}</button>))}
            </div>
-
            <div className="space-y-3">
                <input className="w-full border-b p-2 text-sm" placeholder="標題 (例: 國泰航空 / 希爾頓酒店)" value={title} onChange={e=>setTitle(e.target.value)}/>
                <input className="w-full border-b p-2 text-sm" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
-               
-               {type === 'Flight' && (
-                   <>
-                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="航空公司" value={airline} onChange={e=>setAirline(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="航班編號 (CX506)" value={flightNum} onChange={e=>setFlightNum(e.target.value)}/></div>
-                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛機場 (HKG)" value={origin} onChange={e=>setOrigin(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達機場 (KIX)" value={destination} onChange={e=>setDestination(e.target.value)}/></div>
-                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛時間" value={departTime} onChange={e=>setDepartTime(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達時間" value={arriveTime} onChange={e=>setArriveTime(e.target.value)}/></div>
-                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="座位" value={seat} onChange={e=>setSeat(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="登機門" value={gate} onChange={e=>setGate(e.target.value)}/></div>
-                   </>
-               )}
+               {type === 'Flight' && (<><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="航空公司" value={airline} onChange={e=>setAirline(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="航班編號" value={flightNum} onChange={e=>setFlightNum(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛 (HKG)" value={origin} onChange={e=>setOrigin(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達 (KIX)" value={destination} onChange={e=>setDestination(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛時間" value={departTime} onChange={e=>setDepartTime(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達時間" value={arriveTime} onChange={e=>setArriveTime(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="座位" value={seat} onChange={e=>setSeat(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="登機門" value={gate} onChange={e=>setGate(e.target.value)}/></div></>)}
                {type === 'Hotel' && (<><input className="w-full border-b p-2 text-sm" placeholder="地址" value={address} onChange={e=>setAddress(e.target.value)}/><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="Check-in 時間" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="Check-out 時間" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/></div></>)}
                {(type === 'Rental' || type === 'Ticket') && <input className="w-full border-b p-2 text-sm" placeholder="地址 / 取車點" value={address} onChange={e=>setAddress(e.target.value)}/>}
-               
                <input className="w-full border-b p-2 text-sm" type="number" placeholder="價格 (¥)" value={price} onChange={e=>setPrice(Number(e.target.value))}/>
            </div>
-           
            <button onClick={handleSubmit} className="w-full bg-black text-white py-3 text-xs uppercase tracking-widest hover:opacity-80 mt-6 rounded-lg">確認儲存</button>
         </div>
      </div>
