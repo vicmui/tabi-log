@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, CheckCircle, Star, Image as ImageIcon, Edit, Trash2, Camera } from "lucide-react";
+import { X, CheckCircle, Star, Edit, Trash2, Camera } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
@@ -33,50 +33,39 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
     }
   };
 
-  const toggleVisited = () => {
-    updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited });
-  };
-  
-  const handleDelete = () => {
-      if(confirm(`確定刪除「${activity.location}」嗎？`)) {
-          deleteActivity(tripId, dayIndex, activity.id);
-          onClose();
-      }
-  };
+  const toggleVisited = () => { updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited }); };
+  const handleDelete = () => { if(confirm(`確定刪除「${activity.location}」嗎？`)) { deleteActivity(tripId, dayIndex, activity.id); onClose(); } };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      // 🔥 修正檔案讀取邏輯
-      if (!e.target.files || e.target.files.length === 0 || !trip) return;
-      const file = e.target.files[0];
-
+      const file = e.target.files?.[0];
+      if (!file || !trip) return;
       const filePath = `public/${trip.id}/activities/${uuidv4()}-${file.name}`;
-      const { data, error } = await supabase.storage.from('trip_files').upload(filePath, file);
-
-      if (error) {
-          alert("上傳失敗: " + error.message);
-      } else {
+      const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
+      if (!error) {
           const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
-          const newPhotos = [...photos, publicUrl];
+          const newPhotos = [publicUrl, ...photos]; // 新圖放前面，變封面
           setPhotos(newPhotos);
           updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
-          alert("照片上傳成功！");
-      }
+      } else { alert("上傳失敗"); }
   };
 
   return (
-    // 🔥 修正 className 語法錯誤 (z- -> z-[100])
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg relative z-10 shadow-2xl overflow-hidden rounded-xl max-h-[90vh] flex flex-col">
+        {/* Header 顯示第一張照片作為封面 */}
         <div className="h-40 bg-gray-100 relative group shrink-0">
            <img src={photos.length > 0 ? photos[0] : "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?q=80&w=2000"} className="w-full h-full object-cover opacity-90" />
+           
            <div className="absolute top-4 right-4 flex gap-2">
+               <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/></label>
                <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16}/></button>
                <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20}/></button>
            </div>
         </div>
         
         <div className="p-8 overflow-y-auto">
+           {/* ... 內容保持不變 ... */}
            <div className="flex justify-between items-start mb-6">
               <div>
                 {isEditing ? <input className="text-2xl font-serif font-bold text-jp-charcoal mb-1 border-b" value={editLocation} onChange={e=>setEditLocation(e.target.value)} /> : <h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2>}
@@ -97,27 +86,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                </div>
            ) : (
                <>
-                 <div className="mb-6">
-                    <label className="text-xs text-gray-400 block mb-2">我的評分</label>
-                    {/* 🔥 修正 map 語法錯誤 */}
-                    <div className="flex gap-2">
-                        {[1,2,3,4,5].map(star => (
-                            <button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}>
-                                <Star size={24} fill={star <= rating ? "currentColor" : "none"} />
-                            </button>
-                        ))}
-                    </div>
-                 </div>
+                 <div className="mb-6"><label className="text-xs text-gray-400 block mb-2">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
                  <div className="mb-6"><label className="text-xs text-gray-400 block mb-2">旅後回憶</label><textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="寫低感受..." className="w-full h-24 border border-gray-200 p-3 text-sm rounded-lg"/></div>
-                 <div className="mb-4">
-                   <label className="text-xs text-gray-400 block mb-2">我的照片</label>
-                   <div className="flex gap-2 flex-wrap">
-                      {photos.map((url: string, i: number) => (
-                         <div key={i} className="w-16 h-16 rounded-lg overflow-hidden border"><img src={url} className="w-full h-full object-cover"/></div>
-                      ))}
-                      <label className="w-16 h-16 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50"><Camera size={20}/><input type="file" className="hidden" onChange={handlePhotoUpload}/></label>
-                   </div>
-                 </div>
                </>
            )}
         </div>

@@ -11,42 +11,46 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import clsx from "clsx";
+import { supabase } from "@/lib/supabase";
+import { v4 as uuidv4 } from 'uuid';
+import EditTripModal from "@/components/dashboard/EditTripModal";
 
 export default function PlannerPage() {
   const params = useParams();
-  const { trips, addActivity, addDayToTrip, deleteDayFromTrip, updateTripSettings, updateDayCoverImage } = useTripStore();
+  const { trips, addActivity, addDayToTrip, deleteDayFromTrip, updateDayCoverImage } = useTripStore();
   const [activeDay, setActiveDay] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editStartDate, setEditStartDate] = useState("");
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => setIsMounted(true), []);
   const trip = trips.find((t) => t.id === params.id);
-  
-  useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
-  useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) { setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); } }, [trip, activeDay]);
+  useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); }, [trip, activeDay]);
 
   if (!isMounted || !trip) return <div className="p-10 text-center text-xs tracking-widest text-gray-400">LOADING...</div>;
 
   const currentDailyItinerary = trip.dailyItinerary[activeDay];
 
   const handleAddActivity = (data: any) => { addActivity(trip.id, activeDay, data); setIsModalOpen(false); };
-  const handleDeleteDay = () => { if (trip.dailyItinerary.length <= 1) { alert("最少保留一天！"); return; } if (confirm(`確定刪除 Day ${activeDay + 1}?`)) { deleteDayFromTrip(trip.id, activeDay); } };
-  const handleSaveSettings = () => { updateTripSettings(trip.id, editTitle, editStartDate, trip.coverImage || ""); setIsSettingsOpen(false); };
+  const handleDeleteDay = () => { if (trip.dailyItinerary.length <= 1) { alert("最少保留一天！"); return; } if (confirm(`確定刪除 Day ${activeDay + 1}?`)) deleteDayFromTrip(trip.id, activeDay); };
   
-  const handleChangeDayCover = () => {
-    const newUrl = prompt("請輸入新的封面圖片 URL:", currentDailyItinerary?.coverImage || trip.coverImage);
-    if (newUrl) updateDayCoverImage(trip.id, activeDay, newUrl);
+  // 🔥 每日封面圖片上傳
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const filePath = `public/${trip.id}/day-covers/${activeDay}-${uuidv4()}`;
+      const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
+      if (!error) {
+          const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
+          updateDayCoverImage(trip.id, activeDay, publicUrl);
+      } else { alert("上傳失敗"); }
   };
   
   const handleOpenDayRoute = () => { if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點"); return; } const acts = currentDailyItinerary.activities; const origin = encodeURIComponent(acts[0].location); const destination = encodeURIComponent(acts[acts.length - 1].location); const waypoints = acts.slice(1, -1).map(a => encodeURIComponent(a.location)).join('|'); window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank'); };
 
   return (
-    <div className="flex h-screen bg-white font-sans text-jp-black overflow-hidden">
+    <div className="flex h-screen bg-white font-sans text-jp-charcoal overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative">
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-30"><Link href="/" className="text-gray-400"><ArrowLeft size={20}/></Link><button onClick={()=>setIsSettingsOpen(true)} className="text-sm font-medium tracking-wide truncate w-2/3 text-center flex items-center justify-center gap-2">{trip.title} <Settings size={12} className="text-gray-300"/></button><div className="w-5" /></div>
@@ -70,12 +74,15 @@ export default function PlannerPage() {
 
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full"> 
           <div className="h-40 md:h-72 relative w-full shrink-0 group">
-            <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-top" priority />
+            <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
             <div className="absolute inset-0 bg-black/10" />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
             
-            {/* 🔥 更換每日封面按鈕 */}
-            <button onClick={handleChangeDayCover} className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"><Camera size={16}/></button>
+            {/* 🔥 上傳按鈕 */}
+            <label className="absolute top-4 right-4 bg-white/80 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer hover:bg-white text-black">
+                <Camera size={16}/>
+                <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/>
+            </label>
 
             <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
                <div className="animate-fade-in-up"><h3 className="text-4xl md:text-6xl font-light tracking-[0.2em] text-black mb-2 uppercase" style={{fontFamily: 'var(--font-inter)'}}>Day {activeDay + 1}</h3><div className="flex items-center gap-3 text-[10px] text-gray-500 tracking-[0.3em] uppercase font-light"><MapPin size={10} /><span>大阪</span><span className="w-8 h-[1px] bg-gray-300"></span><Clock size={10} /><span>{currentDailyItinerary?.date}</span></div></div>
@@ -97,7 +104,7 @@ export default function PlannerPage() {
           
           <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} />
           {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
-          {isSettingsOpen && (<div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm"><div className="bg-white p-10 w-full max-w-md shadow-2xl relative border border-gray-100"><h2 className="font-light text-2xl mb-8 tracking-widest text-center uppercase">Settings</h2><div className="space-y-6"><div><label className="text-[10px] text-gray-400 block mb-2 tracking-widest uppercase">Trip Title</label><input className="w-full border-b border-gray-200 p-2 text-sm font-light focus:outline-none focus:border-black transition-colors" value={editTitle} onChange={e=>setEditTitle(e.target.value)}/></div><div><label className="text-[10px] text-gray-400 block mb-2 tracking-widest uppercase">Start Date</label><input type="date" className="w-full border-b border-gray-200 p-2 text-sm font-light focus:outline-none focus:border-black transition-colors" value={editStartDate} onChange={e=>setEditStartDate(e.target.value)}/></div></div><div className="flex gap-4 mt-10"><button onClick={()=>setIsSettingsOpen(false)} className="flex-1 border border-gray-200 py-3 text-[10px] tracking-widest uppercase hover:bg-gray-50 transition-colors">Cancel</button><button onClick={handleSaveSettings} className="flex-1 bg-black text-white py-3 text-[10px] tracking-widest uppercase hover:opacity-80 transition-opacity">Save</button></div></div></div>)}
+          {isSettingsOpen && <EditTripModal trip={trip} onClose={()=>setIsSettingsOpen(false)} />}
         </div>
       </main>
     </div>
