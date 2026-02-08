@@ -34,14 +34,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="zh-TW">
-      <head>
-        <title>VM&apos;s Build</title>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icon-192.png" />
-        <meta name="theme-color" content="#ffffff" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" /> 
-      </head>
+// 在 app/layout.tsx 裡面，找到 <head> 部分
+<head>
+  <title>VM&apos;s Build</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icon-192.png" />
+  <meta name="theme-color" content="#ffffff" />
+  
+  {/* 🔥 修改：新版寫法，兼容性更好 */}
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" /> 
+</head>
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans bg-white text-[#333333] antialiased font-light`}>
         {/* 同步指示條 (上方藍色條) */}
         {isSyncing && <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />}
