@@ -20,7 +20,18 @@ export default function MembersPage() {
 
   useEffect(() => { setIsMounted(true) }, []);
 
-  if (!isMounted || !trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
+  if (!isMounted || !trip) {
+    return (
+      <div className="flex min-h-screen bg-white">
+        <Sidebar />
+        <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
+           <div className="text-center text-gray-400 text-xs tracking-widest animate-pulse">
+              {isSyncing ? "成員資料同步中..." : "載入中..."}
+           </div>
+        </main>
+      </div>
+    );
+  }
 
   const getRandomAvatar = (seed: string) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
 
@@ -38,45 +49,33 @@ export default function MembersPage() {
     setIsSubmitting(false);
   };
 
-  // 🔥 上傳頭像 (加入更多錯誤檢查)
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     setIsSubmitting(true);
     try {
-        // 限制檔案大小 (例如 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            throw new Error("圖片太大！請使用 5MB 以下的圖片。");
-        }
-
+        if (file.size > 5 * 1024 * 1024) throw new Error("圖片太大！請使用 5MB 以下的圖片。");
         const fileExt = file.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `public/${trip.id}/avatars/${fileName}`;
-
-        console.log("Uploading to:", filePath); // Debug 用
-
         const { error: uploadError } = await supabase.storage.from('trip_files').upload(filePath, file);
         if (uploadError) throw uploadError;
-        
         const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
         setAvatarUrl(publicUrl);
-        console.log("Upload success:", publicUrl);
-
     } catch (error: any) {
-        console.error("Upload failed:", error);
         alert("上傳失敗: " + (error.message || "未知錯誤"));
     } finally {
         setIsSubmitting(false);
     }
   };
 
-  // 🔥 儲存 (加入 try-catch 防止卡死)
+  // 🔥 修正版：加入 try-catch 防卡死
   const handleSave = () => {
     if (!nameInput.trim()) return;
     
+    setIsSubmitting(true);
     try {
-        setIsSubmitting(true);
         let updatedMembers = [...trip.members];
 
         if (editingMemberId) {
@@ -98,14 +97,15 @@ export default function MembersPage() {
         resetForm();
 
     } catch (error) {
-        console.error(error);
-        alert("儲存失敗，請重試。");
-        setIsSubmitting(false); // 確保按鈕會變回正常
+        console.error("Save Member Failed:", error);
+        alert("儲存成員失敗，請重試。");
+        // 無論成功失敗，都要結束 Loading
+        setIsSubmitting(false);
     }
   };
 
   const handleDeleteMember = (id: string) => {
-    if (confirm("確定要刪除這位成員嗎？\n(注意：相關的記帳紀錄可能會受影響)")) {
+    if (confirm("確定要刪除這位成員嗎？")) {
       updateTrip(trip.id, { members: trip.members.filter(m => m.id !== id) });
       if (editingMemberId === id) resetForm();
     }
@@ -144,15 +144,12 @@ export default function MembersPage() {
                  <span className="text-xs font-bold tracking-widest uppercase text-gray-400">{editingMemberId ? "編輯資料" : "新增成員"}</span>
                  {editingMemberId && <button onClick={resetForm} className="text-gray-400 hover:text-black"><X size={16}/></button>}
              </div>
-
              <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all shadow-sm">
                 {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"/> : <div className="flex flex-col items-center gap-1"><Camera size={20} /><span className="text-[9px]">上傳</span></div>}
-                {isSubmitting && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><Loader2 className="w-5 h-5 text-white animate-spin"/></div>}
+                {isSubmitting && !nameInput && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><Loader2 className="w-5 h-5 text-white animate-spin"/></div>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={isSubmitting} />
              </label>
-
              <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="輸入名字..." className="bg-transparent border-b border-gray-300 text-center py-2 focus:outline-none focus:border-black w-full text-lg font-serif placeholder-gray-400" disabled={isSubmitting} />
-
              <button onClick={handleSave} disabled={!nameInput.trim() || isSubmitting} className={clsx("text-white px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all w-full rounded-lg flex items-center justify-center gap-2", (!nameInput.trim() || isSubmitting) ? "bg-gray-300 cursor-not-allowed" : "bg-[#333333] hover:bg-black shadow-lg active:scale-95")}>
                {isSubmitting ? "處理中..." : <>{editingMemberId ? <Check size={14}/> : <Plus size={14}/>} {editingMemberId ? "更新資料" : "確認新增"}</>}
              </button>
