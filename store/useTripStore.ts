@@ -25,10 +25,15 @@ export interface PlanItem {
   id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string;
 }
 
+// 🔥 升級 Activity：分開 location (自訂名) 和 address (Google地址)
 export interface Activity {
-  id: string; time: string; type: string; location: string; cost: number; 
+  id: string; time: string; type: string; 
+  location: string; // 自訂名稱 (e.g. Harbs 午餐)
+  address?: string; // Google 完整地址
+  cost: number; 
   note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[];
-  lat?: number; lng?: number;
+  lat?: number;
+  lng?: number;
 }
 
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; }
@@ -105,27 +110,24 @@ export const useTripStore = create<TripState>()(
       togglePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; return { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, isCompleted: !p.isCompleted } : p) }; }) }), tripId),
       deletePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.filter(p => p.id !== itemId) } : t) }), tripId),
       
-      // 🔥 新增/修改：加入自動排序邏輯
+      // 🔥 Add Activity: Sort by Time
       addActivity: (tripId, dayIndex, activity) => updateStateAndSave(set, get, state => ({ 
         trips: state.trips.map(trip => { 
           if (trip.id !== tripId) return trip; 
           const newItinerary = [...trip.dailyItinerary]; 
           if (!newItinerary[dayIndex]) return trip; 
           newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); 
-          // 🔥 Auto Sort by Time
-          newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time));
+          newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time)); // Auto sort
           return { ...trip, dailyItinerary: newItinerary }; 
         }) 
       }), tripId),
 
-      // 🔥 修改：更新時間後也自動排序
       updateActivity: (tripId, dayIndex, activityId, data) => updateStateAndSave(set, get, state => ({ 
         trips: state.trips.map(trip => { 
           if (trip.id !== tripId) return trip; 
           const newItinerary = [...trip.dailyItinerary]; 
           newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); 
-          // 🔥 Auto Sort by Time (if time changed)
-          if(data.time) newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time));
+          if(data.time) newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time)); // Auto sort on edit
           return { ...trip, dailyItinerary: newItinerary }; 
         }) 
       }), tripId),
@@ -136,6 +138,6 @@ export const useTripStore = create<TripState>()(
       deleteDayFromTrip: (tripId, dayIndex) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       updateDayCoverImage: (tripId, dayIndex, imageUrl) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].coverImage = imageUrl; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
     }),
-    { name: 'vm-build-v16-autosort', storage: createJSONStorage(() => localStorage) }
+    { name: 'vm-build-v17-full-edit', storage: createJSONStorage(() => localStorage) }
   )
 );

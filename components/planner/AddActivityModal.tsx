@@ -11,8 +11,9 @@ const TYPES = [{ type: "Food", icon: Utensils, label: "美食" }, { type: "Sight
 export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
   const [type, setType] = useState("Food");
   const [time, setTime] = useState("10:00");
-  const [locationName, setLocationName] = useState("");
-  const [address, setAddress] = useState("");
+  const [customName, setCustomName] = useState(""); // 🔥 新增：自訂名稱
+  const [googleAddress, setGoogleAddress] = useState(""); // Google 搜尋結果
+  const [addressDetail, setAddressDetail] = useState(""); // 詳細地址
   const [cost, setCost] = useState(""); 
   const [currency, setCurrency] = useState("JPY"); 
   const [note, setNote] = useState("");
@@ -27,15 +28,26 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // 🔥 寬鬆檢查：只要有名稱即可
-    if (!locationName) return;
+    // 🔥 邏輯：優先用自訂名，如果無，就用 Google 搜尋結果
+    const finalTitle = customName || googleAddress;
+    if (!finalTitle) return;
     
     let finalCost = Number(cost);
     if (currency === "HKD") finalCost = Math.round(Number(cost) / rate);
 
-    const finalNote = note ? note : address ? `📍 ${address}` : "";
-    onSubmit({ type, time, location: locationName, cost: finalCost, note: finalNote, lat, lng });
-    setLocationName(""); setAddress(""); setCost(""); setNote(""); setLat(null); setLng(null); onClose();
+    onSubmit({ 
+        type, 
+        time, 
+        location: finalTitle, // 這是顯示的大標題
+        address: googleAddress + (addressDetail ? ` (${addressDetail})` : ""), // 這是 Google 地址 (存入 Activity 新欄位)
+        cost: finalCost, 
+        note, 
+        lat, 
+        lng 
+    });
+    
+    // Reset
+    setCustomName(""); setGoogleAddress(""); setAddressDetail(""); setCost(""); setNote(""); setLat(null); setLng(null); onClose();
   };
 
   return (
@@ -46,27 +58,34 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white z-[101] shadow-2xl p-8 rounded-xl">
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-serif font-bold tracking-widest text-[#333333]">新增活動</h2><button onClick={onClose}><X size={20} className="text-gray-400 hover:text-black"/></button></div>
             <form onSubmit={handleSubmit} className="space-y-5">
+              
+              {/* 1. 類別 */}
               <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-2 uppercase">類別</label><div className="grid grid-cols-6 gap-2">{TYPES.map((t) => (<button key={t.type} type="button" onClick={() => setType(t.type)} className={clsx("flex flex-col items-center justify-center py-2 gap-1 rounded-lg transition-all border", type === t.type ? "bg-[#333333] text-white border-black" : "bg-white text-gray-400 border-gray-100 hover:border-gray-300")}><t.icon size={14} /></button>))}</div></div>
+              
+              {/* 2. 名稱 與 搜尋 */}
               <div>
-                 <div className="flex justify-between items-center mb-2"><label className="block text-[10px] font-bold text-gray-400 tracking-widest uppercase">地點 / 店名</label>{apiKey && (<button type="button" onClick={() => setIsGoogleMode(!isGoogleMode)} className="text-[10px] text-blue-500 underline">{isGoogleMode ? "切換手動" : "Google 搜尋"}</button>)}</div>
+                 <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">活動名稱</label>
+                 <input type="text" placeholder="自訂名稱 (例: Harbs 午餐)..." value={customName} onChange={(e) => setCustomName(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm focus:outline-none focus:border-black mb-3"/>
+                 
+                 <div className="flex justify-between items-center mb-1"><label className="block text-[10px] font-bold text-gray-400 tracking-widest uppercase">地點搜尋 (Google)</label>{apiKey && (<button type="button" onClick={() => setIsGoogleMode(!isGoogleMode)} className="text-[10px] text-blue-500 underline">{isGoogleMode ? "切換手動輸入" : "開啟 Google 搜尋"}</button>)}</div>
                  {isGoogleMode && apiKey ? (<div className="border-b border-gray-200">
                      <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ 
                          placeholder: "搜尋地點...", 
                          onChange: async (val: any) => { 
                              if (!val) return; 
-                             // 🔥 即時 Set State
-                             setLocationName(val.label.split(',')[0]); 
-                             setAddress(val.label); 
+                             // 如果用戶未填自訂名，自動填入 Google 名稱
+                             if(!customName) setCustomName(val.label.split(',')[0]);
+                             setGoogleAddress(val.label); 
+                             setAddressDetail(val.label);
                              
-                             // 異步 Fetch 經緯度
                              const results = await geocodeByPlaceId(val.value.place_id); 
                              const { lat, lng } = await getLatLng(results[0]); 
                              setLat(lat); setLng(lng); 
                          }, 
                          styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none' }), menu: (p) => ({ ...p, zIndex: 9999 }) } 
                      }} />
-                 </div>) : (<input type="text" placeholder="手動輸入..." value={locationName} onChange={(e) => setLocationName(e.target.value)} className="w-full border-b py-2 text-sm" autoFocus/>)}
-                 {address && isGoogleMode && <p className="text-[10px] text-gray-400 mt-1 truncate">{address}</p>}
+                 </div>) : (<input type="text" placeholder="手動輸入地址..." value={googleAddress} onChange={(e) => setGoogleAddress(e.target.value)} className="w-full border-b py-2 text-sm" />)}
+                 {addressDetail && isGoogleMode && <p className="text-[10px] text-gray-400 mt-1 truncate">📍 {addressDetail}</p>}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -83,8 +102,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
 
               <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">備註</label><input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm" placeholder="選填..."/></div>
               
-              {/* 🔥 按鈕啟用條件放寬：只要有名稱就可以按 */}
-              <button type="submit" disabled={!locationName} className={clsx("w-full py-3 rounded-lg text-xs font-bold tracking-widest uppercase mt-2 transition-all", !locationName ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#333333] text-white hover:bg-black shadow-lg active:scale-95")}>
+              <button type="submit" disabled={!customName && !googleAddress} className={clsx("w-full py-3 rounded-lg text-xs font-bold tracking-widest uppercase mt-2 transition-all", (!customName && !googleAddress) ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#333333] text-white hover:bg-black shadow-lg active:scale-95")}>
                 確認新增
               </button>
             </form>

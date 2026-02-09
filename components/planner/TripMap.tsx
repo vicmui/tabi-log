@@ -84,9 +84,14 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
         {/* 連線 */}
         {markers.length > 1 && (
             <PolylineF 
-                path={path} 
-                options={{ strokeColor: '#333333', strokeOpacity: 0.8, strokeWeight: 3, icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 }, offset: '0', repeat: '15px' }] }} 
-            />
+    path={path} 
+    options={{ 
+        strokeColor: '#222222', // 深黑色
+        strokeOpacity: 1.0,     // 不透明
+        strokeWeight: 4,        // 🔥 加粗線條
+        icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: '#222222' }, offset: '100%' }] // 加箭頭
+    }} 
+/>
         )}
       </GoogleMap>
     </div>
