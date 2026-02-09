@@ -70,42 +70,29 @@ export default function MembersPage() {
     }
   };
 
-  // 🔥 修正版：加入 try-catch 防卡死
   const handleSave = () => {
     if (!nameInput.trim()) return;
-    
     setIsSubmitting(true);
     try {
         let updatedMembers = [...trip.members];
-
         if (editingMemberId) {
-            updatedMembers = updatedMembers.map(m => 
-                m.id === editingMemberId 
-                ? { ...m, name: nameInput, avatar: avatarUrl || m.avatar }
-                : m
-            );
+            updatedMembers = updatedMembers.map(m => m.id === editingMemberId ? { ...m, name: nameInput, avatar: avatarUrl || m.avatar } : m);
         } else {
-            const newMember = { 
-                id: uuidv4(), 
-                name: nameInput, 
-                avatar: avatarUrl || getRandomAvatar(nameInput) 
-            };
+            const newMember = { id: uuidv4(), name: nameInput, avatar: avatarUrl || getRandomAvatar(nameInput) };
             updatedMembers.push(newMember);
         }
-
         updateTrip(trip.id, { members: updatedMembers });
         resetForm();
-
     } catch (error) {
-        console.error("Save Member Failed:", error);
-        alert("儲存成員失敗，請重試。");
-        // 無論成功失敗，都要結束 Loading
+        console.error(error);
+        alert("儲存失敗，請重試。");
+    } finally {
         setIsSubmitting(false);
     }
   };
 
   const handleDeleteMember = (id: string) => {
-    if (confirm("確定要刪除這位成員嗎？")) {
+    if (confirm("確定要刪除這位成員嗎？\n(注意：相關的記帳紀錄可能會受影響)")) {
       updateTrip(trip.id, { members: trip.members.filter(m => m.id !== id) });
       if (editingMemberId === id) resetForm();
     }
