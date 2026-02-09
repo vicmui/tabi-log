@@ -1,11 +1,11 @@
 "use client";
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, MarkerF, PolylineF } from '@react-google-maps/api';
 import { Activity } from '@/store/useTripStore';
 
 const containerStyle = { width: '100%', height: '100%' };
 
-// 極簡地圖風格
+// 極簡地圖風格 (去除了多餘標籤)
 const mapOptions = {
   disableDefaultUI: true, zoomControl: true, mapTypeControl: false, streetViewControl: false,
   styles: [
@@ -25,6 +25,8 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!
   });
 
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+
   const markers = useMemo(() => {
     return activities
       .filter(act => act.lat && act.lng)
@@ -32,29 +34,42 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
         id: act.id,
         lat: act.lat!,
         lng: act.lng!,
-        label: (index + 1).toString(),
+        label: (index + 1).toString(), // 🔥 加入數字 1, 2, 3...
         title: act.location,
       }));
   }, [activities]);
 
-  // 連線路徑
   const path = useMemo(() => markers.map(m => ({ lat: m.lat, lng: m.lng })), [markers]);
 
-  const center = useMemo(() => {
-    if (markers.length > 0) return { lat: markers[0].lat, lng: markers[0].lng };
-    return { lat: 34.6937, lng: 135.5023 }; // Default Osaka
+  // 🔥 自動縮放地圖以顯示所有點
+  const onLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+    if (markers.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      markers.forEach(m => bounds.extend({ lat: m.lat, lng: m.lng }));
+      map.fitBounds(bounds);
+    }
   }, [markers]);
 
   if (!isLoaded) return <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400 text-xs">Map Loading...</div>;
 
   return (
     <div className="w-full h-[60vh] rounded-xl overflow-hidden shadow-inner border border-gray-200">
-      <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={13} options={mapOptions}>
+      <GoogleMap mapContainerStyle={containerStyle} zoom={13} options={mapOptions} onLoad={onLoad}>
+        {/* 數字 Marker */}
         {markers.map((marker) => (
-          <MarkerF key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} label={{ text: marker.label, color: 'white', fontWeight: 'bold' }} title={marker.title} />
+          <MarkerF 
+            key={marker.id} 
+            position={{ lat: marker.lat, lng: marker.lng }} 
+            label={{ text: marker.label, color: 'white', fontWeight: 'bold', fontSize: '14px' }} 
+            title={marker.title}
+          />
         ))}
-        {/* 畫線連接景點 */}
-        <PolylineF path={path} options={{ strokeColor: '#333333', strokeOpacity: 0.8, strokeWeight: 2, icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 }, offset: '0', repeat: '10px' }] }} />
+        {/* 連線 */}
+        <PolylineF 
+            path={path} 
+            options={{ strokeColor: '#333333', strokeOpacity: 0.8, strokeWeight: 3, icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 }, offset: '0', repeat: '15px' }] }} 
+        />
       </GoogleMap>
     </div>
   );
