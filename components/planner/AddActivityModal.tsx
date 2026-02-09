@@ -13,21 +13,21 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
   const [time, setTime] = useState("10:00");
   const [locationName, setLocationName] = useState("");
   const [address, setAddress] = useState("");
-  const [cost, setCost] = useState(""); // 改用 String
-  const [currency, setCurrency] = useState("JPY"); // 新增
+  const [cost, setCost] = useState(""); 
+  const [currency, setCurrency] = useState("JPY"); 
   const [note, setNote] = useState("");
   const [isGoogleMode, setIsGoogleMode] = useState(true);
   const [apiKey, setApiKey] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
 
-  // 匯率 (暫時寫死 0.052，或者你可以從 props 傳入 trip.rate)
   const rate = 0.052; 
 
   useEffect(() => { const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY; if (key) setApiKey(key); else setIsGoogleMode(false); }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // 🔥 寬鬆檢查：只要有名稱即可
     if (!locationName) return;
     
     let finalCost = Number(cost);
@@ -47,12 +47,30 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-serif font-bold tracking-widest text-[#333333]">新增活動</h2><button onClick={onClose}><X size={20} className="text-gray-400 hover:text-black"/></button></div>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-2 uppercase">類別</label><div className="grid grid-cols-6 gap-2">{TYPES.map((t) => (<button key={t.type} type="button" onClick={() => setType(t.type)} className={clsx("flex flex-col items-center justify-center py-2 gap-1 rounded-lg transition-all border", type === t.type ? "bg-[#333333] text-white border-black" : "bg-white text-gray-400 border-gray-100 hover:border-gray-300")}><t.icon size={14} /></button>))}</div></div>
-              <div><div className="flex justify-between items-center mb-2"><label className="block text-[10px] font-bold text-gray-400 tracking-widest uppercase">地點</label>{apiKey && (<button type="button" onClick={() => setIsGoogleMode(!isGoogleMode)} className="text-[10px] text-blue-500 underline">{isGoogleMode ? "切換手動" : "Google 搜尋"}</button>)}</div>{isGoogleMode && apiKey ? (<div className="border-b border-gray-200"><GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ placeholder: "搜尋...", onChange: async (val: any) => { if (!val) return; const results = await geocodeByPlaceId(val.value.place_id); const { lat, lng } = await getLatLng(results[0]); setLocationName(val.label.split(',')[0]); setAddress(val.label); setLat(lat); setLng(lng); }, styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none' }), menu: (p) => ({ ...p, zIndex: 9999 }) } }} /></div>) : (<input type="text" placeholder="手動輸入..." value={locationName} onChange={(e) => setLocationName(e.target.value)} className="w-full border-b py-2 text-sm" autoFocus/>)}{address && isGoogleMode && <p className="text-[10px] text-gray-400 mt-1 truncate">{address}</p>}</div>
+              <div>
+                 <div className="flex justify-between items-center mb-2"><label className="block text-[10px] font-bold text-gray-400 tracking-widest uppercase">地點 / 店名</label>{apiKey && (<button type="button" onClick={() => setIsGoogleMode(!isGoogleMode)} className="text-[10px] text-blue-500 underline">{isGoogleMode ? "切換手動" : "Google 搜尋"}</button>)}</div>
+                 {isGoogleMode && apiKey ? (<div className="border-b border-gray-200">
+                     <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ 
+                         placeholder: "搜尋地點...", 
+                         onChange: async (val: any) => { 
+                             if (!val) return; 
+                             // 🔥 即時 Set State
+                             setLocationName(val.label.split(',')[0]); 
+                             setAddress(val.label); 
+                             
+                             // 異步 Fetch 經緯度
+                             const results = await geocodeByPlaceId(val.value.place_id); 
+                             const { lat, lng } = await getLatLng(results[0]); 
+                             setLat(lat); setLng(lng); 
+                         }, 
+                         styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none' }), menu: (p) => ({ ...p, zIndex: 9999 }) } 
+                     }} />
+                 </div>) : (<input type="text" placeholder="手動輸入..." value={locationName} onChange={(e) => setLocationName(e.target.value)} className="w-full border-b py-2 text-sm" autoFocus/>)}
+                 {address && isGoogleMode && <p className="text-[10px] text-gray-400 mt-1 truncate">{address}</p>}
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">時間</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm"/></div>
-                
-                {/* 🔥 幣值輸入 */}
                 <div>
                    <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">預算</label>
                    <div className="flex items-center border-b border-gray-200">
@@ -64,7 +82,11 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
               </div>
 
               <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">備註</label><input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm" placeholder="選填..."/></div>
-              <button type="submit" className="w-full bg-[#333333] text-white py-3 rounded-lg text-xs font-bold tracking-widest uppercase">確認新增</button>
+              
+              {/* 🔥 按鈕啟用條件放寬：只要有名稱就可以按 */}
+              <button type="submit" disabled={!locationName} className={clsx("w-full py-3 rounded-lg text-xs font-bold tracking-widest uppercase mt-2 transition-all", !locationName ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#333333] text-white hover:bg-black shadow-lg active:scale-95")}>
+                確認新增
+              </button>
             </form>
           </motion.div>
         </>
