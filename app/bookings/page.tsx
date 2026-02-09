@@ -1,10 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
-import TripSwitcher from "@/components/layout/TripSwitcher"; // 🔥 加入 Switcher
+import TripSwitcher from "@/components/layout/TripSwitcher";
 import { useTripStore, Booking, BookingType } from "@/store/useTripStore";
-import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2 } from "lucide-react";
+import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, Upload, FileText, CheckCircle2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from "@/lib/supabase";
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 export default function BookingsPage() {
   const { trips, activeTripId, addBooking, updateBooking, deleteBooking } = useTripStore();
@@ -27,7 +29,7 @@ export default function BookingsPage() {
              <div className="flex items-center gap-4">
                 <p className="text-xs text-gray-400 tracking-widest uppercase">Bookings & Tickets</p>
                 <span className="text-gray-300">|</span>
-                <TripSwitcher /> {/* 🔥 Switcher 在此 */}
+                <TripSwitcher />
              </div>
           </div>
           <button onClick={()=>{setEditingBooking(null); setIsModalOpen(true)}} className="bg-jp-charcoal text-white px-4 py-2 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black rounded"><Plus size={14}/> 新增預訂</button>
@@ -39,17 +41,33 @@ export default function BookingsPage() {
           )) : <div className="text-gray-400 text-sm text-center py-20">此旅程暫無預訂資料</div>}
         </div>
         
-        {isModalOpen && <BookingModal initialData={editingBooking} onClose={()=>setIsModalOpen(false)} onSave={(b: Booking) => { if(editingBooking) updateBooking(trip.id, editingBooking.id, b); else addBooking(trip.id, b); }} />}
+        {isModalOpen && (
+          <BookingModal 
+            initialData={editingBooking} 
+            tripId={trip.id} // 🔥 傳入 Trip ID 用於上傳路徑
+            onClose={()=>setIsModalOpen(false)} 
+            onSave={(b: Booking) => { if(editingBooking) updateBooking(trip.id, editingBooking.id, b); else addBooking(trip.id, b); }} 
+          />
+        )}
       </main>
     </div>
   );
 }
 
+// === 卡片組件 ===
 function BookingCard({ booking, onEdit, onDelete }: { booking: Booking, onEdit: ()=>void, onDelete: ()=>void }) {
   const isFlight = booking.type === "Flight";
   const details = booking.details || {};
   const typeName = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };
   
+  const handleViewFile = () => {
+    if (details.fileUrl) {
+      window.open(details.fileUrl, '_blank');
+    } else {
+      alert("此項目未上傳憑證檔案");
+    }
+  };
+
   return (
     <div className="bg-white rounded-none shadow-sm border border-gray-200 overflow-hidden relative group hover:shadow-md transition-all rounded-xl">
       <div className={`h-2 w-full ${isFlight ? 'bg-blue-600' : booking.type === 'Hotel' ? 'bg-purple-600' : 'bg-gray-400'}`} />
@@ -98,14 +116,22 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking, onEdit: 
 
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
            <div className="text-[10px] text-gray-400 tracking-widest uppercase">{details.price ? `已付: ¥${details.price.toLocaleString()}` : "PREPAID"}</div>
-           <button className="flex items-center gap-2 text-xs border border-gray-200 px-4 py-2 rounded hover:bg-black hover:text-white transition-colors uppercase tracking-wider"><Download size={14} /> 查看詳情</button>
+           {/* 🔥 激活按鈕功能 */}
+           <button 
+             onClick={handleViewFile}
+             disabled={!details.fileUrl}
+             className={`flex items-center gap-2 text-xs border border-gray-200 px-4 py-2 rounded transition-colors uppercase tracking-wider ${details.fileUrl ? 'hover:bg-black hover:text-white cursor-pointer' : 'opacity-50 cursor-not-allowed bg-gray-50'}`}
+           >
+             {details.fileUrl ? <><Download size={14} /> 查看憑證</> : <><X size={14}/> 無憑證</>}
+           </button>
         </div>
       </div>
     </div>
   );
 }
 
-function BookingModal({ onClose, onSave, initialData }: any) {
+// === 新增/編輯 彈窗 ===
+function BookingModal({ onClose, onSave, initialData, tripId }: any) {
   const [type, setType] = useState<BookingType>(initialData?.type || "Flight");
   const [title, setTitle] = useState(initialData?.title || "");
   const [date, setDate] = useState(initialData?.date || "");
@@ -113,6 +139,10 @@ function BookingModal({ onClose, onSave, initialData }: any) {
   
   const [price, setPrice] = useState(initDetails.price || 0);
   const [address, setAddress] = useState(initDetails.address || "");
+  const [fileUrl, setFileUrl] = useState(initDetails.fileUrl || ""); // 檔案 URL
+  const [uploading, setUploading] = useState(false);
+
+  // 機票專用
   const [airline, setAirline] = useState(initDetails.airline || "");
   const [flightNum, setFlightNum] = useState(initDetails.flightNum || "");
   const [origin, setOrigin] = useState(initDetails.origin || "");
@@ -121,15 +151,46 @@ function BookingModal({ onClose, onSave, initialData }: any) {
   const [gate, setGate] = useState(initDetails.gate || "");
   const [departTime, setDepartTime] = useState(initDetails.departTime || "");
   const [arriveTime, setArriveTime] = useState(initDetails.arriveTime || "");
+
+  // 住宿專用
   const [checkIn, setCheckIn] = useState(initDetails.checkIn || "");
   const [checkOut, setCheckOut] = useState(initDetails.checkOut || "");
+
+  const [isGoogleMode, setIsGoogleMode] = useState(true);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 
   const handleSubmit = () => {
     onSave({
         id: initialData?.id || uuidv4(), type, title, date,
-        details: { price, address, ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}), ...(type === 'Hotel' ? { checkIn, checkOut } : {}) }
+        details: { 
+            price, address, fileUrl,
+            ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}),
+            ...(type === 'Hotel' ? { checkIn, checkOut } : {})
+        }
     });
     onClose();
+  };
+
+  // 🔥 上傳憑證 (PDF/Image)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `public/${tripId}/bookings/${fileName}`;
+        
+        const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
+        setFileUrl(publicUrl);
+    } catch (error: any) {
+        alert("上傳失敗: " + error.message);
+    } finally {
+        setUploading(false);
+    }
   };
 
   const TYPE_LABELS: Record<BookingType, string> = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };
@@ -139,18 +200,79 @@ function BookingModal({ onClose, onSave, initialData }: any) {
         <div className="bg-white p-6 w-full max-w-md shadow-2xl relative rounded-xl max-h-[90vh] overflow-y-auto">
            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X size={20}/></button>
            <h2 className="font-serif font-bold text-xl mb-6">{initialData ? "編輯預訂" : "新增預訂"}</h2>
+           
            <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
               {(Object.keys(TYPE_LABELS) as BookingType[]).map((t) => (<button key={t} onClick={()=>setType(t)} className={`flex-shrink-0 px-3 py-1 text-xs border rounded-full transition-colors ${type===t?'bg-black text-white':'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{TYPE_LABELS[t]}</button>))}
            </div>
-           <div className="space-y-3">
-               <input className="w-full border-b p-2 text-sm" placeholder="標題 (例: 國泰航空 / 希爾頓酒店)" value={title} onChange={e=>setTitle(e.target.value)}/>
-               <input className="w-full border-b p-2 text-sm" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
-               {type === 'Flight' && (<><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="航空公司" value={airline} onChange={e=>setAirline(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="航班編號" value={flightNum} onChange={e=>setFlightNum(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛 (HKG)" value={origin} onChange={e=>setOrigin(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達 (KIX)" value={destination} onChange={e=>setDestination(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛時間" value={departTime} onChange={e=>setDepartTime(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達時間" value={arriveTime} onChange={e=>setArriveTime(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="座位" value={seat} onChange={e=>setSeat(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="登機門" value={gate} onChange={e=>setGate(e.target.value)}/></div></>)}
-               {type === 'Hotel' && (<><input className="w-full border-b p-2 text-sm" placeholder="地址" value={address} onChange={e=>setAddress(e.target.value)}/><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="Check-in 時間" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="Check-out 時間" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/></div></>)}
-               {(type === 'Rental' || type === 'Ticket') && <input className="w-full border-b p-2 text-sm" placeholder="地址 / 取車點" value={address} onChange={e=>setAddress(e.target.value)}/>}
-               <input className="w-full border-b p-2 text-sm" type="number" placeholder="價格 (¥)" value={price} onChange={e=>setPrice(Number(e.target.value))}/>
+
+           <div className="space-y-4">
+               <div className="space-y-1">
+                   <label className="text-[10px] text-gray-400 uppercase tracking-widest">標題 / 項目名稱</label>
+                   <input className="w-full border-b p-2 text-sm focus:border-black outline-none" placeholder="例: 國泰航空 / 希爾頓酒店" value={title} onChange={e=>setTitle(e.target.value)}/>
+               </div>
+               
+               <div className="space-y-1">
+                   <label className="text-[10px] text-gray-400 uppercase tracking-widest">日期</label>
+                   <input className="w-full border-b p-2 text-sm focus:border-black outline-none" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
+               </div>
+               
+               {/* 航班欄位 */}
+               {type === 'Flight' && (
+                   <div className="space-y-2 bg-gray-50 p-3 rounded">
+                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="航空公司" value={airline} onChange={e=>setAirline(e.target.value)}/><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="航班號" value={flightNum} onChange={e=>setFlightNum(e.target.value)}/></div>
+                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="起飛 (HKG)" value={origin} onChange={e=>setOrigin(e.target.value)}/><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="抵達 (KIX)" value={destination} onChange={e=>setDestination(e.target.value)}/></div>
+                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="起飛時間" value={departTime} onChange={e=>setDepartTime(e.target.value)}/><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="抵達時間" value={arriveTime} onChange={e=>setArriveTime(e.target.value)}/></div>
+                       <div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="座位" value={seat} onChange={e=>setSeat(e.target.value)}/><input className="flex-1 border-b p-2 text-sm bg-transparent" placeholder="登機門" value={gate} onChange={e=>setGate(e.target.value)}/></div>
+                   </div>
+               )}
+
+               {/* 地址欄位 (Google Maps) */}
+               {type !== 'Flight' && (
+                   <div className="space-y-1">
+                       <div className="flex justify-between items-center">
+                           <label className="text-[10px] text-gray-400 uppercase tracking-widest">地址 / 取票點</label>
+                           {apiKey && <button onClick={()=>setIsGoogleMode(!isGoogleMode)} className="text-[9px] text-blue-500 underline">{isGoogleMode ? "手動輸入" : "Google 搜尋"}</button>}
+                       </div>
+                       
+                       {isGoogleMode && apiKey ? (
+                           <GooglePlacesAutocomplete
+                               apiKey={apiKey}
+                               selectProps={{
+                                   placeholder: "搜尋地點...",
+                                   onChange: (val: any) => setAddress(val.label),
+                                   styles: { control: (p) => ({ ...p, border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, boxShadow: 'none', minHeight: '36px' }), placeholder: (p) => ({ ...p, fontSize: '14px', color: '#9ca3af', marginLeft: 0 }) }
+                               }}
+                           />
+                       ) : (
+                           <input className="w-full border-b p-2 text-sm focus:border-black outline-none" placeholder="輸入地址..." value={address} onChange={e=>setAddress(e.target.value)}/>
+                       )}
+                       {isGoogleMode && address && <p className="text-[10px] text-gray-500 mt-1 truncate">{address}</p>}
+                   </div>
+               )}
+
+               {/* 住宿時間 */}
+               {type === 'Hotel' && (
+                   <div className="flex gap-2">
+                       <input className="flex-1 border-b p-2 text-sm" placeholder="Check-in 時間" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/>
+                       <input className="flex-1 border-b p-2 text-sm" placeholder="Check-out 時間" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/>
+                   </div>
+               )}
+
+               <div className="space-y-1">
+                   <label className="text-[10px] text-gray-400 uppercase tracking-widest">費用 (¥)</label>
+                   <input className="w-full border-b p-2 text-sm focus:border-black outline-none" type="number" placeholder="0" value={price} onChange={e=>setPrice(Number(e.target.value))}/>
+               </div>
+
+               {/* 🔥 檔案上傳 */}
+               <div className="pt-4">
+                  <label className={`flex items-center justify-center gap-2 w-full p-3 border border-dashed rounded-lg cursor-pointer transition-colors ${fileUrl ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-300 text-gray-400 hover:bg-gray-50'}`}>
+                      <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} />
+                      {uploading ? <span className="animate-pulse">上傳中...</span> : fileUrl ? <><CheckCircle2 size={16}/> 憑證已上傳 (點擊更換)</> : <><Upload size={16}/> 上傳憑證 (PDF/圖片)</>}
+                  </label>
+               </div>
            </div>
-           <button onClick={handleSubmit} className="w-full bg-black text-white py-3 text-xs uppercase tracking-widest hover:opacity-80 mt-6 rounded-lg">確認儲存</button>
+
+           <button onClick={handleSubmit} disabled={uploading} className="w-full bg-black text-white py-3 text-xs uppercase tracking-widest hover:opacity-80 mt-6 rounded-lg transition-opacity disabled:opacity-50">確認儲存</button>
         </div>
      </div>
   )
