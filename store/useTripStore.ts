@@ -3,8 +3,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
-// ================= 類型定義 =================
-
 export interface Member { id: string; name: string; avatar: string; }
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking {
@@ -25,12 +23,11 @@ export interface PlanItem {
   id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string;
 }
 
-// 🔥 升級 Activity，加入經緯度
 export interface Activity {
   id: string; time: string; type: string; location: string; cost: number; 
   note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[];
-  lat?: number; // 緯度
-  lng?: number; // 經度
+  lat?: number;
+  lng?: number;
 }
 
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; }
@@ -78,31 +75,35 @@ export const useTripStore = create<TripState>()(
     (set, get) => ({
       trips: [INITIAL_TRIP], activeTripId: null, isSyncing: false,
       setActiveTrip: (id) => set({ activeTripId: id }),
-      loadTripsFromCloud: async () => { set({ isSyncing: true }); const { data, error } = await supabase.from('trips').select('*'); if (!error && data) { const loadedTrips = data.map(row => row.content as Trip); set({ trips: loadedTrips }); if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips[0].id }); } set({ isSyncing: false }); },
+      loadTripsFromCloud: async () => { set({ isSyncing: true }); const { data, error } = await supabase.from('trips').select('*'); if (!error && data) { const loadedTrips = data.map(row => row.content as Trip); set({ trips: loadedTrips }); if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips.id }); } set({ isSyncing: false }); },
       saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); set({ isSyncing: false }); },
-      subscribeToTrip: (tripId: string) => { supabase.channel('trips-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, (payload) => { const newTrip = payload.new.content as Trip; set(state => ({ trips: state.trips.map(t => t.id === newTrip.id ? newTrip : t) })); }).subscribe(); },
-      importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if(newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
+      importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips.id : null }); if(newTrips.length > 0) get().saveTripToCloud(newTrips); },
       addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
-      deleteTrip: async (tripId) => { set({ isSyncing: true }); await supabase.from('trips').delete().eq('id', tripId); set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
+      deleteTrip: async (tripId) => { set({ isSyncing: true }); await supabase.from('trips').delete().eq('id', tripId); set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips?.id || null) : state.activeTripId, isSyncing: false }; }); },
 
       updateTrip: (tripId, data) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
-      updateTripSettings: (tripId, title, newStartDate, coverImage) => { set(state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T')[0] }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T')[0] }; })})); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
+      updateTripSettings: (tripId, title, newStartDate, coverImage) => { set(state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T') }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T') }; })})); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updateBudgetTotal: (tripId, total) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, budgetTotal: total } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
+      
       addBooking: (tripId, booking) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: [...t.bookings, booking] } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updateBooking: (tripId, bookingId, data) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.map(b => b.id === bookingId ? { ...b, ...data } : b) } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       deleteBooking: (tripId, bookingId) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.filter(b => b.id !== bookingId) } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
+      
       addExpense: (tripId, expense) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: [expense, ...t.expenses] } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updateExpense: (tripId, expenseId, data) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.map(e => e.id === expenseId ? { ...e, ...data } : e) } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       deleteExpense: (tripId, expenseId) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.filter(e => e.id !== expenseId) } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
+      
       addPlanItem: (tripId, item) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: [...t.plans, item] } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updatePlanItem: (tripId, itemId, data) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, ...data } : p) } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       togglePlanItem: (tripId, itemId) => { set(state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; return { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, isCompleted: !p.isCompleted } : p) }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       deletePlanItem: (tripId, itemId) => { set(state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.filter(p => p.id !== itemId) } : t) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
+      
       addActivity: (tripId, dayIndex, activity) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (!newItinerary[dayIndex]) return trip; newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); return { ...trip, dailyItinerary: newItinerary }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updateActivity: (tripId, dayIndex, activityId, data) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); return { ...trip, dailyItinerary: newItinerary }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updateActivityOrder: (tripId, dayIndex, newActivities) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       deleteActivity: (tripId, dayIndex, activityId) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId); return { ...trip, dailyItinerary: newItinerary }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
-      addDayToTrip: (tripId) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; let nextDateStr = trip.startDate; if (trip.dailyItinerary.length > 0) { const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1]; const d = new Date(lastDay.date); d.setDate(d.getDate() + 1); nextDateStr = d.toISOString().split('T')[0]; } return { ...trip, endDate: nextDateStr, dailyItinerary: [...trip.dailyItinerary, { day: trip.dailyItinerary.length + 1, date: nextDateStr, weather: 'Sun', activities: [] }] }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
+      
+      addDayToTrip: (tripId) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; let nextDateStr = trip.startDate; if (trip.dailyItinerary.length > 0) { const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1]; const d = new Date(lastDay.date); d.setDate(d.getDate() + 1); nextDateStr = d.toISOString().split('T'); } return { ...trip, endDate: nextDateStr, dailyItinerary: [...trip.dailyItinerary, { day: trip.dailyItinerary.length + 1, date: nextDateStr, weather: 'Sun', activities: [] }] }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       deleteDayFromTrip: (tripId, dayIndex) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
       updateDayCoverImage: (tripId, dayIndex, imageUrl) => { set(state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].coverImage = imageUrl; } return { ...trip, dailyItinerary: newItinerary }; }) })); const updated = get().trips.find(t => t.id === tripId); if(updated) get().saveTripToCloud(updated); },
     }),
@@ -111,4 +112,4 @@ export const useTripStore = create<TripState>()(
       storage: createJSONStorage(() => localStorage) 
     }
   )
-);```
+);
