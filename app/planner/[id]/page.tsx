@@ -7,7 +7,7 @@ import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import ShareItinerary from "@/components/planner/ShareItinerary";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, CloudSun, Thermometer } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -27,8 +27,6 @@ export default function PlannerPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editStartDate, setEditStartDate] = useState("");
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  
-  // 天氣狀態
   const [weatherData, setWeatherData] = useState<{temp: string, code: number} | null>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -37,18 +35,16 @@ export default function PlannerPage() {
   useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
   useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) { setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); } }, [trip, activeDay]);
 
-  // 🔥 Fetch Weather Data
   useEffect(() => {
     const fetchWeather = async () => {
         if (!trip) return;
         const currentDay = trip.dailyItinerary[activeDay];
-        // 預設大阪座標，或者取第一個行程的座標
         let lat = 34.6937, lng = 135.5023;
         const firstAct = currentDay.activities.find(a => a.lat && a.lng);
         if (firstAct && firstAct.lat && firstAct.lng) { lat = firstAct.lat; lng = firstAct.lng; }
 
         try {
-            const dateStr = currentDay.date; // YYYY-MM-DD
+            const dateStr = currentDay.date;
             const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`);
             const data = await res.json();
             if (data.daily) {
@@ -65,8 +61,6 @@ export default function PlannerPage() {
   if (!isMounted || !trip) return <div className="p-10 text-center text-xs tracking-widest text-gray-400">LOADING...</div>;
 
   const currentDailyItinerary = trip.dailyItinerary[activeDay];
-  
-  // 🔥 動態地點：取第一個有地點的活動，否則顯示 Default
   const displayLocation = currentDailyItinerary?.activities.length > 0 ? currentDailyItinerary.activities[0].location.split(' ')[0] : "自由探索";
 
   const handleAddActivity = (data: any) => { addActivity(trip.id, activeDay, data); setIsModalOpen(false); };
@@ -111,8 +105,8 @@ export default function PlannerPage() {
             
             <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
                <div className="animate-fade-in-up">
-                 {/* 🔥 字體氣勢增強：font-black, tracking-tighter */}
-                 <h3 className="text-5xl md:text-7xl font-black tracking-tighter text-black mb-2 uppercase drop-shadow-sm" style={{fontFamily: 'var(--font-inter)'}}>Day {activeDay + 1}</h3>
+                 {/* 🔥 字體修正：font-bold + tracking-wide */}
+                 <h3 className="text-5xl md:text-7xl font-bold tracking-wide text-black mb-2 uppercase drop-shadow-sm" style={{fontFamily: 'var(--font-inter)'}}>Day {activeDay + 1}</h3>
                  <div className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold bg-white/80 backdrop-blur-sm w-fit px-3 py-1 rounded-full">
                     <MapPin size={10} /><span>{displayLocation}</span>
                     <span className="w-px h-3 bg-gray-400"></span>
@@ -136,7 +130,10 @@ export default function PlannerPage() {
             {viewMode === 'list' ? (
                 currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : (<div className="text-center py-32 text-gray-300 text-[10px] tracking-[0.3em] uppercase font-light">No Activities</div>)
             ) : (
-                <div className="h-[60vh] md:h-[500px] w-full"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
+                // 🔥 地圖高度修正：手機 60vh，桌面固定 500px
+                <div className="h-[60vh] md:h-[500px] w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <TripMap activities={currentDailyItinerary?.activities || []} />
+                </div>
             )}
           </div>
           
