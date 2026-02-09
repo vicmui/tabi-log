@@ -6,7 +6,6 @@ import { Plus, Settings, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 import Link from "next/link";
-import clsx from "clsx";
 
 export default function Home() {
   const { trips, addTrip, deleteTrip, setActiveTrip } = useTripStore();
@@ -29,11 +28,9 @@ export default function Home() {
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
-      e.stopPropagation(); // 防止點擊跳轉
+      e.stopPropagation();
       e.preventDefault();
-      if(confirm("⚠️ 警告：確定要永久刪除此旅程嗎？")) {
-          deleteTrip(id);
-      }
+      if(confirm("⚠️ 警告：確定要永久刪除此旅程嗎？")) deleteTrip(id);
   };
 
   return (
@@ -42,8 +39,9 @@ export default function Home() {
       <main className="flex-1 p-8 ml-0 md:ml-64 pb-24">
         <div className="flex justify-between items-center mb-12 mt-4">
            <div>
-             <h1 className="text-4xl font-light tracking-widest text-jp-black uppercase">我的旅程</h1>
-             <p className="text-gray-400 mt-2 text-xs tracking-widest uppercase">My Voyages</p>
+             {/* 🔥 修正字體樣式：font-serif + font-bold */}
+             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-black uppercase mb-2">我的旅程</h1>
+             <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
            </div>
            <button onClick={handleAddTrip} className="bg-jp-black text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 text-xs tracking-widest uppercase rounded">
              <Plus size={16} /> 新增旅程
@@ -60,24 +58,16 @@ export default function Home() {
                 return (
                   <div key={trip.id} onClick={() => setActiveTrip(trip.id)} className="relative group cursor-pointer bg-white border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden h-[360px] flex flex-col rounded-lg">
                       <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
-
                       <div className="h-1/2 w-full relative overflow-hidden">
                           <img src={trip.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"/>
                           <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full z-20">
                               {daysLeft > 0 ? `還有 ${daysLeft} 天` : "進行中/已結束"}
                           </div>
-                          
-                          {/* 🔥 右上角操作按鈕 (Z-Index 要高過 Link) */}
                           <div className="absolute top-4 right-4 flex gap-2 z-30">
-                              <button onClick={(e)=>{e.stopPropagation(); e.preventDefault(); setEditingTrip(trip)}} className="bg-white/80 p-2 rounded-full hover:bg-white text-gray-600 hover:text-black transition-colors">
-                                  <Settings size={14}/>
-                              </button>
-                              <button onClick={(e)=>handleDelete(e, trip.id)} className="bg-white/80 p-2 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition-colors">
-                                  <Trash2 size={14}/>
-                              </button>
+                              <button onClick={(e)=>{e.stopPropagation(); e.preventDefault(); setEditingTrip(trip)}} className="bg-white/80 p-2 rounded-full hover:bg-white text-gray-600 hover:text-black transition-colors"><Settings size={14}/></button>
+                              <button onClick={(e)=>handleDelete(e, trip.id)} className="bg-white/80 p-2 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition-colors"><Trash2 size={14}/></button>
                           </div>
                       </div>
-                      
                       <div className="p-6 flex flex-col justify-between flex-1">
                           <div>
                               <h3 className="text-xl font-medium mb-1 tracking-wide truncate">{trip.title}</h3>
@@ -92,7 +82,6 @@ export default function Home() {
                 )
             })}
         </div>
-
         {editingTrip && <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} />}
       </main>
     </div>
