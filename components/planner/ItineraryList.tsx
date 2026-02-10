@@ -1,7 +1,7 @@
 "use client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Activity, useTripStore } from "@/store/useTripStore";
-import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, AlignLeft, Map, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, AlignLeft, Map, Trash2, CheckCircle2, Circle, Navigation } from "lucide-react";
 import clsx from "clsx";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 
@@ -17,7 +17,7 @@ const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg:
 interface Props { dayIndex: number; activities: Activity[]; tripId: string; onActivityClick: (id: string) => void; }
 
 const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, provided }: any) => {
-  const { deleteActivity } = useTripStore();
+  const { deleteActivity, updateActivity } = useTripStore();
   const x = useMotionValue(0);
   const bgOpacity = useTransform(x, [-100, 0], [1, 0]);
 
@@ -29,6 +29,18 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
     }
   };
 
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // 優先用座標，無就用地址名
+    const dest = (activity.lat && activity.lng) ? `${activity.lat},${activity.lng}` : encodeURIComponent(activity.address || activity.location);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=transit`, '_blank');
+  };
+
+  const toggleCheck = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
+  };
+
   const config = TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other;
 
   return (
@@ -37,7 +49,7 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
 
       <motion.div
         drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }}
-        className="bg-white relative z-10 rounded-xl shadow-sm border border-gray-200"
+        className="bg-white relative z-10 rounded-xl shadow-sm border border-gray-200 group"
         {...provided.dragHandleProps} onClick={() => onActivityClick(activity.id)}
       >
         <div className="flex items-start gap-4 p-4 cursor-pointer">
@@ -53,15 +65,18 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
                 {activity.cost > 0 && <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap ml-2">¥ {activity.cost.toLocaleString()}</span>}
               </div>
               
-              <div className="flex flex-wrap items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
-                  {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
-                  
-                  {/* 🔥 新增：顯示有無地址 */}
-                  {activity.address && <span className="text-[9px] flex items-center gap-0.5 text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-sm"><MapPin size={8}/> Map</span>}
+                  {activity.address && <span className="text-[9px] text-gray-400 flex items-center gap-0.5 bg-gray-50 px-1 rounded"><MapPin size={8}/> 有地圖</span>}
               </div>
               
               {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
+              
+              {/* 🔥 操作按鈕列 */}
+              <div className="flex gap-3 mt-3 pt-3 border-t border-gray-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                 <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded"><Navigation size={10}/> 導航</button>
+                 <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-green-600 hover:underline bg-green-50 px-2 py-1 rounded">{activity.isVisited ? <><Circle size={10}/> 取消</> : <><CheckCircle2 size={10}/> 打卡</>}</button>
+              </div>
             </div>
         </div>
       </motion.div>

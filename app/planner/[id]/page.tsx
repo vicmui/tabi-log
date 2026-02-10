@@ -4,10 +4,9 @@ import Sidebar from "@/components/layout/Sidebar";
 import ItineraryList from "@/components/planner/ItineraryList";
 import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
-import ShareItinerary from "@/components/planner/ShareItinerary";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -42,7 +41,6 @@ export default function PlannerPage() {
         let lat = 34.6937, lng = 135.5023;
         const firstAct = currentDay.activities.find(a => a.lat && a.lng);
         if (firstAct && firstAct.lat && firstAct.lng) { lat = firstAct.lat; lng = firstAct.lng; }
-
         try {
             const dateStr = currentDay.date;
             const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`);
@@ -72,6 +70,19 @@ export default function PlannerPage() {
       const filePath = `public/${trip.id}/day-covers/${activeDay}-${uuidv4()}`;
       const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
       if (!error) { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); updateDayCoverImage(trip.id, activeDay, publicUrl); }
+  };
+
+  const handleOpenDayRoute = () => {
+    if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點才能規劃路線"); return; }
+    const acts = currentDailyItinerary.activities.filter(a => a.address || a.location); // 確保有地點
+    if (acts.length < 2) { alert("地點資料不足"); return; }
+
+    const origin = encodeURIComponent(acts[0].address || acts[0].location);
+    const destination = encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location);
+    const waypoints = acts.slice(1, -1).map(a => encodeURIComponent(a.address || a.location)).join('|');
+    
+    // 🔥 開啟 Google Maps 路線規劃
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank');
   };
 
   return (
@@ -105,7 +116,6 @@ export default function PlannerPage() {
             
             <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
                <div className="animate-fade-in-up">
-                 {/* 🔥 字體修正：font-bold + tracking-wide */}
                  <h3 className="text-5xl md:text-7xl font-bold tracking-wide text-black mb-2 uppercase drop-shadow-sm" style={{fontFamily: 'var(--font-inter)'}}>Day {activeDay + 1}</h3>
                  <div className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold bg-white/80 backdrop-blur-sm w-fit px-3 py-1 rounded-full">
                     <MapPin size={10} /><span>{displayLocation}</span>
@@ -121,7 +131,11 @@ export default function PlannerPage() {
             <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-10 pt-2">
                <div className="flex items-center gap-4"><span className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">行程</span><button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 transition-colors"><CalendarX size={14} /></button></div>
                <div className="flex gap-3 w-full md:w-auto overflow-x-auto no-scrollbar justify-end">
-                  {viewMode === 'list' && <ShareItinerary elementId="itinerary-capture-area" tripTitle={trip.title} day={`Day${activeDay+1}`} />}
+                  {/* 🔥 移除 Share，改為全日導航 */}
+                  <button onClick={handleOpenDayRoute} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black hover:text-black transition-colors bg-white uppercase rounded-lg">
+                    <Navigation size={12} /> 全日路線
+                  </button>
+                  {/* 切換視圖 */}
                   <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black hover:text-black transition-colors bg-white uppercase rounded-lg">{viewMode === 'list' ? <><MapIcon size={12} /> 地圖總覽</> : <><ListIcon size={12} /> 行程列表</>}</button>
                   <button onClick={() => setIsModalOpen(true)} className="flex-none flex items-center gap-2 text-[10px] tracking-widest bg-black text-white px-5 py-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 uppercase rounded-lg"><Plus size={12} /> 新增</button>
                </div>
@@ -130,7 +144,6 @@ export default function PlannerPage() {
             {viewMode === 'list' ? (
                 currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : (<div className="text-center py-32 text-gray-300 text-[10px] tracking-[0.3em] uppercase font-light">No Activities</div>)
             ) : (
-                // 🔥 地圖高度修正：手機 60vh，桌面固定 500px
                 <div className="h-[60vh] md:h-[500px] w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                     <TripMap activities={currentDailyItinerary?.activities || []} />
                 </div>
