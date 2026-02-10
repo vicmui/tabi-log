@@ -23,9 +23,7 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
 
   const handleDragEnd = (e: any, info: any) => {
     if (info.offset.x < -100) {
-      if (confirm(`確定要刪除「${activity.location}」嗎？`)) {
-        deleteActivity(tripId, dayIndex, activity.id);
-      }
+      if (confirm(`確定要刪除「${activity.location}」嗎？`)) deleteActivity(tripId, dayIndex, activity.id);
     }
   };
 
@@ -35,41 +33,30 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=transit`, '_blank');
   };
 
-  const toggleCheck = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
-  };
-
+  const toggleCheck = (e: React.MouseEvent) => { e.stopPropagation(); updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited }); };
   const config = TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other;
 
   return (
     <div className="relative overflow-hidden rounded-xl mb-3" ref={provided.innerRef} {...provided.draggableProps}>
       <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl"><Trash2 className="text-white" size={20} /></motion.div>
-      <motion.div
-        drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }}
-        className="bg-white relative z-10 rounded-xl shadow-sm border border-gray-200 group"
-        {...provided.dragHandleProps} onClick={() => onActivityClick(activity.id)}
-      >
+      <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="bg-white relative z-10 rounded-xl shadow-sm border border-gray-200 group" {...provided.dragHandleProps} onClick={() => onActivityClick(activity.id)}>
         <div className="flex items-start gap-4 p-4 cursor-pointer">
             <div className="flex flex-col items-center gap-2 min-w-[50px] pt-1">
               <span className="text-[11px] font-mono text-gray-800 font-bold">{activity.time}</span>
-              <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center shadow-sm", activity.isVisited ? "bg-gray-800 text-white" : "bg-white border border-gray-200 text-gray-500")}>
-                  {activity.isVisited ? <CheckCircle2 size={14}/> : <config.icon size={14} />}
-              </div>
+              <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center shadow-sm", activity.isVisited ? "bg-gray-800 text-white" : "bg-white border border-gray-200 text-gray-500")}>{activity.isVisited ? <CheckCircle2 size={14}/> : <config.icon size={14} />}</div>
             </div>
             <div className="flex-1 min-w-0 pt-1">
               <div className="flex justify-between items-start mb-1">
                 <h4 className={clsx("text-sm font-bold tracking-wide leading-tight", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
+                {/* 🔥 修正：只在 > 0 時顯示 */}
                 {activity.cost > 0 && <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap ml-2">¥ {activity.cost.toLocaleString()}</span>}
               </div>
-              
               <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
                   {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
+                  {activity.address && <span className="text-[9px] text-gray-400 flex items-center gap-0.5 bg-gray-50 px-1 rounded"><MapPin size={8}/> Map</span>}
               </div>
-              
               {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
-              
               <div className="flex gap-3 mt-3 pt-3 border-t border-gray-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                  <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded"><Navigation size={10}/> 導航</button>
                  <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-green-600 hover:underline bg-green-50 px-2 py-1 rounded">{activity.isVisited ? <><Circle size={10}/> 取消</> : <><CheckCircle2 size={10}/> 打卡</>}</button>

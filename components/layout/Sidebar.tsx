@@ -2,15 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { 
-  Home, 
-  Ticket, 
-  CalendarRange, 
-  Wallet, 
-  ClipboardList, 
-  Briefcase, 
-  Users 
-} from "lucide-react";
+import { Home, Ticket, CalendarRange, Wallet, ClipboardList, Briefcase, Users } from "lucide-react";
 
 const MENU_ITEMS = [
   { label: "HOME", subLabel: "首頁", href: "/", icon: Home },
@@ -26,32 +18,23 @@ export default function Sidebar() {
   const pathname = usePathname();
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col py-12 px-8 z-50 hidden md:flex">
-      
-      {/* 1. Logo 區域 */}
-      <div className="mb-10"> {/* 縮近了與下面 Navigation 的距離 */}
-        {/* 🔥 改動：Font Black (特粗), Tracking Tighter (字距緊), Text 4xl (大氣) */}
+      <div className="mb-10">
         <h1 className="text-4xl font-black tracking-tighter text-[#1a1a1a] uppercase leading-none" style={{ fontFamily: 'var(--font-inter)' }}>
           VM&apos;s<br/>Build
         </h1>
         <div className="h-[2px] w-10 bg-black my-5"></div>
-        <p className="text-[10px] text-gray-400 tracking-[0.25em] uppercase font-medium">Travel Architect</p>
+        {/* 🔥 修改：Travel Architect -> 旅行手帳 */}
+        <p className="text-[10px] text-gray-400 tracking-[0.25em] uppercase font-medium">旅行手帳</p>
       </div>
 
-      {/* 2. Navigation 區域 (加入 flex-1 讓它佔據中間空間) */}
       <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar py-2">
         {MENU_ITEMS.map((item) => {
           const isActive = pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href;
           return (
             <Link href={item.href} key={item.href} className="group block">
               <div className="flex items-center gap-3">
-                {/* 如果你想 Desktop 都顯示 Icon 可以開返下面註解，目前保持純文字風格 */}
-                {/* <item.icon size={16} className={isActive ? "text-black" : "text-gray-300"} /> */}
-                
                 <div className="flex flex-col">
-                  <span className={clsx(
-                    "text-xs tracking-[0.15em] transition-all duration-300 uppercase",
-                    isActive ? "text-black font-bold" : "text-gray-400 group-hover:text-gray-600 font-medium"
-                  )}>
+                  <span className={clsx("text-xs tracking-[0.15em] transition-all duration-300 uppercase", isActive ? "text-black font-bold" : "text-gray-400 group-hover:text-gray-600 font-medium")}>
                     {item.label}
                   </span>
                   <span className="text-[9px] text-gray-300 group-hover:text-gray-400 transition-colors tracking-widest font-light scale-90 origin-left">
@@ -64,7 +47,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* 3. Footer 區域 (mt-auto 會自動將它推到最底，防止痴住上面的 Nav) */}
       <div className="mt-auto pt-8 border-t border-gray-50">
         <div className="text-[9px] text-gray-300 tracking-widest uppercase leading-loose">
           <p>© 2026 VM&apos;s Build</p>
