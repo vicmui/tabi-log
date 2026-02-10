@@ -2,7 +2,7 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, MarkerF, PolylineF, InfoWindowF } from '@react-google-maps/api';
 import { Activity } from '@/store/useTripStore';
-import { Navigation } from 'lucide-react';
+import { Navigation, MapPin } from 'lucide-react';
 
 const containerStyle = { width: '100%', height: '100%' };
 const DEFAULT_CENTER = { lat: 34.6937, lng: 135.5023 }; // 大阪
@@ -20,8 +20,6 @@ const MONOCHROME_STYLE = [
   { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
   { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#dadada" }] },
   { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
-  { featureType: "transit.line", elementType: "geometry", stylers: [{ color: "#e5e5e5" }] },
-  { featureType: "transit.station", elementType: "geometry", stylers: [{ color: "#eeeeee" }] },
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] },
   { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] }
 ];
@@ -35,37 +33,46 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
+  // 1. 強力數據清洗
   const markers = useMemo(() => {
     if (!activities || activities.length === 0) return [];
+    
     return activities
-      .filter(act => act.lat && act.lng)
-      .map((act, index) => ({
-        id: act.id,
-        lat: Number(act.lat),
-        lng: Number(act.lng),
-        label: (index + 1).toString(),
-        title: act.location,
-        type: act.type
-      }));
+      .map((act, index) => {
+        // 🔥 強制轉換為數字，防止 String/Null 問題
+        const lat = parseFloat(String(act.lat));
+        const lng = parseFloat(String(act.lng));
+
+        // 檢查是否有效座標
+        if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
+
+        return {
+          id: act.id,
+          lat,
+          lng,
+          label: (index + 1).toString(),
+          title: act.location,
+          type: act.type
+        };
+      })
+      .filter((m): m is NonNullable<typeof m> => m !== null); // 過濾掉無效資料
   }, [activities]);
 
   const path = useMemo(() => markers.map(m => ({ lat: m.lat, lng: m.lng })), [markers]);
 
-  // 🔥 修正：更穩定的 Zoom 邏輯
+  // 2. 智能縮放邏輯
   useEffect(() => {
     if (mapRef.current && markers.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       markers.forEach(m => bounds.extend({ lat: m.lat, lng: m.lng }));
 
       if (markers.length === 1) {
-          // 單點：直接定位 + 固定 Zoom
           mapRef.current.setCenter({ lat: markers[0].lat, lng: markers[0].lng });
           mapRef.current.setZoom(15);
       } else {
-          // 多點：Fit Bounds
           mapRef.current.fitBounds(bounds, 50);
           
-          // 🔥 防止 Zoom 太深導致灰畫面 (重要 Fix)
+          // 防止 Zoom 太深
           const listener = google.maps.event.addListener(mapRef.current, "idle", () => {
             if (mapRef.current && mapRef.current.getZoom()! > 16) {
                 mapRef.current.setZoom(16); 
@@ -88,6 +95,13 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden shadow-sm border border-gray-200 bg-gray-50 relative">
+      
+      {/* 🔥 Debug 顯示條：讓你知道系統讀到幾多個點 */}
+      <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm border border-gray-200 text-[10px] font-bold text-gray-600 flex items-center gap-1">
+         <MapPin size={10} className={markers.length > 0 ? "text-green-500" : "text-gray-400"}/>
+         {markers.length > 0 ? `已定位 ${markers.length} 個地點` : "暫無座標資料"}
+      </div>
+
       <GoogleMap 
         mapContainerStyle={containerStyle} 
         center={DEFAULT_CENTER} 
@@ -96,8 +110,8 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
             disableDefaultUI: true, 
             zoomControl: true, 
             clickableIcons: false,
-            minZoom: 2,  // 防止縮太細
-            maxZoom: 18, // 🔥 防止縮太深變灰
+            minZoom: 2,
+            maxZoom: 18,
             styles: MONOCHROME_STYLE
         }}
         onLoad={onLoad}
@@ -138,11 +152,14 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
             >
                 <div className="p-2 min-w-[140px] text-center">
                     <h3 className="font-bold text-sm mb-1 text-black font-sans">{selectedMarker.title}</h3>
+                    <div className="flex justify-center mb-2">
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{selectedMarker.type}</span>
+                    </div>
                     <a 
                         href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-center gap-1 w-full bg-blue-600 text-white text-[10px] py-1.5 rounded hover:opacity-80 transition-opacity no-underline font-bold tracking-widest uppercase mt-2"
+                        className="flex items-center justify-center gap-1 w-full bg-blue-600 text-white text-[10px] py-1.5 rounded hover:opacity-80 transition-opacity no-underline font-bold tracking-widest uppercase"
                     >
                         <Navigation size={10} /> Google 導航
                     </a>
