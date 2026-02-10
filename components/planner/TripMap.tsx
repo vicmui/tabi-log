@@ -6,10 +6,10 @@ import { Navigation } from 'lucide-react';
 
 const containerStyle = { width: '100%', height: '100%' };
 
-// 預設大阪中心 (如果完全無資料)
+// 預設大阪中心
 const DEFAULT_CENTER = { lat: 34.7024, lng: 135.4959 };
 
-// 🔥 United Tokyo 風格：極致黑白灰地圖樣式
+// United Tokyo 風格
 const MONOCHROME_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -40,21 +40,15 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
-  // 1. 數據處理：強制轉換經緯度為數字 (Fix bug)
+  // 1. 整理 Marker 數據
   const markers = useMemo(() => {
     if (!activities || activities.length === 0) return [];
     
-    // Debug: 在 Console 顯示收到的資料，方便除錯
-    console.log("Map received activities:", activities);
-
-    const validMarkers = activities
-      .filter(act => act.lat !== undefined && act.lng !== undefined) // 確保有值
+    return activities
+      .filter(act => act.lat !== undefined && act.lng !== undefined)
       .map((act, index) => {
-        // 🔥 強制轉 Number，防止 Database 傳回 String 導致地圖讀唔到
         const lat = Number(act.lat);
         const lng = Number(act.lng);
-
-        // 二次檢查座標是否有效 (非 NaN)
         if (isNaN(lat) || isNaN(lng)) return null;
 
         return {
@@ -66,30 +60,43 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
           type: act.type
         };
       })
-      .filter(m => m !== null); // 過濾掉無效資料
-
-    console.log("Valid markers for map:", validMarkers);
-    return validMarkers;
+      .filter(m => m !== null);
   }, [activities]);
 
-  // 2. 連線路徑
   const path = useMemo(() => markers.map(m => ({ lat: m!.lat, lng: m!.lng })), [markers]);
 
-  // 3. 自動縮放 (Auto Zoom / Fit Bounds)
+  // 2. 🔥 智能縮放邏輯 (Smart Zoom)
   useEffect(() => {
     if (map && markers.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       markers.forEach(m => bounds.extend({ lat: m!.lat, lng: m!.lng }));
+
+      // 檢查所有點是否太過接近 (例如全部都在同一個座標)
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
       
-      // 如果只有一個點，Zoom 近啲；如果有多個點，Fit Bounds
-      if (markers.length === 1) {
+      // 計算經緯度差值
+      const latDiff = Math.abs(ne.lat() - sw.lat());
+      const lngDiff = Math.abs(ne.lng() - sw.lng());
+
+      // 如果只有一個點，或者所有點都擠在一起 (差值極小)
+      if (markers.length === 1 || (latDiff < 0.005 && lngDiff < 0.005)) {
+          // 強制設定中心點 + 舒適的 Zoom Level
           map.setCenter({ lat: markers[0]!.lat, lng: markers[0]!.lng });
-          map.setZoom(14);
+          map.setZoom(15); // Level 15 是街道級別，睇得最舒服
       } else {
+          // 點夠分散，先 Fit Bounds
           map.fitBounds(bounds, 50); // 50px padding
+          
+          // 防止 Fit Bounds Zoom 得太深 (例如只有兩個點且很近)
+          // 這裡使用 listener 限制最大 Zoom
+          const listener = google.maps.event.addListener(map, "idle", () => { 
+            if (map.getZoom()! > 16) map.setZoom(16); 
+            google.maps.event.removeListener(listener); 
+          });
       }
     } else if (map) {
-      // 無 Marker 時去大阪
+      // 無 Marker，去大阪
       map.setCenter(DEFAULT_CENTER);
       map.setZoom(12);
     }
@@ -97,7 +104,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
 
   const onLoad = useCallback((map: google.maps.Map) => setMap(map), []);
 
-  if (loadError) return <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-red-400">Map API Error</div>;
+  if (loadError) return <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-red-400">Map Error</div>;
   if (!isLoaded) return <div className="w-full h-full flex items-center justify-center bg-gray-100 text-xs text-gray-400 animate-pulse">LOADING MAP...</div>;
 
   return (
@@ -110,14 +117,15 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
             ...{ 
               disableDefaultUI: true, 
               zoomControl: true, 
-              clickableIcons: false 
+              clickableIcons: false,
+              maxZoom: 18 // 🔥 限制最大縮放，防止變灰
             },
-            styles: MONOCHROME_STYLE // 🔥 套用黑白風格
+            styles: MONOCHROME_STYLE
         }}
         onLoad={onLoad}
         onClick={() => setSelectedMarker(null)}
       >
-        {/* 連線 (深灰色) */}
+        {/* 連線 */}
         {markers.length > 1 && (
             <PolylineF 
                 path={path as google.maps.LatLngLiteral[]} 
@@ -130,7 +138,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
             />
         )}
 
-        {/* Markers (黑色波波，白色字) */}
+        {/* Markers */}
         {markers.map((marker) => (
           <MarkerF 
             key={marker!.id} 
@@ -141,10 +149,9 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
                 fontWeight: 'bold', 
                 fontSize: '12px',
             }} 
-            // 自訂 Icon：黑色圓形
             icon={{
                 path: google.maps.SymbolPath.CIRCLE,
-                fillColor: '#1a1a1a', // United Tokyo Black
+                fillColor: '#1a1a1a', 
                 fillOpacity: 1,
                 scale: 12,
                 strokeColor: '#ffffff',
@@ -154,7 +161,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
           />
         ))}
 
-        {/* InfoWindow (點擊後彈出) */}
+        {/* InfoWindow */}
         {selectedMarker && (
             <InfoWindowF
                 position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
