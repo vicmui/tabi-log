@@ -36,19 +36,12 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
 
     const finalNote = note ? note : addressDetail ? `📍 ${addressDetail}` : "";
 
-    // Debug Log (你可以打開 Console 看看有沒有數值)
-    console.log("Saving Activity:", { lat, lng, location: finalTitle });
+    // 🔥 Debug: 確認提交時有座標
+    if (!lat || !lng) {
+        if(isGoogleMode && apiKey) alert("⚠️ 警告：未能獲取此地點座標，地圖上將無法顯示。請嘗試重新選取。");
+    }
 
-    onSubmit({ 
-        type, 
-        time, 
-        location: finalTitle, 
-        address: googleAddress + (addressDetail ? ` (${addressDetail})` : ""), 
-        cost: finalCost, 
-        note: finalNote, 
-        lat, 
-        lng 
-    });
+    onSubmit({ type, time, location: finalTitle, address: googleAddress + (addressDetail ? ` (${addressDetail})` : ""), cost: finalCost, note: finalNote, lat, lng });
     
     setCustomName(""); setGoogleAddress(""); setAddressDetail(""); setCost(""); setNote(""); setLat(null); setLng(null); onClose();
   };
@@ -77,19 +70,27 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
                              setGoogleAddress(val.label); 
                              setAddressDetail(val.label);
                              
-                             // 🔥 獲取經緯度
                              try {
                                 const results = await geocodeByPlaceId(val.value.place_id); 
                                 const { lat, lng } = await getLatLng(results[0]); 
                                 setLat(lat); setLng(lng); 
+                                console.log("Fetched Coordinates:", lat, lng);
                              } catch (error) {
-                                console.error("Geocoding error:", error);
+                                console.error("Google API Error:", error);
+                                alert("無法獲取座標，請檢查 API Key 設定。");
                              }
                          }, 
                          styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none' }), menu: (p) => ({ ...p, zIndex: 9999 }) } 
                      }} />
                  </div>) : (<input type="text" placeholder="手動輸入地址..." value={googleAddress} onChange={(e) => setGoogleAddress(e.target.value)} className="w-full border-b py-2 text-sm" />)}
-                 {lat && lng && <p className="text-[10px] text-green-600 mt-1">✅ 已取得座標</p>}
+                 
+                 {/* 🔥 顯示座標狀態 */}
+                 <div className="flex items-center gap-2 mt-2">
+                     <span className={clsx("w-2 h-2 rounded-full", lat && lng ? "bg-green-500" : "bg-red-500")}/>
+                     <span className="text-[10px] text-gray-500">
+                        {lat && lng ? `座標鎖定 (${lat.toFixed(4)}, ${lng.toFixed(4)})` : "未有座標 (地圖不會顯示)"}
+                     </span>
+                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">

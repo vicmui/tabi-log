@@ -16,22 +16,17 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
 
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Edit Fields
   const [editLocation, setEditLocation] = useState(activity?.location || "");
   const [editType, setEditType] = useState(activity?.type || "Food");
   const [editTime, setEditTime] = useState(activity?.time || "");
   const [editNote, setEditNote] = useState(activity?.note || "");
   const [editCost, setEditCost] = useState(activity?.cost ? activity.cost.toString() : "");
   const [currency, setCurrency] = useState("JPY"); 
+  const [editAddress, setEditAddress] = useState(activity?.address || "");
   
-  // 🔥 關鍵修正：確保這些 State 初始化正確
-  const [editAddress, setEditAddress] = useState(activity?.address || ""); 
-  const [editLat, setEditLat] = useState<number | undefined>(activity?.lat);
-  const [editLng, setEditLng] = useState<number | undefined>(activity?.lng);
-
-  // Google Search Data
   const [apiKey, setApiKey] = useState("");
+  const [editLat, setEditLat] = useState(activity?.lat);
+  const [editLng, setEditLng] = useState(activity?.lng);
 
   const [comment, setComment] = useState(activity?.comment || "");
   const [rating, setRating] = useState(activity?.rating || 0);
@@ -48,16 +43,15 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       let finalCost = Number(editCost);
       if (currency === "HKD") finalCost = Math.round(Number(editCost) / rate);
 
-      // 🔥 關鍵修正：這裡必須將 address, lat, lng 傳回去 Store
+      // 🔥 必須確定有 lat/lng 傳入
+      if (!editLat || !editLng) {
+          if (confirm("⚠️ 注意：此地點未有座標，地圖上將無法顯示。確定儲存？") === false) return;
+      }
+
       updateActivity(tripId, dayIndex, activityId, { 
-          location: editLocation, 
-          type: editType,
-          time: editTime, 
-          note: editNote, 
-          cost: finalCost,
-          address: editAddress, // 更新地址
-          lat: editLat,         // 更新緯度 (地圖用)
-          lng: editLng          // 更新經度 (地圖用)
+          location: editLocation, type: editType, time: editTime, 
+          note: editNote, cost: finalCost, address: editAddress,
+          lat: editLat, lng: editLng
       });
       setIsEditing(false);
       setEditCost(finalCost.toString()); setCurrency("JPY");
@@ -70,7 +64,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const handleDelete = () => { if(confirm(`確定刪除「${activity.location}」嗎？`)) { deleteActivity(tripId, dayIndex, activity.id); onClose(); } };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
+      const file = e.target.files && e.target.files[0];
       if (!file || !trip) return;
       const filePath = `public/${trip.id}/activities/${uuidv4()}-${file.name}`;
       const { data, error } = await supabase.storage.from('trip_files').upload(filePath, file);
@@ -97,14 +91,9 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         
         <div className="p-8 overflow-y-auto">
            {isEditing ? (
-               // === 編輯模式 ===
                <div className="space-y-5">
-                  <div>
-                      <label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱 (顯示用)</label>
-                      <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} />
-                  </div>
+                  <div><label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label><input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} /></div>
 
-                  {/* 🔥 Google 重新搜尋 */}
                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                       <label className="text-[10px] text-blue-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map (必做)</label>
                       {apiKey ? (
@@ -114,46 +103,30 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                                onChange: async (val: any) => { 
                                    if (!val) return; 
                                    setEditAddress(val.label); 
-                                   const results = await geocodeByPlaceId(val.value.place_id); 
-                                   const { lat, lng } = await getLatLng(results[0]); 
-                                   setEditLat(lat); setEditLng(lng); 
-                                   // 自動更新標題 (如果用戶想用 Google 名)
-                                   setEditLocation(val.label.split(',')[0]);
+                                   try {
+                                       const results = await geocodeByPlaceId(val.value.place_id); 
+                                       const { lat, lng } = await getLatLng(results[0]); 
+                                       setEditLat(lat); setEditLng(lng); 
+                                       if(!editLocation) setEditLocation(val.label.split(',')[0]);
+                                   } catch(e) { alert("無法獲取座標，請檢查 API Key。"); }
                                }, 
                                styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
                            }} />
                         </div>
                       ) : <p className="text-xs text-red-500">API Key Missing</p>}
-                      
                       <div className="flex items-center gap-2 mt-2">
                           <span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-500")}/>
-                          <span className="text-[10px] text-gray-500">{editLat && editLng ? "座標已鎖定 (地圖可見)" : "未有座標 (請搜尋)"}</span>
+                          <span className="text-[10px] text-gray-500">{editLat && editLng ? `座標鎖定 (${editLat.toFixed(4)}, ${editLng.toFixed(4)})` : "未有座標"}</span>
                       </div>
-                      {editAddress && <p className="text-[10px] text-gray-500 mt-1 truncate">{editAddress}</p>}
                   </div>
 
-                  <div className="flex gap-4">
-                      <div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">時間</label><input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} /></div>
-                      <div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">類別</label><select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>{TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}</select></div>
-                  </div>
+                  <div className="flex gap-4"><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">時間</label><input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} /></div><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">類別</label><select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>{TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}</select></div></div>
                   <div><label className="text-xs text-gray-400 uppercase tracking-widest">費用</label><div className="flex items-center border-b border-gray-200 pb-1"><input type="number" value={editCost} onChange={e=>setEditCost(e.target.value)} className="w-full text-sm focus:outline-none" placeholder="0"/><button type="button" onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded flex items-center gap-1 hover:bg-gray-200">{currency} <ArrowRightLeft size={10}/></button></div>{currency === "HKD" && editCost && <p className="text-[9px] text-gray-400 text-right mt-1">≈ ¥{Math.round(Number(editCost)/rate).toLocaleString()}</p>}</div>
                   <div><label className="text-xs text-gray-400 uppercase tracking-widest">備註</label><textarea value={editNote} onChange={e=>setEditNote(e.target.value)} className="w-full h-20 border border-gray-200 p-2 text-sm rounded-lg"/></div>
                </div>
            ) : (
-               // === 檢視模式 ===
                <>
-                 <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span>
-                        <span>{activity.time}</span>
-                      </div>
-                      {/* 🔥 顯示地址，確認有無資料 */}
-                      {activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}
-                    </div>
-                    <button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button>
-                 </div>
+                 <div className="flex justify-between items-start mb-6"><div><h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2><div className="flex items-center gap-2 text-xs text-gray-500"><span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span><span>{activity.time}</span></div>{activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}</div><button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button></div>
                  {activity.cost > 0 && <div className="mb-6"><span className="text-xl font-bold font-mono">¥{activity.cost.toLocaleString()}</span></div>}
                  {activity.note && <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100"><p className="text-sm text-gray-600 leading-relaxed">{activity.note}</p></div>}
                  <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
