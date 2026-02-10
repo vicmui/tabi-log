@@ -24,9 +24,9 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [editNote, setEditNote] = useState(activity?.note || "");
   const [editCost, setEditCost] = useState(activity?.cost ? activity.cost.toString() : "");
   const [currency, setCurrency] = useState("JPY"); 
-  const [editAddress, setEditAddress] = useState(activity?.address || ""); // Google Address
+  const [editAddress, setEditAddress] = useState(activity?.address || "");
   
-  // Google Search in Edit
+  // Google Search Data
   const [apiKey, setApiKey] = useState("");
   const [editLat, setEditLat] = useState(activity?.lat);
   const [editLng, setEditLng] = useState(activity?.lng);
@@ -53,8 +53,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           note: editNote, 
           cost: finalCost,
           address: editAddress,
-          lat: editLat,
-          lng: editLng
+          lat: editLat, // 🔥 確保座標被儲存
+          lng: editLng  // 🔥 確保座標被儲存
       });
       setIsEditing(false);
       setEditCost(finalCost.toString()); setCurrency("JPY");
@@ -67,10 +67,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const handleDelete = () => { if(confirm(`確定刪除「${activity.location}」嗎？`)) { deleteActivity(tripId, dayIndex, activity.id); onClose(); } };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files && e.target.files[0];
+      const file = e.target.files?.[0];
       if (!file || !trip) return;
       const filePath = `public/${trip.id}/activities/${uuidv4()}-${file.name}`;
-      const { data, error } = await supabase.storage.from('trip_files').upload(filePath, file);
+      const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
       if (!error) {
           const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
           const newPhotos = [publicUrl, ...photos];
@@ -94,59 +94,50 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         
         <div className="p-8 overflow-y-auto">
            {isEditing ? (
-               // 🔥 編輯模式 (全功能)
-               <div className="space-y-4">
+               // === 編輯模式 ===
+               <div className="space-y-5">
                   <div>
-                      <label className="text-xs text-gray-400">名稱</label>
-                      <input className="text-xl font-bold w-full border-b p-1" value={editLocation} onChange={e=>setEditLocation(e.target.value)} />
+                      <label className="text-xs text-gray-400 font-bold mb-1 block">地點名稱</label>
+                      <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} />
                   </div>
 
-                  <div>
-                      <label className="text-xs text-gray-400 mb-1 block">Google 地點 (用於地圖)</label>
-                      {apiKey && (
-                        <div className="border p-1 rounded">
+                  {/* 🔥 Google 重新搜尋：這是救回舊資料的關鍵 */}
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                      <label className="text-[10px] text-blue-500 font-bold mb-1 block uppercase">連結 Google Map (必做)</label>
+                      {apiKey ? (
+                        <div className="bg-white border p-1 rounded">
                            <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ 
-                               placeholder: "重新搜尋...",
+                               placeholder: "輸入地點以獲取座標...",
                                onChange: async (val: any) => { 
                                    if (!val) return; 
                                    setEditAddress(val.label); 
                                    const results = await geocodeByPlaceId(val.value.place_id); 
                                    const { lat, lng } = await getLatLng(results[0]); 
                                    setEditLat(lat); setEditLng(lng); 
+                                   // 順便更新顯示名稱
+                                   if(!editLocation) setEditLocation(val.label.split(',')[0]);
                                }, 
-                               styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px' }) } 
+                               styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
                            }} />
                         </div>
-                      )}
-                      {editAddress && <p className="text-[10px] text-gray-400 mt-1 truncate">📍 {editAddress}</p>}
+                      ) : <p className="text-xs text-red-500">API Key Missing</p>}
+                      
+                      {/* 顯示座標狀態 */}
+                      <div className="flex items-center gap-2 mt-2">
+                          <span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-500")}/>
+                          <span className="text-[10px] text-gray-500">{editLat && editLng ? "座標已鎖定 (會顯示在地圖)" : "未有座標 (地圖不會顯示)"}</span>
+                      </div>
                   </div>
 
                   <div className="flex gap-4">
-                      <div className="flex-1">
-                          <label className="text-xs text-gray-400">時間</label>
-                          <input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} />
-                      </div>
-                      <div className="flex-1">
-                          <label className="text-xs text-gray-400">類別</label>
-                          <select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>
-                              {TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}
-                          </select>
-                      </div>
+                      <div className="flex-1"><label className="text-xs text-gray-400">時間</label><input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} /></div>
+                      <div className="flex-1"><label className="text-xs text-gray-400">類別</label><select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>{TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}</select></div>
                   </div>
-
-                  <div>
-                     <label className="text-xs text-gray-400">費用</label>
-                     <div className="flex items-center border-b border-gray-200 pb-1">
-                        <input type="number" value={editCost} onChange={e=>setEditCost(e.target.value)} className="w-full text-sm focus:outline-none" placeholder="0"/>
-                        <button type="button" onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded flex items-center gap-1 hover:bg-gray-200">{currency} <ArrowRightLeft size={10}/></button>
-                     </div>
-                     {currency === "HKD" && editCost && <p className="text-[9px] text-gray-400 text-right mt-1">≈ ¥{Math.round(Number(editCost)/rate).toLocaleString()}</p>}
-                  </div>
-
+                  <div><label className="text-xs text-gray-400">費用</label><div className="flex items-center border-b border-gray-200 pb-1"><input type="number" value={editCost} onChange={e=>setEditCost(e.target.value)} className="w-full text-sm focus:outline-none" placeholder="0"/><button type="button" onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded flex items-center gap-1 hover:bg-gray-200">{currency} <ArrowRightLeft size={10}/></button></div>{currency === "HKD" && editCost && <p className="text-[9px] text-gray-400 text-right mt-1">≈ ¥{Math.round(Number(editCost)/rate).toLocaleString()}</p>}</div>
                   <div><label className="text-xs text-gray-400">備註</label><textarea value={editNote} onChange={e=>setEditNote(e.target.value)} className="w-full h-20 border border-gray-200 p-2 text-sm rounded-lg"/></div>
                </div>
            ) : (
-               // 檢視模式
+               // === 檢視模式 ===
                <>
                  <div className="flex justify-between items-start mb-6">
                     <div>
@@ -155,13 +146,11 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                         <span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span>
                         <span>{activity.time}</span>
                       </div>
+                      {/* 顯示是否有地址/座標 */}
                       {activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}
                     </div>
-                    <button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}>
-                      <CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}
-                    </button>
+                    <button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button>
                  </div>
-                 {/* ... 其他檢視內容保持不變 ... */}
                  {activity.cost > 0 && <div className="mb-6"><span className="text-xl font-bold font-mono">¥{activity.cost.toLocaleString()}</span></div>}
                  {activity.note && <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100"><p className="text-sm text-gray-600 leading-relaxed">{activity.note}</p></div>}
                  <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
