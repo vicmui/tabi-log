@@ -1,7 +1,7 @@
 "use client";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Activity, useTripStore } from "@/store/useTripStore";
-import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, AlignLeft, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, AlignLeft, Map, Trash2, CheckCircle2, Circle } from "lucide-react";
 import clsx from "clsx";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 
@@ -16,8 +16,7 @@ const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg:
 
 interface Props { dayIndex: number; activities: Activity[]; tripId: string; onActivityClick: (id: string) => void; }
 
-// 🔥 修正版 SwipableItem，確保預設可見
-const SwipableItem = ({ activity, tripId, dayIndex, onActivityClick, provided }: any) => {
+const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, provided }: any) => {
   const { deleteActivity } = useTripStore();
   const x = useMotionValue(0);
   const bgOpacity = useTransform(x, [-100, 0], [1, 0]);
@@ -34,19 +33,12 @@ const SwipableItem = ({ activity, tripId, dayIndex, onActivityClick, provided }:
 
   return (
     <div className="relative overflow-hidden rounded-xl mb-3" ref={provided.innerRef} {...provided.draggableProps}>
-      <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl">
-        <Trash2 className="text-white" size={20} />
-      </motion.div>
+      <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl"><Trash2 className="text-white" size={20} /></motion.div>
 
       <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={{ left: 0.6, right: 0 }}
-        onDragEnd={handleDragEnd}
-        style={{ x }} // 只綁定 x 軸，不再影響 opacity
+        drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }}
         className="bg-white relative z-10 rounded-xl shadow-sm border border-gray-200"
-        {...provided.dragHandleProps}
-        onClick={() => onActivityClick(activity.id)}
+        {...provided.dragHandleProps} onClick={() => onActivityClick(activity.id)}
       >
         <div className="flex items-start gap-4 p-4 cursor-pointer">
             <div className="flex flex-col items-center gap-2 min-w-[50px] pt-1">
@@ -60,15 +52,16 @@ const SwipableItem = ({ activity, tripId, dayIndex, onActivityClick, provided }:
                 <h4 className={clsx("text-sm font-bold tracking-wide leading-tight", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
                 {activity.cost > 0 && <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap ml-2">¥ {activity.cost.toLocaleString()}</span>}
               </div>
+              
               <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
                   {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
+                  
+                  {/* 🔥 新增：顯示有無地址 */}
+                  {activity.address && <span className="text-[9px] flex items-center gap-0.5 text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-sm"><MapPin size={8}/> Map</span>}
               </div>
-              {activity.note && (
-                  <div className="flex items-start gap-1 text-gray-500 mt-1">
-                    <AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p>
-                  </div>
-              )}
+              
+              {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
             </div>
         </div>
       </motion.div>
@@ -78,41 +71,17 @@ const SwipableItem = ({ activity, tripId, dayIndex, onActivityClick, provided }:
 
 export default function ItineraryList({ dayIndex, activities, tripId, onActivityClick }: Props) {
   const { updateActivityOrder } = useTripStore();
+  const onDragEnd = (result: DropResult) => { if (!result.destination) return; const items = Array.from(activities); const [reorderedItem] = items.splice(result.source.index, 1); items.splice(result.destination.index, 0, reorderedItem); updateActivityOrder(tripId, dayIndex, items); };
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const items = Array.from(activities);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    updateActivityOrder(tripId, dayIndex, items);
-  };
-
-  if (!activities || activities.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
-         <div className="text-6xl mb-4 grayscale">🐈🌸</div> 
-         <p className="text-sm font-bold text-gray-400 tracking-widest uppercase">今日暫無行程</p>
-         <p className="text-[10px] text-gray-300 mt-1">按 &quot;+&quot; 開始規劃冒險</p>
-      </div>
-    );
-  }
+  if (!activities || activities.length === 0) return (<div className="flex flex-col items-center justify-center py-20 text-center opacity-60"><div className="text-6xl mb-4 grayscale">🐈🌸</div><p className="text-sm font-bold text-gray-400 tracking-widest uppercase">今日暫無行程</p><p className="text-[10px] text-gray-300 mt-1">按右下角 &quot;+&quot; 開始規劃冒險</p></div>);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId={`day-${dayIndex}`}>
         {(provided) => (
-          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-0 relative pl-4 py-2" id="itinerary-capture-area">
+          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-0 relative pl-4 py-2">
             <div className="absolute left-[28px] top-4 bottom-4 w-[2px] bg-gray-100" />
-            {activities.map((activity, index) => (
-              <Draggable key={activity.id} draggableId={activity.id} index={index}>
-                {(provided) => (
-                  <SwipableItem 
-                    activity={activity} index={index} tripId={tripId} dayIndex={dayIndex} 
-                    onActivityClick={onActivityClick} provided={provided} 
-                  />
-                )}
-              </Draggable>
-            ))}
+            {activities.map((activity, index) => (<Draggable key={activity.id} draggableId={activity.id} index={index}>{(provided) => (<SwipableItem activity={activity} index={index} tripId={tripId} dayIndex={dayIndex} onActivityClick={onActivityClick} provided={provided} />)}</Draggable>))}
             {provided.placeholder}
           </div>
         )}
