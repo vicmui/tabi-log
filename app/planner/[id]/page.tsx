@@ -4,9 +4,10 @@ import Sidebar from "@/components/layout/Sidebar";
 import ItineraryList from "@/components/planner/ItineraryList";
 import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
+import ShareItinerary from "@/components/planner/ShareItinerary";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation, CloudSun, CloudRain, Sun, Cloud, Snowflake } from "lucide-react"; // 加入天氣 Icons
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation, Sun, Cloud, CloudSun, CloudRain, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -14,7 +15,7 @@ import clsx from "clsx";
 import EditTripModal from "@/components/dashboard/EditTripModal";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
-import { format, parseISO } from 'date-fns'; // 🔥 引入日期格式化工具
+import { format, parseISO, differenceInDays } from 'date-fns';
 
 export default function PlannerPage() {
   const params = useParams();
@@ -28,7 +29,7 @@ export default function PlannerPage() {
   const [editStartDate, setEditStartDate] = useState("");
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   
-  // 🔥 天氣狀態：儲存每日溫度同天氣代碼
+  // 天氣狀態
   const [weatherMap, setWeatherMap] = useState<Record<string, { temp: string; code: number }>>({});
 
   useEffect(() => { setIsMounted(true); }, []);
@@ -37,33 +38,33 @@ export default function PlannerPage() {
   useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
   useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) { setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); } }, [trip, activeDay]);
 
-  // 🔥 Fetch All Weather Data
+  // 🔥 獲取天氣資料邏輯
   useEffect(() => {
     const fetchAllWeather = async () => {
         if (!trip || trip.dailyItinerary.length === 0) return;
 
-        const startDate = trip.dailyItinerary[0].date;
-        const endDate = trip.dailyItinerary[trip.dailyItinerary.length - 1].date;
-        const lat = trip.dailyItinerary[0].activities.find(a=>a.lat)?.lat || 34.69;
-        const lng = trip.dailyItinerary[0].activities.find(a=>a.lng)?.lng || 135.50;
+        const startDateStr = trip.dailyItinerary[0].date;
+        const endDateStr = trip.dailyItinerary[trip.dailyItinerary.length - 1].date;
+        const daysUntilTrip = differenceInDays(parseISO(startDateStr), new Date());
 
-        if(!startDate || !endDate) return;
+        // 如果行程太遠 (超過14日)，就唔 Call API
+        if (daysUntilTrip > 14) return;
 
+        const lat = 34.69; const lng = 135.50; // 預設大阪
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${startDate}&end_date=${endDate}`);
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${startDateStr}&end_date=${endDateStr}`);
             const data = await res.json();
-
             if (data.daily && data.daily.time) {
-                const newWeatherMap: Record<string, { temp: string; code: number }> = {};
-                data.daily.time.forEach((dateStr: string, index: number) => {
-                    newWeatherMap[dateStr] = {
-                        temp: `${Math.round(data.daily.temperature_2m_min[index])}° / ${Math.round(data.daily.temperature_2m_max[index])}°`,
-                        code: data.daily.weather_code[index]
+                const newMap: Record<string, { temp: string; code: number }> = {};
+                data.daily.time.forEach((d: string, i: number) => {
+                    newMap[d] = {
+                        temp: `${Math.round(data.daily.temperature_2m_min[i])}°/${Math.round(data.daily.temperature_2m_max[i])}°`,
+                        code: data.daily.weather_code[i]
                     };
                 });
-                setWeatherMap(newWeatherMap);
+                setWeatherMap(newMap);
             }
-        } catch (e) { console.error("Weather API error", e); }
+        } catch (e) { console.error(e); }
     };
     fetchAllWeather();
   }, [trip]);
@@ -76,25 +77,39 @@ export default function PlannerPage() {
   const handleAddActivity = (data: any) => { addActivity(trip.id, activeDay, data); setIsModalOpen(false); };
   const handleDeleteDay = () => { if (trip.dailyItinerary.length <= 1) { alert("最少保留一天！"); return; } if (confirm(`確定刪除 Day ${activeDay + 1}?`)) { deleteDayFromTrip(trip.id, activeDay); } };
   const handleSaveSettings = () => { updateTripSettings(trip.id, editTitle, editStartDate, trip.coverImage || ""); setIsSettingsOpen(false); };
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; const filePath = `public/${trip.id}/day-covers/${activeDay}-${uuidv4()}`; const { error } = await supabase.storage.from('trip_files').upload(filePath, file); if (!error) { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); updateDayCoverImage(trip.id, activeDay, publicUrl); } };
-  const handleOpenDayRoute = () => { if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個有地址的地點"); return; } const acts = currentDailyItinerary.activities.filter(a => (a.lat && a.lng) || a.address); if (acts.length < 2) { alert("地點資料不足"); return; } const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location); const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location); const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|'); window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank'); };
   
-  // 🔥 天氣代碼轉 Icon
-  const getWeatherIcon = (code: number) => {
-    if (code <= 1) return <Sun size={12}/>;
-    if (code <= 3) return <CloudSun size={12}/>;
-    if (code > 3 && code < 51) return <Cloud size={12}/>;
-    if (code >= 51 && code < 71) return <CloudRain size={12}/>;
-    if (code >= 71) return <Snowflake size={12}/>;
-    return <Cloud size={12}/>;
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]; if (!file) return;
+      const filePath = `public/${trip.id}/day-covers/${activeDay}-${uuidv4()}`;
+      const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
+      if (!error) { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); updateDayCoverImage(trip.id, activeDay, publicUrl); }
   };
-  
+
+  const handleOpenDayRoute = () => {
+    if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點"); return; }
+    const acts = currentDailyItinerary.activities.filter(a => a.address || a.location);
+    const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location);
+    const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location);
+    const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|');
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank');
+  };
+
+  // 🔥 天氣 Icon 判斷
+  const WeatherIcon = ({ code }: { code?: number }) => {
+      if (code === undefined) return <Sun size={12} className="text-gray-300" />;
+      if (code <= 1) return <Sun size={12} className="text-orange-400" />;
+      if (code <= 3) return <CloudSun size={12} className="text-gray-400" />;
+      if (code >= 51 && code <= 67) return <CloudRain size={12} className="text-blue-400" />;
+      return <Cloud size={12} className="text-gray-400" />;
+  };
+
   return (
     <div className="flex h-screen bg-white font-sans text-jp-black overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative">
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-30"><Link href="/" className="text-gray-400"><ArrowLeft size={20}/></Link><button onClick={()=>setIsSettingsOpen(true)} className="text-sm font-medium tracking-wide truncate w-2/3 text-center flex items-center justify-center gap-2">{trip.title} <Settings size={12} className="text-gray-300"/></button><div className="w-5" /></div>
 
+        {/* Desktop Sidebar */}
         <div className="hidden md:flex w-64 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col shrink-0 z-20 pt-10">
           <div className="px-8 pb-8 border-b border-gray-50 sticky top-0 bg-white z-10">
             <Link href="/" className="flex items-center gap-2 text-[10px] text-gray-300 hover:text-black mb-6 transition-colors tracking-widest uppercase"><ArrowLeft size={10}/> Back</Link>
@@ -102,39 +117,39 @@ export default function PlannerPage() {
           </div>
           <div className="flex-1 py-4">
             {trip.dailyItinerary.map((dayItem, index) => {
-                const weatherInfo = weatherMap[dayItem.date];
-                return (
-                  <button key={dayItem.day} onClick={() => setActiveDay(index)} className={`w-full text-left py-4 px-8 transition-all duration-300 group relative ${activeDay === index ? "bg-gray-50" : "hover:bg-gray-50"}`}>
-                    <div className="flex justify-between items-center relative z-10">
-                        <span className={clsx("text-xs tracking-[0.2em] uppercase", activeDay === index ? "font-medium text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span>
-                        {/* 🔥 顯示星期幾 */}
-                        <span className="text-[9px] text-gray-400 font-light tracking-widest">{format(parseISO(dayItem.date), 'EEE')}</span>
-                    </div>
-                    <div className="text-[9px] mt-1 text-gray-300 font-light tracking-widest">{dayItem.date}</div>
-                    {/* 🔥 顯示天氣同溫度 */}
-                    {weatherInfo && (
-                        <div className="mt-2 flex items-center gap-4 text-[9px] text-gray-400 font-medium tracking-wider">
-                           <div className="flex items-center gap-1">{getWeatherIcon(weatherInfo.code)} Weather</div>
-                           <div className="flex items-center gap-1"><Thermometer size={12}/> {weatherInfo.temp}</div>
-                        </div>
-                    )}
-                    {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-black" />}
-                  </button>
-                )
+              const info = weatherMap[dayItem.date];
+              const dayName = format(parseISO(dayItem.date), 'EEE');
+              return (
+                <button key={dayItem.day} onClick={() => setActiveDay(index)} className={`w-full text-left py-4 px-8 transition-all duration-300 group relative ${activeDay === index ? "bg-gray-50" : "hover:bg-gray-50"}`}>
+                  <div className="flex justify-between items-center relative z-10">
+                    <span className={clsx("text-xs tracking-[0.2em] uppercase", activeDay === index ? "font-bold text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span>
+                    <span className="text-[10px] text-gray-400 font-medium uppercase">{dayName}</span>
+                  </div>
+                  <div className="text-[9px] mt-1 text-gray-300 font-light tracking-widest">{dayItem.date}</div>
+                  
+                  {/* 🔥 顯示天氣與溫度 */}
+                  <div className="mt-2 flex items-center gap-3">
+                     <WeatherIcon code={info?.code} />
+                     <span className="text-[9px] text-gray-400 font-medium tracking-tighter">
+                         {info ? info.temp : "15° / 25°"}
+                     </span>
+                  </div>
+
+                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-black" />}
+                </button>
+              )
             })}
             <button onClick={() => addDayToTrip(trip.id)} className="w-full py-6 text-[10px] text-gray-300 hover:text-black flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-colors"><Plus size={12}/> Add Day</button>
           </div>
         </div>
 
-        {/* ... Mobile Day Selector (保持不變) ... */}
         <div className="md:hidden w-full bg-white border-b border-gray-100 z-20 shadow-sm shrink-0">
            <div className="flex overflow-x-auto snap-x no-scrollbar py-3 px-4 gap-3 items-center">
               {trip.dailyItinerary.map((dayItem, index) => (<button key={dayItem.day} onClick={() => setActiveDay(index)} className={clsx("flex-shrink-0 snap-start flex flex-col items-center justify-center w-14 h-14 border transition-all duration-200", activeDay === index ? "bg-black text-white border-black" : "bg-white text-gray-400 border-gray-200")}><span className="text-[9px] font-light uppercase tracking-wider">Day</span><span className="text-lg font-light leading-none">{dayItem.day}</span></button>))}
               <button onClick={() => addDayToTrip(trip.id)} className="flex-shrink-0 flex flex-col items-center justify-center w-10 h-14 border border-dashed border-gray-300 text-gray-400"><Plus size={16}/></button>
            </div>
         </div>
-        
-        {/* ... 右側內容區塊 (保持不變) ... */}
+
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full"> 
           <div className="h-40 md:h-72 relative w-full shrink-0 group">
             <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
@@ -154,7 +169,7 @@ export default function PlannerPage() {
 
           <div className="px-4 md:px-16 py-8 max-w-5xl mx-auto min-h-[500px] pb-32">
             <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-10 pt-2">
-               <div className="flex items-center gap-4"><span className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">行程</span><button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 transition-colors"><CalendarX size={14} /></button></div>
+               <div className="flex items-center gap-4"><span className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">行程</span><button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 transition-colors" title="Delete"><CalendarX size={14} /></button></div>
                <div className="flex gap-3 w-full md:w-auto overflow-x-auto no-scrollbar justify-end">
                   <button onClick={handleOpenDayRoute} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black hover:text-black transition-colors bg-white uppercase rounded-lg"><Navigation size={12} /> 全日路線</button>
                   <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black hover:text-black transition-colors bg-white uppercase rounded-lg">{viewMode === 'list' ? <><MapIcon size={12} /> 地圖總覽</> : <><ListIcon size={12} /> 行程列表</>}</button>
