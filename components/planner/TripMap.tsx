@@ -55,7 +55,9 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
     }
   }, [markers]);
 
-  const onLoad = useCallback((map: google.maps.Map) => { mapRef.current = map; }, []);
+  const onLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden shadow-sm border border-gray-200 bg-gray-50 relative">
