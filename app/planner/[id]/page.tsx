@@ -37,7 +37,6 @@ export default function PlannerPage() {
   useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
   useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) { setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); } }, [trip, activeDay]);
 
-  // 天氣資料 Fetching
   useEffect(() => {
     const fetchWeather = async () => {
         if (!trip || trip.dailyItinerary.length === 0) return;
@@ -100,12 +99,10 @@ export default function PlannerPage() {
 
   return (
     <div className="flex h-screen bg-white font-sans text-[#333333] overflow-hidden">
-      {/* 1. 全局 Sidebar (Desktop 固定) */}
       <Sidebar />
-
       <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative overflow-hidden">
         
-        {/* ==================== 手機版 Header ==================== */}
+        {/* 手機版 Header */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
            <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-400"/></Link>
            <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
@@ -129,7 +126,8 @@ export default function PlannerPage() {
               return (
                 <button key={dayItem.day} onClick={() => setActiveDay(index)} className={`w-full text-left py-6 px-8 transition-all duration-300 group relative border-b border-gray-50 last:border-0 ${activeDay === index ? "bg-gray-50" : "hover:bg-gray-50"}`}>
                   <div className="flex justify-between items-center relative z-10">
-                    <span className={clsx("text-xs tracking-[0.15em] uppercase", activeDay === index ? "font-bold text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span>
+                    {/* 🔥 修正：減低 Bold 度為 font-semibold */}
+                    <span className={clsx("text-xs tracking-[0.15em] uppercase", activeDay === index ? "font-semibold text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span>
                     <span className="text-[9px] text-gray-400 font-medium uppercase">{format(parseISO(dayItem.date), 'EEE')}</span>
                   </div>
                   <div className="text-[9px] mt-1 text-gray-300 font-light">{dayItem.date}</div>
@@ -156,7 +154,8 @@ export default function PlannerPage() {
                      activeDay === index ? "bg-black text-white border-black shadow-lg scale-105" : "bg-white text-gray-400 border-gray-100"
                    )}>
                       <span className="text-[9px] font-bold uppercase tracking-widest">{format(parseISO(dayItem.date), 'EEE')}</span>
-                      <span className="text-xl font-bold leading-none my-1">{dayItem.day}</span>
+                      {/* 🔥 修正：減低 Bold 度為 font-semibold */}
+                      <span className="text-xl font-semibold leading-none my-1">{dayItem.day}</span>
                       <span className="text-[8px] font-medium opacity-60">{info ? info.temp : "15°/25°"}</span>
                    </button>
                  )
@@ -165,15 +164,14 @@ export default function PlannerPage() {
            </div>
         </div>
 
-        {/* ==================== 右側主要內容區 (行程/地圖) ==================== */}
+        {/* ==================== 主要內容區 ==================== */}
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full no-scrollbar pb-32"> 
-          
-          {/* Header Cover */}
           <div className="h-44 md:h-80 relative w-full shrink-0 group">
             <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
             <div className="absolute inset-0 bg-black/10" /><div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 px-6 md:px-12 pb-6 pt-20 text-black">
-               <h3 className="text-4xl md:text-8xl font-black tracking-tighter uppercase leading-none">Day {activeDay + 1}</h3>
+            <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20 text-black">
+               {/* 🔥 修正：減低中央標題 Bold 度為 font-semibold，並微調字距 */}
+               <h3 className="text-4xl md:text-8xl font-semibold tracking-tighter uppercase leading-none">Day {activeDay + 1}</h3>
                <div className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/80 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-sm">
                   <MapPin size={10} /><span>{displayLocation}</span>
                   <span className="w-px h-3 bg-gray-300"></span>
@@ -183,43 +181,27 @@ export default function PlannerPage() {
             <label className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
           </div>
 
-          {/* 內容區塊 */}
           <div className="px-4 md:px-12 py-6 max-w-5xl mx-auto min-h-[500px]">
-            
-            {/* Action Bar (Sticky) */}
             <div className="mb-8 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-30 pt-2">
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                      <span className="text-[11px] font-bold tracking-[0.2em] text-black uppercase">行程規劃 Itinerary</span>
+                      <span className="text-[11px] font-bold tracking-[0.2em] text-black uppercase">行程規劃</span>
                       <button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 p-1"><CalendarX size={16} /></button>
                   </div>
-                  
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar">
-                      <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2 rounded-xl bg-white uppercase hover:border-black transition-colors whitespace-nowrap px-4">
-                        <Share size={14} /> 分享
-                      </button>
-                      <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2 rounded-xl bg-white uppercase hover:border-black transition-colors whitespace-nowrap px-4">
-                        <Navigation size={14} /> 路線
-                      </button>
-                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2 rounded-xl bg-white uppercase hover:border-black transition-colors whitespace-nowrap px-4">
-                        {viewMode === 'list' ? <><MapIcon size={14} /> 地圖</> : <><ListIcon size={14} /> 列表</>}
-                      </button>
-                      {/* Desktop Only Add Button */}
-                      <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest bg-black text-white px-5 py-2 hover:bg-gray-800 transition-colors shadow-lg uppercase rounded-xl font-bold">
-                        <Plus size={12} /> 新增活動
-                      </button>
+                      <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2 rounded-xl bg-white uppercase hover:border-black transition-colors whitespace-nowrap px-4"><Share size={14} /> 分享</button>
+                      <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2 rounded-xl bg-white uppercase hover:border-black transition-colors whitespace-nowrap px-4"><Navigation size={14} /> 路線</button>
+                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2 rounded-xl bg-white uppercase hover:border-black transition-colors whitespace-nowrap px-4">{viewMode === 'list' ? <><MapIcon size={14} /> 地圖</> : <><ListIcon size={14} /> 列表</>}</button>
+                      <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest bg-black text-white px-5 py-2 hover:bg-gray-800 transition-colors shadow-lg uppercase rounded-xl font-bold"><Plus size={12} /> 新增活動</button>
                   </div>
                </div>
             </div>
 
-            {/* List / Map View */}
             <div className="w-full">
                 {viewMode === 'list' ? (
-                    currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : <div className="text-center py-20 text-gray-300 text-[10px] uppercase">今日暫無行程安排</div>
+                    currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : <div className="text-center py-20 text-gray-300 text-[10px] uppercase tracking-widest">今日暫無行程安排</div>
                 ) : (
-                    <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50">
-                        <TripMap activities={currentDailyItinerary?.activities || []} />
-                    </div>
+                    <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
                 )}
             </div>
           </div>
