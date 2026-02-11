@@ -4,10 +4,9 @@ import Sidebar from "@/components/layout/Sidebar";
 import ItineraryList from "@/components/planner/ItineraryList";
 import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
-import ShareItinerary from "@/components/planner/ShareItinerary";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Share } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -35,7 +34,6 @@ export default function PlannerPage() {
   useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
   useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) { setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); } }, [trip, activeDay]);
 
-  // 天氣 API
   useEffect(() => {
     const fetchWeather = async () => {
         if (!trip) return;
@@ -75,11 +73,27 @@ export default function PlannerPage() {
       if (!error) { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); updateDayCoverImage(trip.id, activeDay, publicUrl); }
   };
 
-  // 🔥 複製分享連結功能
-  const handleCopyShareLink = () => {
-      const url = `${window.location.origin}/share/${trip.id}`;
-      navigator.clipboard.writeText(url);
-      alert("已複製分享連結！\n你可以傳送給朋友，他們只能查看不能編輯。");
+  // 🔥 升級版：一鍵連結全日景點 (Google Maps Route)
+  const handleOpenDayRoute = () => {
+    if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { 
+        alert("請至少安排兩個有地址的地點，才能規劃路線。"); 
+        return; 
+    }
+    
+    // 只選取有地址/座標的活動
+    const acts = currentDailyItinerary.activities.filter(a => (a.lat && a.lng) || a.address);
+    if (acts.length < 2) { 
+        alert("地點資料不足 (需有地址或座標)"); 
+        return; 
+    }
+
+    const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location);
+    const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location);
+    
+    // 中途點 (Waypoints)
+    const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|');
+    
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank');
   };
 
   return (
@@ -107,20 +121,11 @@ export default function PlannerPage() {
 
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full"> 
           <div className="h-40 md:h-72 relative w-full shrink-0 group">
-            <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-top" priority />
+            <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
             <div className="absolute inset-0 bg-black/10" /><div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
             <label className="absolute top-4 right-4 bg-white/80 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer hover:bg-white text-black"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
-            
             <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
-               <div className="animate-fade-in-up">
-                 <h3 className="text-5xl md:text-7xl font-bold tracking-wide text-black mb-2 uppercase drop-shadow-sm" style={{fontFamily: 'var(--font-inter)'}}>Day {activeDay + 1}</h3>
-                 <div className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold bg-white/80 backdrop-blur-sm w-fit px-3 py-1 rounded-full">
-                    <MapPin size={10} /><span>{displayLocation}</span>
-                    <span className="w-px h-3 bg-gray-400"></span>
-                    <Clock size={10} /><span>{currentDailyItinerary?.date}</span>
-                    {weatherData && <><span className="w-px h-3 bg-gray-400"></span><Thermometer size={10}/><span>{weatherData.temp}</span></>}
-                 </div>
-               </div>
+               <div className="animate-fade-in-up"><h3 className="text-5xl md:text-7xl font-bold tracking-wide text-black mb-2 uppercase drop-shadow-sm" style={{fontFamily: 'var(--font-inter)'}}>Day {activeDay + 1}</h3><div className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold bg-white/80 backdrop-blur-sm w-fit px-3 py-1 rounded-full"><MapPin size={10} /><span>{displayLocation}</span><span className="w-px h-3 bg-gray-400"></span><Clock size={10} /><span>{currentDailyItinerary?.date}</span>{weatherData && <><span className="w-px h-3 bg-gray-400"></span><Thermometer size={10}/><span>{weatherData.temp}</span></>}</div></div>
             </div>
           </div>
 
@@ -129,14 +134,11 @@ export default function PlannerPage() {
                <div className="flex items-center gap-4"><span className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">行程</span><button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 transition-colors"><CalendarX size={14} /></button></div>
                <div className="flex gap-3 w-full md:w-auto overflow-x-auto no-scrollbar justify-end">
                   
-                  {/* 🔥 Share Link */}
-                  <button onClick={handleCopyShareLink} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:border-black hover:text-black transition-colors bg-white uppercase">
-                    <Share size={12} /> 分享連結
+                  {/* 🔥 新增：全日路線導航按鈕 (Wanderlog 風格) */}
+                  <button onClick={handleOpenDayRoute} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black hover:text-black transition-colors bg-white uppercase rounded-lg">
+                    <Navigation size={12} /> 全日路線
                   </button>
 
-                  {/* Share Image */}
-                  {viewMode === 'list' && <ShareItinerary elementId="itinerary-capture-area" tripTitle={trip.title} day={`Day${activeDay+1}`} />}
-                  
                   <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black hover:text-black transition-colors bg-white uppercase rounded-lg">{viewMode === 'list' ? <><MapIcon size={12} /> 地圖總覽</> : <><ListIcon size={12} /> 行程列表</>}</button>
                   <button onClick={() => setIsModalOpen(true)} className="flex-none flex items-center gap-2 text-[10px] tracking-widest bg-black text-white px-5 py-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 uppercase rounded-lg"><Plus size={12} /> 新增</button>
                </div>
@@ -145,9 +147,7 @@ export default function PlannerPage() {
             {viewMode === 'list' ? (
                 currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : (<div className="text-center py-32 text-gray-300 text-[10px] tracking-[0.3em] uppercase font-light">No Activities</div>)
             ) : (
-                <div className="h-[60vh] md:h-[500px] w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <TripMap activities={currentDailyItinerary?.activities || []} />
-                </div>
+                <div className="h-[60vh] md:h-[500px] w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
             )}
           </div>
           
