@@ -36,8 +36,9 @@ export default function PlannerPage() {
   useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
   useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) { setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); } }, [trip, activeDay]);
 
+  // 天氣 API 獲取
   useEffect(() => {
-    const fetchWeather = async () => {
+    const fetchAllWeather = async () => {
         if (!trip || trip.dailyItinerary.length === 0) return;
         const startDate = trip.dailyItinerary[0].date;
         const endDate = trip.dailyItinerary[trip.dailyItinerary.length - 1].date;
@@ -54,7 +55,7 @@ export default function PlannerPage() {
             }
         } catch (e) {}
     };
-    fetchWeather();
+    fetchAllWeather();
   }, [trip]);
 
   if (!isMounted || !trip) return <div className="p-10 text-center animate-pulse">LOADING...</div>;
@@ -62,10 +63,55 @@ export default function PlannerPage() {
   const currentDailyItinerary = trip.dailyItinerary[activeDay];
   const displayLocation = currentDailyItinerary?.activities.length > 0 ? currentDailyItinerary.activities[0].location.split(' ')[0] : "自由探索";
 
+  // 🔥 補返定義：新增活動
+  const handleAddActivity = (data: any) => { 
+    addActivity(trip.id, activeDay, data); 
+    setIsModalOpen(false); 
+  };
+
+  // 🔥 補返定義：刪除當前日子 (之前就係漏咗呢段！)
+  const handleDeleteDay = () => { 
+    if (trip.dailyItinerary.length <= 1) { 
+        alert("最少保留一天！"); 
+        return; 
+    } 
+    if (confirm(`確定要刪除 Day ${activeDay + 1} 及其所有行程嗎？`)) {
+      deleteDayFromTrip(trip.id, activeDay); 
+    }
+  };
+
+  // 🔥 補返定義：儲存設定
+  const handleSaveSettings = () => { 
+    updateTripSettings(trip.id, editTitle, editStartDate, trip.coverImage || ""); 
+    setIsSettingsOpen(false); 
+  };
+
+  // 複製分享連結
   const handleCopyShareLink = () => {
     const url = `${window.location.origin}/share/${trip.id}`;
     navigator.clipboard.writeText(url);
     alert("已複製分享連結！你可以傳送給朋友，他們只能查看不能編輯。");
+  };
+
+  // 全日路線
+  const handleOpenDayRoute = () => {
+    if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點"); return; }
+    const acts = currentDailyItinerary.activities.filter(a => a.address || a.location);
+    const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location);
+    const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location);
+    const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|');
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank');
+  };
+
+  // 封面圖上傳
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const filePath = `public/${trip.id}/day-covers/${activeDay}-${uuidv4()}`;
+    const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
+    if (!error) { 
+        const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); 
+        updateDayCoverImage(trip.id, activeDay, publicUrl); 
+    }
   };
 
   const WeatherIcon = ({ code }: { code?: number }) => {
@@ -87,10 +133,10 @@ export default function PlannerPage() {
            <button onClick={handleCopyShareLink} className="text-gray-400"><Share size={20}/></button>
         </div>
 
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar (Day Selector) */}
         <div className="hidden md:flex w-64 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col shrink-0 z-20 pt-10">
           <div className="px-8 pb-8 border-b border-gray-50 sticky top-0 bg-white z-10">
-            <Link href="/" className="flex items-center gap-2 text-[10px] text-gray-300 hover:text-black mb-6 tracking-widest uppercase"><ArrowLeft size={10}/> Back</Link>
+            <Link href="/" className="flex items-center gap-2 text-[10px] text-gray-300 hover:text-black mb-6 transition-colors tracking-widest uppercase"><ArrowLeft size={10}/> Back</Link>
             <div className="group cursor-pointer" onClick={()=>setIsSettingsOpen(true)}>
                <h2 className="text-lg font-bold leading-snug mb-1 text-black tracking-tight">{trip.title}</h2>
                <p className="text-[9px] text-gray-400 tracking-[0.2em] uppercase">{trip.startDate}</p>
@@ -110,7 +156,7 @@ export default function PlannerPage() {
                      <WeatherIcon code={info?.code} />
                      <span>{info ? info.temp : "15°/25°"}</span>
                   </div>
-                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-black" />}
+                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-black" />}
                 </button>
               )
             })}
@@ -118,7 +164,7 @@ export default function PlannerPage() {
           </div>
         </div>
 
-        {/* 🔥 Mobile Day Selector: 加上星期同天氣 */}
+        {/* Mobile Day Selector */}
         <div className="md:hidden w-full bg-white border-b border-gray-100 z-20 shadow-sm shrink-0">
            <div className="flex overflow-x-auto snap-x no-scrollbar py-4 px-4 gap-3 items-center">
               {trip.dailyItinerary.map((dayItem, index) => {
@@ -141,7 +187,7 @@ export default function PlannerPage() {
            </div>
         </div>
 
-        {/* Content Area */}
+        {/* Main Content Area */}
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full"> 
           <div className="h-40 md:h-72 relative w-full shrink-0 group">
             <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
@@ -154,12 +200,17 @@ export default function PlannerPage() {
                   <Clock size={10} /><span>{currentDailyItinerary?.date}</span>
                </div>
             </div>
+            <label className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
           </div>
 
           <div className="px-4 md:px-16 py-8 max-w-5xl mx-auto min-h-[500px] pb-32">
             <div className="flex justify-between items-center mb-10 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-10 pt-2">
-               <div className="flex items-center gap-4"><span className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">Itinerary</span><button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 transition-colors"><CalendarX size={14} /></button></div>
+               <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-bold tracking-[0.2em] text-black uppercase">Itinerary</span>
+                  <button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 transition-colors"><CalendarX size={14} /></button>
+               </div>
                <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar justify-end">
+                  <button onClick={handleCopyShareLink} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black transition-colors bg-white uppercase rounded-lg"><Share size={12} /> Share</button>
                   <button onClick={handleOpenDayRoute} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black transition-colors bg-white uppercase rounded-lg"><Navigation size={12} /> Route</button>
                   <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-4 py-2 hover:border-black transition-colors bg-white uppercase rounded-lg">{viewMode === 'list' ? <><MapIcon size={12} /> Map</> : <><ListIcon size={12} /> List</>}</button>
                   <button onClick={() => setIsModalOpen(true)} className="flex-none flex items-center gap-2 text-[10px] tracking-widest bg-black text-white px-5 py-2 hover:bg-gray-800 transition-colors shadow-lg uppercase rounded-lg"><Plus size={12} /> Add</button>
@@ -173,6 +224,7 @@ export default function PlannerPage() {
           </div>
           <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} />
           {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
+          {isSettingsOpen && <EditTripModal trip={trip} onClose={()=>setIsSettingsOpen(false)} />}
         </div>
       </main>
     </div>
