@@ -31,11 +31,14 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
         updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
     };
 
+    // 嚴格檢查費用
     const costValue = Number(activity.cost);
     const hasCost = !isNaN(costValue) && costValue > 0;
 
     return (
         <div className="relative group ml-4">
+            
+            {/* 黑色數字波波 */}
             <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm shadow-md border-4 border-white z-20">
                 {index + 1}
             </div>
@@ -44,6 +47,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                 className="flex items-start gap-4 p-4 pl-6 cursor-pointer bg-white relative z-10 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow" 
                 onClick={() => !isReadOnly && onActivityClick && onActivityClick(activity.id)}
             >
+                {/* 左側 Icon & Time */}
                 <div className="flex flex-col items-center gap-2 min-w-[50px] pt-1">
                     <span className="text-[11px] font-mono text-gray-800 font-bold">{activity.time}</span>
                     <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-10", activity.isVisited ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-500")}>
@@ -51,10 +55,11 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                     </div>
                 </div>
 
+                {/* 右側內容 */}
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex justify-between items-start mb-1">
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
-                        {/* 顯示費用：只在 > 0 時顯示 */}
+                        {/* 費用顯示 */}
                         {hasCost && (
                             <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
                                 ¥ {costValue.toLocaleString()}
@@ -103,7 +108,10 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
   const { updateActivityOrder } = useTripStore();
   const onDragEnd = (result: DropResult) => { if (!result.destination) return; const items = Array.from(activities); const [reorderedItem] = items.splice(result.source.index, 1); items.splice(result.destination.index, 0, reorderedItem); updateActivityOrder(tripId, dayIndex, items); };
 
-  if (!activities || activities.length === 0) return (<div className="flex flex-col items-center justify-center py-20 text-center opacity-60"><div className="text-6xl mb-4 grayscale">🐈🌸</div><p className="text-sm font-bold text-gray-400 tracking-widest uppercase">今日暫無行程</p>{!isReadOnly && <p className="text-[10px] text-gray-300 mt-1">按右下角 &quot;+&quot; 開始規劃冒險</p>}</div>);
+  // 🔥 1. 強力過濾：確保沒有 null 值的活動
+  const validActivities = (activities || []).filter(a => !!a);
+
+  if (validActivities.length === 0) return (<div className="flex flex-col items-center justify-center py-20 text-center opacity-60"><div className="text-6xl mb-4 grayscale">🐈🌸</div><p className="text-sm font-bold text-gray-400 tracking-widest uppercase">今日暫無行程</p>{!isReadOnly && <p className="text-[10px] text-gray-300 mt-1">按右下角 &quot;+&quot; 開始規劃冒險</p>}</div>);
 
   return (
     <div className="relative">
@@ -113,20 +121,28 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-0 relative pl-2 py-2">
                     <div className="absolute left-[38px] top-4 bottom-4 w-[2px] bg-gray-100" />
-                    
-                    {/* 🔥 修正：加入 .filter(a => !!a) 過濾壞資料 */}
-                    {activities.filter(a => !!a).map((activity, index) => (
-                       <div key={activity.id} className="relative">
-                           <Draggable draggableId={activity.id} index={index}>
-                              {(provided) => (<SwipableItem activity={activity} index={index} tripId={tripId} dayIndex={dayIndex} onActivityClick={onActivityClick} provided={provided} />)}
-                           </Draggable>
-                           {index < activities.length - 1 && (
-                               <div className="pl-4">
-                                  <TravelStats origin={{ lat: Number(activities[index].lat), lng: Number(activities[index].lng) }} dest={{ lat: Number(activities[index+1].lat), lng: Number(activities[index+1].lng) }} />
-                               </div>
-                           )}
-                       </div>
-                    ))}
+                    {validActivities.map((activity, index) => {
+                       // 🔥 2. 安全檢查：確保 nextActivity 存在且兩者都有座標
+                       const nextActivity = validActivities[index + 1];
+                       const showTravelStats = nextActivity && 
+                                               typeof activity.lat === 'number' && typeof activity.lng === 'number' &&
+                                               typeof nextActivity.lat === 'number' && typeof nextActivity.lng === 'number';
+
+                       return (
+                           <div key={activity.id} className="relative">
+                               <Draggable draggableId={activity.id} index={index}>
+                                  {(provided) => (<SwipableItem activity={activity} index={index} tripId={tripId} dayIndex={dayIndex} onActivityClick={onActivityClick} provided={provided} />)}
+                               </Draggable>
+                               
+                               {/* 🔥 3. 只有通過檢查才渲染 TravelStats */}
+                               {showTravelStats && (
+                                   <div className="pl-4">
+                                      <TravelStats origin={{ lat: activity.lat!, lng: activity.lng! }} dest={{ lat: nextActivity.lat!, lng: nextActivity.lng! }} />
+                                   </div>
+                               )}
+                           </div>
+                       );
+                    })}
                     {provided.placeholder}
                   </div>
                 )}
@@ -135,16 +151,23 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
         ) : (
             <div className="space-y-0 pl-2">
                  <div className="absolute left-[38px] top-4 bottom-4 w-[2px] bg-gray-100" />
-                {activities.filter(a => !!a).map((activity, index) => (
-                   <div key={activity.id} className="relative mb-0">
-                       <ItemContent activity={activity} isReadOnly={true} config={TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other} tripId={tripId} dayIndex={dayIndex} index={index} />
-                       {index < activities.length - 1 && (
-                           <div className="pl-4">
-                               <TravelStats origin={{ lat: Number(activities[index].lat), lng: Number(activities[index].lng) }} dest={{ lat: Number(activities[index+1].lat), lng: Number(activities[index+1].lng) }} />
-                           </div>
-                       )}
-                   </div>
-                ))}
+                {validActivities.map((activity, index) => {
+                   const nextActivity = validActivities[index + 1];
+                   const showTravelStats = nextActivity && 
+                                           typeof activity.lat === 'number' && typeof activity.lng === 'number' &&
+                                           typeof nextActivity.lat === 'number' && typeof nextActivity.lng === 'number';
+
+                   return (
+                       <div key={activity.id} className="relative mb-0">
+                           <ItemContent activity={activity} isReadOnly={true} config={TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other} tripId={tripId} dayIndex={dayIndex} index={index} />
+                           {showTravelStats && (
+                               <div className="pl-4">
+                                   <TravelStats origin={{ lat: activity.lat!, lng: activity.lng! }} dest={{ lat: nextActivity.lat!, lng: nextActivity.lng! }} />
+                               </div>
+                           )}
+                       </div>
+                   )
+                })}
             </div>
         )}
     </div>
