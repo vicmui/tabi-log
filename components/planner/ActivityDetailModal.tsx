@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+// 🔥 修復：補回 AnimatePresence
+import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle, Star, Image as ImageIcon, Edit, Trash2, Camera, ArrowRightLeft, MapPin } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
@@ -16,6 +17,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
 
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit Fields
   const [editLocation, setEditLocation] = useState(activity?.location || "");
   const [editType, setEditType] = useState(activity?.type || "Food");
   const [editTime, setEditTime] = useState(activity?.time || "");
@@ -24,7 +27,9 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [editLat, setEditLat] = useState(activity?.lat);
   const [editLng, setEditLng] = useState(activity?.lng);
   
+  // Google Search Data
   const [apiKey, setApiKey] = useState("");
+
   const [comment, setComment] = useState(activity?.comment || "");
   const [rating, setRating] = useState(activity?.rating || 0);
   const [photos, setPhotos] = useState<string[]>(activity?.photos || []);
@@ -36,7 +41,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
 
   const handleSave = () => {
     if (isEditing) {
-      // 🔥 這裡不再更新 cost，保持為 0 (或原本數值)
       updateActivity(tripId, dayIndex, activityId, { 
           location: editLocation, type: editType, time: editTime, 
           note: editNote, address: editAddress, 
@@ -83,8 +87,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         
         <div className="p-8 overflow-y-auto">
            {isEditing ? (
+               // === 編輯模式 ===
                <div className="space-y-5">
                   <div><label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label><input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} /></div>
+
                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                       <label className="text-[10px] text-blue-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map</label>
                       {apiKey ? (
@@ -99,7 +105,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                                        const { lat, lng } = await getLatLng(results[0]); 
                                        setEditLat(lat); setEditLng(lng); 
                                        if(!editLocation) setEditLocation(val.label.split(',')[0]);
-                                   } catch(e) { alert("無法獲取座標"); }
+                                   } catch(e) { alert("無法獲取座標，請檢查 API Key。"); }
                                }, 
                                styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
                            }} />
@@ -107,11 +113,13 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                       ) : <p className="text-xs text-red-500">API Key Missing</p>}
                       <div className="flex items-center gap-2 mt-2"><span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-500")}/> <span className="text-[10px] text-gray-500">{editLat && editLng ? `座標鎖定` : "未有座標"}</span></div>
                   </div>
+
                   <div className="flex gap-4"><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">時間</label><input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} /></div><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">類別</label><select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>{TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}</select></div></div>
-                  {/* 🔥 已移除費用編輯欄位 */}
+                  {/* 🔥 已移除費用編輯 */}
                   <div><label className="text-xs text-gray-400 uppercase tracking-widest">備註</label><textarea value={editNote} onChange={e=>setEditNote(e.target.value)} className="w-full h-20 border border-gray-200 p-2 text-sm rounded-lg"/></div>
                </div>
            ) : (
+               // === 檢視模式 ===
                <>
                  <div className="flex justify-between items-start mb-6"><div><h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2><div className="flex items-center gap-2 text-xs text-gray-500"><span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span><span>{activity.time}</span></div>{activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}</div><button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button></div>
                  {/* 🔥 已移除費用顯示 */}
@@ -129,6 +137,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         </div>
       </motion.div>
 
+      {/* Lightbox */}
       <AnimatePresence>
         {expandedImg && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExpandedImg(null)} className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
