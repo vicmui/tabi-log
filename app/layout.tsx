@@ -1,28 +1,27 @@
 "use client";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import MobileNav from "@/components/layout/MobileNav";
 import { useTripStore } from "@/store/useTripStore";
 import { supabase } from "@/lib/supabase";
 import "./globals.css";
-import { useJsApiLoader } from "@react-google-maps/api";
+import { useJsApiLoader, Libraries } from "@react-google-maps/api";
 import { differenceInDays, parseISO } from 'date-fns';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], weight: ["300", "400", "500", "700"], variable: "--font-noto-sans" });
 
-// 🔥 關鍵修正：這是唯一的標準清單，其他檔案必須跟這個一模一樣！
-const LIBRARIES: ("places" | "marker" | "geometry" | "routes")[] = ["places", "marker", "geometry", "routes"];
+// 🔥 關鍵修正：定義在外面，確保參照地址一致
+const LIBRARIES: Libraries = ["places", "marker", "geometry", "routes"];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { loadTripsFromCloud, isSyncing, trips, activeTripId, updateTrip } = useTripStore();
   
-  // 載入 Google Maps (這是全站第一次載入)
+  // 🔥 修正：移除了 language 設定，避免與預設衝突
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
-    libraries: LIBRARIES, // 使用標準清單
-    language: 'zh-HK',    // 強制中文地圖 (可選)
+    libraries: LIBRARIES,
   });
 
   useEffect(() => { loadTripsFromCloud(); }, [loadTripsFromCloud]);
@@ -77,7 +76,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans bg-white text-[#333333] antialiased font-light`}>
         {isSyncing && <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />}
         {loadError && <div className="p-4 text-center bg-red-500 text-white text-xs">Map Error: Check API Key</div>}
-        {isLoaded ? <div className="pb-24 md:pb-0">{children}</div> : <div className="p-10 text-center animate-pulse text-xs tracking-widest text-gray-400">LOADING MAPS...</div>}
+        
+        {/* 確保地圖載入後才顯示內容，防止閃爍 */}
+        {isLoaded ? <div className="pb-24 md:pb-0">{children}</div> : <div className="p-10 text-center animate-pulse text-xs tracking-widest text-gray-400">LOADING...</div>}
+        
         <MobileNav />
       </body>
     </html>

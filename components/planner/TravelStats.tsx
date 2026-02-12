@@ -1,15 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useJsApiLoader, Libraries } from '@react-google-maps/api';
 import { Car, Footprints, TrainFront, Loader2 } from "lucide-react";
 import clsx from "clsx";
 
-interface Props { origin: { lat: number; lng: number }; dest: { lat: number; lng: number }; }
+interface Props {
+  origin: { lat: number; lng: number };
+  dest: { lat: number; lng: number };
+}
+
 type TravelMode = "WALKING" | "TRANSIT" | "DRIVING";
 const MODE_CONFIG: Record<TravelMode, { icon: any }> = { WALKING: { icon: Footprints }, TRANSIT: { icon: TrainFront }, DRIVING: { icon: Car } };
 
-// 🔥 關鍵修正：與 layout.tsx 一致
-const LIBRARIES: ("places" | "marker" | "geometry" | "routes")[] = ["places", "marker", "geometry", "routes"];
+// 🔥 關鍵修正：必須與 layout.tsx 一致
+const LIBRARIES: Libraries = ["places", "marker", "geometry", "routes"];
 
 export default function TravelStats({ origin, dest }: Props) {
   const { isLoaded } = useJsApiLoader({
