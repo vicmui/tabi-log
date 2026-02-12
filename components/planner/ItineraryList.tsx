@@ -17,7 +17,6 @@ const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg:
 
 interface Props { dayIndex: number; activities: Activity[]; tripId: string; onActivityClick: (id: string) => void; isReadOnly?: boolean; }
 
-// 🔥 修正：加入 tripId 和 dayIndex 到 props
 const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tripId, dayIndex }: any) => {
     const { updateActivity } = useTripStore();
     
@@ -27,14 +26,13 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=transit`, '_blank');
     };
 
-    // 🔥 修正：打卡功能現在有足夠參數運作
+    // 保留打卡功能
     const toggleCheck = (e: React.MouseEvent) => {
         e.stopPropagation();
         updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
     };
 
-    const costValue = Number(activity.cost);
-    const hasCost = !isNaN(costValue) && costValue > 0;
+    // 🔥 已徹底刪除 cost 相關邏輯
 
     return (
         <div className="relative group ml-4">
@@ -60,18 +58,14 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex justify-between items-start mb-1">
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
-                        {/* 費用 > 0 才顯示 */}
-                        {hasCost && (
-                            <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                                ¥ {costValue.toLocaleString()}
-                            </span>
-                        )}
+                        {/* 🔥 這裡絕對不會再顯示價錢 */}
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                         {/* 類別標籤 */}
                         <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
-                        {/* 評分 */}
+                        
+                        {/* 評分星星 */}
                         {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
                     </div>
                     
@@ -103,7 +97,7 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
     <div className="relative overflow-visible" ref={provided.innerRef} {...provided.draggableProps}>
       <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl my-1"><Trash2 className="text-white" size={20} /></motion.div>
       <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="relative z-10 group" {...provided.dragHandleProps}>
-          {/* 🔥 傳遞 tripId, dayIndex */}
+          {/* 傳遞所有必要參數 */}
           <ItemContent activity={activity} onActivityClick={onActivityClick} isReadOnly={false} config={config} tripId={tripId} dayIndex={dayIndex} index={index} />
       </motion.div>
     </div>
