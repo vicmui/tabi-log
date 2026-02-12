@@ -6,7 +6,6 @@ import clsx from "clsx";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import TravelStats from "./TravelStats";
 
-// 保持原本的彩色設定
 const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg: string }> = {
   Food: { icon: Utensils, label: "美食", color: "text-orange-600", bg: "bg-orange-50" },
   Sightseeing: { icon: Camera, label: "景點", color: "text-blue-600", bg: "bg-blue-50" },
@@ -29,7 +28,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: a
 
     const toggleCheck = (e: React.MouseEvent) => {
         e.stopPropagation();
-        updateActivity(activity.id, { isVisited: !activity.isVisited });
+        updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
     };
 
     return (
@@ -56,23 +55,17 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: a
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex justify-between items-start mb-1">
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
-                        {/* 🔥 已移除費用顯示 */}
+                        {/* 🔥 徹底移除價錢顯示 */}
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {/* 類別標籤 */}
                         <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
-                        
-                        {/* 評分星星 */}
                         {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
-                        
-                        {/* 🔥 已移除 Map Tag */}
+                        {activity.address && <span className="text-[9px] text-gray-400 flex items-center gap-0.5 bg-gray-50 px-1 rounded"><MapPin size={8}/> Map</span>}
                     </div>
                     
-                    {/* 備註 */}
                     {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
                     
-                    {/* 操作按鈕 */}
                     <div className={clsx("flex gap-3 mt-3 pt-3 border-t border-gray-50 transition-opacity", isReadOnly ? "" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100")}>
                         <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
                         {!isReadOnly && (

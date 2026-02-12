@@ -14,15 +14,11 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
   const [customName, setCustomName] = useState("");
   const [googleAddress, setGoogleAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
-  const [cost, setCost] = useState(""); 
-  const [currency, setCurrency] = useState("JPY"); 
   const [note, setNote] = useState("");
   const [isGoogleMode, setIsGoogleMode] = useState(true);
   const [apiKey, setApiKey] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
-
-  const rate = 0.052; 
 
   useEffect(() => { const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY; if (key) setApiKey(key); else setIsGoogleMode(false); }, []);
 
@@ -31,19 +27,25 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
     const finalTitle = customName || googleAddress;
     if (!finalTitle) return;
     
-    let finalCost = Number(cost);
-    if (currency === "HKD") finalCost = Math.round(Number(cost) / rate);
-
     const finalNote = note ? note : addressDetail ? `📍 ${addressDetail}` : "";
 
-    // 🔥 Debug: 確認提交時有座標
     if (!lat || !lng) {
         if(isGoogleMode && apiKey) alert("⚠️ 警告：未能獲取此地點座標，地圖上將無法顯示。請嘗試重新選取。");
     }
 
-    onSubmit({ type, time, location: finalTitle, address: googleAddress + (addressDetail ? ` (${addressDetail})` : ""), cost: finalCost, note: finalNote, lat, lng });
+    // 🔥 費用 Cost 默認為 0
+    onSubmit({ 
+        type, 
+        time, 
+        location: finalTitle, 
+        address: googleAddress + (addressDetail ? ` (${addressDetail})` : ""), 
+        cost: 0, 
+        note: finalNote, 
+        lat, 
+        lng 
+    });
     
-    setCustomName(""); setGoogleAddress(""); setAddressDetail(""); setCost(""); setNote(""); setLat(null); setLng(null); onClose();
+    setCustomName(""); setGoogleAddress(""); setAddressDetail(""); setNote(""); setLat(null); setLng(null); onClose();
   };
 
   return (
@@ -74,35 +76,22 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
                                 const results = await geocodeByPlaceId(val.value.place_id); 
                                 const { lat, lng } = await getLatLng(results[0]); 
                                 setLat(lat); setLng(lng); 
-                                console.log("Fetched Coordinates:", lat, lng);
-                             } catch (error) {
-                                console.error("Google API Error:", error);
-                                alert("無法獲取座標，請檢查 API Key 設定。");
-                             }
+                             } catch (error) { console.error(error); alert("無法獲取座標"); }
                          }, 
-                         styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none' }), menu: (p) => ({ ...p, zIndex: 9999 }) } 
+                         styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
                      }} />
                  </div>) : (<input type="text" placeholder="手動輸入地址..." value={googleAddress} onChange={(e) => setGoogleAddress(e.target.value)} className="w-full border-b py-2 text-sm" />)}
                  
-                 {/* 🔥 顯示座標狀態 */}
                  <div className="flex items-center gap-2 mt-2">
                      <span className={clsx("w-2 h-2 rounded-full", lat && lng ? "bg-green-500" : "bg-red-500")}/>
-                     <span className="text-[10px] text-gray-500">
-                        {lat && lng ? `座標鎖定 (${lat.toFixed(4)}, ${lng.toFixed(4)})` : "未有座標 (地圖不會顯示)"}
-                     </span>
+                     <span className="text-[10px] text-gray-500">{lat && lng ? `座標鎖定 (${lat.toFixed(4)}, ${lng.toFixed(4)})` : "未有座標"}</span>
                  </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">時間</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm"/></div>
-                <div>
-                   <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">預算</label>
-                   <div className="flex items-center border-b border-gray-200">
-                       <input type="number" value={cost} onChange={(e) => setCost(e.target.value)} className="w-full py-2 text-sm focus:outline-none" placeholder="0"/>
-                       <button type="button" onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-[10px] font-bold px-2 bg-gray-100 rounded flex items-center gap-1">{currency} <ArrowRightLeft size={8}/></button>
-                   </div>
-                   {currency === "HKD" && cost && <p className="text-[9px] text-gray-400 text-right mt-1">≈ ¥{Math.round(Number(cost)/rate).toLocaleString()}</p>}
-                </div>
+              {/* 🔥 只保留時間輸入 */}
+              <div>
+                  <label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">時間</label>
+                  <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm"/>
               </div>
 
               <div><label className="block text-[10px] font-bold text-gray-400 tracking-widest mb-1 uppercase">備註</label><input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 text-sm" placeholder="選填..."/></div>
