@@ -3,8 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
-// ================= 類型定義 =================
-
+// ... (類型定義 Interfaces 保持不變，照舊) ...
 export interface Member { id: string; name: string; avatar: string; }
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking {
@@ -25,11 +24,8 @@ export interface PlanItem {
   id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string;
 }
 export interface Activity {
-  id: string; time: string; type: string; location: string; cost: number; 
-  note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; 
-  lat?: number; lng?: number;
+  id: string; time: string; type: string; location: string; cost: number; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; lat?: number; lng?: number;
 }
-// 🔥 新增 customLocation
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; customLocation?: string; }
 export interface Trip {
   id: string; title: string; startDate: string; endDate: string; coverImage?: string; status: 'planning' | 'ongoing' | 'completed';
@@ -66,8 +62,6 @@ interface TripState {
   addDayToTrip: (tripId: string) => void;
   deleteDayFromTrip: (tripId: string, dayIndex: number) => void;
   updateDayCoverImage: (tripId: string, dayIndex: number, imageUrl: string) => void;
-  
-  // 🔥 新增：手動修改每日地點
   updateDayLocation: (tripId: string, dayIndex: number, location: string) => void;
 }
 
@@ -76,7 +70,6 @@ const INITIAL_TRIP: Trip = { id: "trip-osaka-mum", title: "Osaka Trip (March) �
 
 const updateStateAndSave = (set: any, get: any, updateFn: (state: TripState) => Partial<TripState>, tripId: string) => { set(updateFn); const updatedTrip = get().trips.find((t: Trip) => t.id === tripId); if (updatedTrip) get().saveTripToCloud(updatedTrip); };
 
-// 🔥 修正了這裡的 create()(...) 結構
 export const useTripStore = create<TripState>()(
   persist(
     (set, get) => ({
@@ -103,29 +96,38 @@ export const useTripStore = create<TripState>()(
       updatePlanItem: (tripId, itemId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, ...data } : p) } : t) }), tripId),
       togglePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; return { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, isCompleted: !p.isCompleted } : p) }; }) }), tripId),
       deletePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.filter(p => p.id !== itemId) } : t) }), tripId),
-      addActivity: (tripId, dayIndex, activity) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (!newItinerary[dayIndex]) return trip; newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-      updateActivity: (tripId, dayIndex, activityId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+      
+      // 🔥 修正：新增活動時自動排序
+      addActivity: (tripId, dayIndex, activity) => updateStateAndSave(set, get, state => ({ 
+        trips: state.trips.map(trip => { 
+          if (trip.id !== tripId) return trip; 
+          const newItinerary = [...trip.dailyItinerary]; 
+          if (!newItinerary[dayIndex]) return trip; 
+          newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); 
+          // 🔥 Auto Sort
+          newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time));
+          return { ...trip, dailyItinerary: newItinerary }; 
+        }) 
+      }), tripId),
+
+      // 🔥 修正：更新活動時自動排序 (如果改了時間)
+      updateActivity: (tripId, dayIndex, activityId, data) => updateStateAndSave(set, get, state => ({ 
+        trips: state.trips.map(trip => { 
+          if (trip.id !== tripId) return trip; 
+          const newItinerary = [...trip.dailyItinerary]; 
+          newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); 
+          if(data.time) newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time));
+          return { ...trip, dailyItinerary: newItinerary }; 
+        }) 
+      }), tripId),
+
       updateActivityOrder: (tripId, dayIndex, newActivities) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       deleteActivity: (tripId, dayIndex, activityId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       addDayToTrip: (tripId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; let nextDateStr = trip.startDate; if (trip.dailyItinerary.length > 0) { const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1]; const d = new Date(lastDay.date); d.setDate(d.getDate() + 1); nextDateStr = d.toISOString().split('T')[0]; } return { ...trip, endDate: nextDateStr, dailyItinerary: [...trip.dailyItinerary, { day: trip.dailyItinerary.length + 1, date: nextDateStr, weather: 'Sun', activities: [] }] }; }) }), tripId),
       deleteDayFromTrip: (tripId, dayIndex) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       updateDayCoverImage: (tripId, dayIndex, imageUrl) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].coverImage = imageUrl; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-      
-      // 🔥 這裡的括號修正了
-      updateDayLocation: (tripId, dayIndex, location) => updateStateAndSave(set, get, state => ({
-        trips: state.trips.map(trip => {
-          if (trip.id !== tripId) return trip;
-          const newItinerary = [...trip.dailyItinerary];
-          if (newItinerary[dayIndex]) {
-            newItinerary[dayIndex].customLocation = location;
-          }
-          return { ...trip, dailyItinerary: newItinerary };
-        })
-      }), tripId),
+      updateDayLocation: (tripId, dayIndex, location) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].customLocation = location; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
     }),
-    { 
-      name: 'vm-build-v19-fixed', 
-      storage: createJSONStorage(() => localStorage) 
-    }
+    { name: 'vm-build-v19-final-fixes', storage: createJSONStorage(() => localStorage) }
   )
 );
