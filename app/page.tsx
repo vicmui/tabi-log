@@ -39,11 +39,10 @@ export default function Home() {
       <main className="flex-1 p-8 ml-0 md:ml-64 pb-24">
         <div className="flex justify-between items-center mb-12 mt-4">
            <div>
-             {/* 🔥 修正字體樣式：font-serif + font-bold */}
-             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-black uppercase mb-2">我的旅程</h1>
+             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">我的旅程</h1>
              <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
            </div>
-           <button onClick={handleAddTrip} className="bg-jp-black text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 text-xs tracking-widest uppercase rounded">
+           <button onClick={handleAddTrip} className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 text-xs tracking-widest uppercase rounded">
              <Plus size={16} /> 新增旅程
            </button>
         </div>
@@ -51,8 +50,11 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {trips.map((trip) => {
                 const daysLeft = differenceInDays(parseISO(trip.startDate), new Date());
-                const totalActs = trip.dailyItinerary.reduce((acc, day) => acc + day.activities.length, 0);
-                const visitedActs = trip.dailyItinerary.reduce((acc, day) => acc + day.activities.filter(a=>a.isVisited).length, 0);
+                
+                // 🔥 修復崩潰：加入 (a => a) 過濾掉壞資料
+                const totalActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a)?.length || 0), 0);
+                const visitedActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a && a.isVisited)?.length || 0), 0);
+                
                 const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0;
 
                 return (
