@@ -62,10 +62,12 @@ export default function PlannerPage() {
 
   const currentDailyItinerary = trip.dailyItinerary[activeDay];
   
-  const displayLocation = currentDailyItinerary?.customLocation || (currentDailyItinerary?.activities.length > 0 ? currentDailyItinerary.activities[0].location.split(' ')[0] : "自由探索");
+  // 🔥 確保顯示正確地點：自訂 > 第一個活動 > 預設
+  const displayLocation = currentDailyItinerary?.customLocation || (currentDailyItinerary?.activities && currentDailyItinerary.activities.length > 0 ? currentDailyItinerary.activities[0].location.split(' ')[0] : "自由探索");
 
+  // 🔥 點擊修改地點
   const handleEditLocation = () => {
-      const newLoc = prompt("自訂當日主要城市/地點:", displayLocation);
+      const newLoc = prompt("修改當日地點名稱:", displayLocation);
       if (newLoc) updateDayLocation(trip.id, activeDay, newLoc);
   };
 
@@ -79,7 +81,7 @@ export default function PlannerPage() {
   };
   const handleOpenDayRoute = () => {
     if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點"); return; }
-    const acts = currentDailyItinerary.activities.filter(a => a.address || a.location);
+    const acts = currentDailyItinerary.activities.filter(a => a && (a.address || a.location)); // 過濾 null
     const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location);
     const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location);
     const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|');
@@ -151,21 +153,22 @@ export default function PlannerPage() {
 
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full no-scrollbar pb-32"> 
           <div className="h-44 md:h-80 relative w-full shrink-0 group">
-            {/* 🔥 修正：移除了所有 Gradient 和黑色遮罩 */}
             <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
-            
-            <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
-               <div className="animate-fade-in-up">
-                 {/* 🔥 文字加入 drop-shadow 確保可讀性 */}
-                 <h3 className="text-4xl md:text-7xl font-bold tracking-tight uppercase leading-none text-black drop-shadow-md" style={{fontFamily: 'var(--font-inter)', textShadow: '0 2px 10px rgba(255,255,255,0.8)'}}>
-                     Day {activeDay + 1}
-                 </h3>
-                 <div className="flex items-center gap-3 text-[10px] text-black tracking-[0.3em] uppercase font-bold mt-2 bg-white/60 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-sm">
-                    <MapPin size={10} /><span>{displayLocation}</span>
-                    <span className="w-px h-3 bg-black/20"></span>
-                    <Clock size={10} /><span>{currentDailyItinerary?.date}</span>
-                 </div>
-               </div>
+            <div className="absolute inset-0 bg-black/10" /><div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20 text-black">
+               <h3 className="text-4xl md:text-7xl font-semibold tracking-tighter uppercase leading-none">Day {activeDay + 1}</h3>
+               
+               {/* 🔥 修正：地點改為 Button，確保可以點擊 */}
+               <button 
+                  onClick={handleEditLocation} 
+                  className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/80 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-sm hover:bg-white hover:scale-105 transition-all z-20 relative"
+               >
+                  <MapPin size={10} />
+                  <span>{displayLocation}</span>
+                  <Edit size={8} className="opacity-50"/>
+                  <span className="w-px h-3 bg-gray-300"></span>
+                  <Clock size={10} /><span>{currentDailyItinerary?.date}</span>
+               </button>
             </div>
             <label className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
           </div>
@@ -177,7 +180,7 @@ export default function PlannerPage() {
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
                       <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /> <span className="hidden sm:inline">分享</span></button>
                       <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /> <span className="hidden sm:inline">路線</span></button>
-                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={14} /> <span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /> <span className="hidden sm:inline">列表</span></>}</button>
+                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={12} /> 地圖</> : <><ListIcon size={12} /> 列表</>}</button>
                       <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors shadow-lg uppercase rounded-xl font-bold"><Plus size={12} /> 新增活動</button>
                   </div>
                </div>
@@ -185,16 +188,13 @@ export default function PlannerPage() {
 
             <div className="w-full">
                 {viewMode === 'list' ? (
+                    // 🔥 防崩潰：如果 dailyItinerary 存在才渲染
                     currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : <div className="text-center py-20 text-gray-300 text-[10px] uppercase tracking-widest">今日暫無行程安排</div>
                 ) : (
-                    // 🔥 修復地圖：當 activities 為空或 undefined 時，傳遞空陣列
-                    <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50">
-                        <TripMap activities={currentDailyItinerary?.activities || []} />
-                    </div>
+                    <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
                 )}
             </div>
           </div>
-
           <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} />
           {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
           {isSettingsOpen && <EditTripModal trip={trip} onClose={()=>setIsSettingsOpen(false)} />}
