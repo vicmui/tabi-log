@@ -1,24 +1,29 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Car, Footprints, TrainFront, MoreHorizontal, Loader2 } from "lucide-react";
+import { useJsApiLoader } from '@react-google-maps/api';
+import { Car, Footprints, TrainFront, Loader2 } from "lucide-react";
 import clsx from "clsx";
 
-interface Props {
-  origin: { lat: number; lng: number };
-  dest: { lat: number; lng: number };
-}
-
+interface Props { origin: { lat: number; lng: number }; dest: { lat: number; lng: number }; }
 type TravelMode = "WALKING" | "TRANSIT" | "DRIVING";
 const MODE_CONFIG: Record<TravelMode, { icon: any }> = { WALKING: { icon: Footprints }, TRANSIT: { icon: TrainFront }, DRIVING: { icon: Car } };
 
+// 🔥 關鍵修正：與 layout.tsx 一致
+const LIBRARIES: ("places" | "marker" | "geometry" | "routes")[] = ["places", "marker", "geometry", "routes"];
+
 export default function TravelStats({ origin, dest }: Props) {
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
+    libraries: LIBRARIES, 
+  });
+
   const [stats, setStats] = useState<{ duration: string; distance: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<TravelMode>("WALKING");
 
   useEffect(() => {
-    // 🔥 確保 google maps script 已載入
-    if (!window.google || !window.google.maps) return;
+    if (!isLoaded || !window.google || !window.google.maps) return;
     if (!origin || !dest || !origin.lat || !dest.lat) { setLoading(false); return; }
     
     setLoading(true);
@@ -28,20 +33,18 @@ export default function TravelStats({ origin, dest }: Props) {
       {
         origins: [{ lat: origin.lat, lng: origin.lng }],
         destinations: [{ lat: dest.lat, lng: dest.lng }],
-        travelMode: mode as google.maps.TravelMode,
+        travelMode: google.maps.TravelMode[mode],
         unitSystem: google.maps.UnitSystem.METRIC,
       },
       (response, status) => {
         if (status === 'OK' && response?.rows[0]?.elements[0]?.status === 'OK') {
           const element = response.rows[0].elements[0];
-          setStats({ duration: element.duration.text, distance: element.distance.text });
-        } else {
-          setStats(null);
-        }
+          setStats({ duration: element.duration.text.replace(' hours', 'h').replace(' mins', 'm'), distance: element.distance.text });
+        } else { setStats(null); }
         setLoading(false);
       }
     );
-  }, [origin, dest, mode]);
+  }, [isLoaded, origin, dest, mode]);
 
   return (
     <div className="relative pl-10 py-2">
