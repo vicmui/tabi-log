@@ -7,14 +7,23 @@ import { Navigation, MapPin } from 'lucide-react';
 const containerStyle = { width: '100%', height: '100%' };
 const DEFAULT_CENTER = { lat: 34.6937, lng: 135.5023 }; // 大阪
 
+// United Tokyo 風格
 const MONOCHROME_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f5" }] },
-  { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.land_parcel", elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eeeeee" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] }
+  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#dadada" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
+  { featureType: "transit.line", elementType: "geometry", stylers: [{ color: "#e5e5e5" }] },
+  { featureType: "transit.station", elementType: "geometry", stylers: [{ color: "#eeeeee" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] }
 ];
 
 export default function TripMap({ activities }: { activities: Activity[] }) {
@@ -26,19 +35,18 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
-  // 🔥 防崩潰：如果 activities 是 null/undefined，給空陣列
-  const safeActivities = activities || [];
-
+  // 1. 強力數據清洗 (防止 Crash)
   const markers = useMemo(() => {
-    if (safeActivities.length === 0) return [];
+    // 🔥 第一重防護：如果 activities 是 null，回傳空陣列
+    if (!activities) return [];
     
-    return safeActivities
+    return activities
+      // 🔥 第二重防護：過濾掉 null / undefined / 無 ID 的壞資料
+      .filter(act => !!act && !!act.id) 
       .map((act, index) => {
-        // 🔥 強制轉換
         const lat = parseFloat(String(act.lat));
         const lng = parseFloat(String(act.lng));
-        
-        // 檢查有效性
+        // 檢查座標有效性
         if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
 
         return {
@@ -51,7 +59,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
         };
       })
       .filter((m): m is NonNullable<typeof m> => m !== null);
-  }, [safeActivities]);
+  }, [activities]);
 
   const path = useMemo(() => markers.map(m => ({ lat: m.lat, lng: m.lng })), [markers]);
 
@@ -66,7 +74,6 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
                 mapRef.current.setZoom(15);
             } else {
                 mapRef.current.fitBounds(bounds, 50);
-                // 防止 zoom 太深
                 const listener = google.maps.event.addListener(mapRef.current, "idle", () => {
                     if (mapRef.current && mapRef.current.getZoom()! > 16) {
                         mapRef.current.setZoom(16);
@@ -75,7 +82,6 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
                 });
             }
         } else {
-            // 🔥 無資料時，回到大阪
             mapRef.current.setCenter(DEFAULT_CENTER);
             mapRef.current.setZoom(12);
         }
@@ -105,7 +111,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
       >
         {markers.length > 1 && <PolylineF path={path as google.maps.LatLngLiteral[]} options={{ strokeColor: '#333333', strokeOpacity: 0.8, strokeWeight: 3, icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 2, strokeColor: '#333333' }, offset: '50%', repeat: '100px' }] }} />}
         {markers.map((marker) => (<MarkerF key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} label={{ text: marker.label, color: 'white', fontWeight: 'bold', fontSize: '12px' }} icon={{ path: google.maps.SymbolPath.CIRCLE, fillColor: '#1a1a1a', fillOpacity: 1, scale: 12, strokeColor: '#ffffff', strokeWeight: 2 }} onClick={() => setSelectedMarker(marker)} />))}
-        {selectedMarker && (<InfoWindowF position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }} onCloseClick={() => setSelectedMarker(null)} options={{ pixelOffset: new google.maps.Size(0, -12) }}><div className="p-2 min-w-[140px] text-center"><h3 className="font-bold text-sm mb-1 text-black font-sans">{selectedMarker.title}</h3><a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 w-full bg-blue-600 text-white text-[10px] py-1.5 rounded hover:opacity-80 transition-opacity no-underline font-bold tracking-widest uppercase mt-2"><Navigation size={10} /> 導航</a></div></InfoWindowF>)}
+        {selectedMarker && (<InfoWindowF position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }} onCloseClick={() => setSelectedMarker(null)} options={{ pixelOffset: new google.maps.Size(0, -12) }}><div className="p-2 min-w-[140px] text-center"><h3 className="font-bold text-sm mb-1 text-black font-sans">{selectedMarker.title}</h3><div className="flex justify-center mb-2"><span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{selectedMarker.type}</span></div><a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 w-full bg-blue-600 text-white text-[10px] py-1.5 rounded hover:opacity-80 transition-opacity no-underline font-bold tracking-widest uppercase mt-2"><Navigation size={10} /> Google 導航</a></div></InfoWindowF>)}
       </GoogleMap>
     </div>
   );

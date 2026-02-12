@@ -3,7 +3,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
-// ... (類型定義 Interfaces 保持不變，照舊) ...
 export interface Member { id: string; name: string; avatar: string; }
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking {
@@ -70,64 +69,82 @@ const INITIAL_TRIP: Trip = { id: "trip-osaka-mum", title: "Osaka Trip (March) �
 
 const updateStateAndSave = (set: any, get: any, updateFn: (state: TripState) => Partial<TripState>, tripId: string) => { set(updateFn); const updatedTrip = get().trips.find((t: Trip) => t.id === tripId); if (updatedTrip) get().saveTripToCloud(updatedTrip); };
 
-export const useTripStore = create<TripState>()(
-  persist(
-    (set, get) => ({
-      trips: [INITIAL_TRIP], activeTripId: null, isSyncing: false,
-      setActiveTrip: (id) => set({ activeTripId: id }),
-      loadTripsFromCloud: async () => { set({ isSyncing: true }); const { data, error } = await supabase.from('trips').select('*'); if (!error && data) { const loadedTrips = data.map(row => row.content as Trip); set({ trips: loadedTrips }); if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips[0].id }); } set({ isSyncing: false }); },
-      saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); set({ isSyncing: false }); },
-      subscribeToTrip: (tripId: string) => { supabase.channel('trips-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, (payload) => { const newTrip = payload.new.content as Trip; set(state => ({ trips: state.trips.map(t => t.id === newTrip.id ? newTrip : t) })); }).subscribe(); },
-      importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if(newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
-      addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
-      deleteTrip: async (tripId) => { set({ isSyncing: true }); await supabase.from('trips').delete().eq('id', tripId); set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
+export const useTripStore = create<TripState>((set, get) => ({
+  trips: [INITIAL_TRIP], activeTripId: null, isSyncing: false,
+  setActiveTrip: (id) => set({ activeTripId: id }),
+  
+  // 🔥 強力修復：載入時自動清理 null 資料
+  loadTripsFromCloud: async () => { 
+      set({ isSyncing: true }); 
+      const { data, error } = await supabase.from('trips').select('*'); 
+      if (!error && data) { 
+          const loadedTrips = data.map(row => {
+              const trip = row.content as Trip;
+              // 自動清洗每一天的 activities，移除 null
+              trip.dailyItinerary.forEach(day => {
+                  if (day.activities) {
+                      day.activities = day.activities.filter(a => !!a && !!a.id);
+                  }
+              });
+              return trip;
+          });
+          set({ trips: loadedTrips }); 
+          if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips[0].id }); 
+      } 
+      set({ isSyncing: false }); 
+  },
+  
+  saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); set({ isSyncing: false }); },
+  subscribeToTrip: (tripId: string) => { supabase.channel('trips-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` }, (payload) => { const newTrip = payload.new.content as Trip; set(state => ({ trips: state.trips.map(t => t.id === newTrip.id ? newTrip : t) })); }).subscribe(); },
+  importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if(newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
+  addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
+  deleteTrip: async (tripId) => { set({ isSyncing: true }); await supabase.from('trips').delete().eq('id', tripId); set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
 
-      updateTrip: (tripId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) }), tripId),
-      updateTripSettings: (tripId, title, newStartDate, coverImage) => updateStateAndSave(set, get, (state) => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T')[0] }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T')[0] }; }) }), tripId),
-      updateBudgetTotal: (tripId, total) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, budgetTotal: total } : t) }), tripId),
-      updateTripRate: (tripId, rate) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, exchangeRate: rate } : t) }), tripId),
-      addBooking: (tripId, booking) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: [...t.bookings, booking] } : t) }), tripId),
-      updateBooking: (tripId, bookingId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.map(b => b.id === bookingId ? { ...b, ...data } : b) } : t) }), tripId),
-      deleteBooking: (tripId, bookingId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.filter(b => b.id !== bookingId) } : t) }), tripId),
-      addExpense: (tripId, expense) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: [expense, ...t.expenses] } : t) }), tripId),
-      updateExpense: (tripId, expenseId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.map(e => e.id === expenseId ? { ...e, ...data } : e) } : t) }), tripId),
-      deleteExpense: (tripId, expenseId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.filter(e => e.id !== expenseId) } : t) }), tripId),
-      addPlanItem: (tripId, item) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: [...t.plans, item] } : t) }), tripId),
-      updatePlanItem: (tripId, itemId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, ...data } : p) } : t) }), tripId),
-      togglePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; return { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, isCompleted: !p.isCompleted } : p) }; }) }), tripId),
-      deletePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.filter(p => p.id !== itemId) } : t) }), tripId),
-      
-      // 🔥 修正：新增活動時自動排序
-      addActivity: (tripId, dayIndex, activity) => updateStateAndSave(set, get, state => ({ 
-        trips: state.trips.map(trip => { 
-          if (trip.id !== tripId) return trip; 
-          const newItinerary = [...trip.dailyItinerary]; 
-          if (!newItinerary[dayIndex]) return trip; 
-          newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); 
-          // 🔥 Auto Sort
-          newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time));
-          return { ...trip, dailyItinerary: newItinerary }; 
-        }) 
-      }), tripId),
+  updateTrip: (tripId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) }), tripId),
+  updateTripSettings: (tripId, title, newStartDate, coverImage) => updateStateAndSave(set, get, (state) => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T')[0] }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T')[0] }; }) }), tripId),
+  updateBudgetTotal: (tripId, total) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, budgetTotal: total } : t) }), tripId),
+  updateTripRate: (tripId, rate) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, exchangeRate: rate } : t) }), tripId),
+  addBooking: (tripId, booking) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: [...t.bookings, booking] } : t) }), tripId),
+  updateBooking: (tripId, bookingId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.map(b => b.id === bookingId ? { ...b, ...data } : b) } : t) }), tripId),
+  deleteBooking: (tripId, bookingId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.filter(b => b.id !== bookingId) } : t) }), tripId),
+  addExpense: (tripId, expense) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: [expense, ...t.expenses] } : t) }), tripId),
+  updateExpense: (tripId, expenseId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.map(e => e.id === expenseId ? { ...e, ...data } : e) } : t) }), tripId),
+  deleteExpense: (tripId, expenseId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.filter(e => e.id !== expenseId) } : t) }), tripId),
+  addPlanItem: (tripId, item) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: [...t.plans, item] } : t) }), tripId),
+  updatePlanItem: (tripId, itemId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, ...data } : p) } : t) }), tripId),
+  togglePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; return { ...t, plans: t.plans.map(p => p.id === itemId ? { ...p, isCompleted: !p.isCompleted } : p) }; }) }), tripId),
+  deletePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.filter(p => p.id !== itemId) } : t) }), tripId),
+  
+  addActivity: (tripId, dayIndex, activity) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (!newItinerary[dayIndex]) return trip; newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time)); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+  
+  // 🔥 更新活動時也過濾 null
+  updateActivity: (tripId, dayIndex, activityId, data) => updateStateAndSave(set, get, state => ({ 
+    trips: state.trips.map(trip => { 
+      if (trip.id !== tripId) return trip; 
+      const newItinerary = [...trip.dailyItinerary]; 
+      newItinerary[dayIndex].activities = newItinerary[dayIndex].activities
+        .map(a => a && a.id === activityId ? { ...a, ...data } : a)
+        .filter(a => !!a); // 安全過濾
+      if(data.time) newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time)); 
+      return { ...trip, dailyItinerary: newItinerary }; 
+    }) 
+  }), tripId),
 
-      // 🔥 修正：更新活動時自動排序 (如果改了時間)
-      updateActivity: (tripId, dayIndex, activityId, data) => updateStateAndSave(set, get, state => ({ 
-        trips: state.trips.map(trip => { 
-          if (trip.id !== tripId) return trip; 
-          const newItinerary = [...trip.dailyItinerary]; 
-          newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); 
-          if(data.time) newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time));
-          return { ...trip, dailyItinerary: newItinerary }; 
-        }) 
-      }), tripId),
-
-      updateActivityOrder: (tripId, dayIndex, newActivities) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-      deleteActivity: (tripId, dayIndex, activityId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a.id !== activityId); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-      addDayToTrip: (tripId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; let nextDateStr = trip.startDate; if (trip.dailyItinerary.length > 0) { const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1]; const d = new Date(lastDay.date); d.setDate(d.getDate() + 1); nextDateStr = d.toISOString().split('T')[0]; } return { ...trip, endDate: nextDateStr, dailyItinerary: [...trip.dailyItinerary, { day: trip.dailyItinerary.length + 1, date: nextDateStr, weather: 'Sun', activities: [] }] }; }) }), tripId),
-      deleteDayFromTrip: (tripId, dayIndex) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-      updateDayCoverImage: (tripId, dayIndex, imageUrl) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].coverImage = imageUrl; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-      updateDayLocation: (tripId, dayIndex, location) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].customLocation = location; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
-    }),
-    { name: 'vm-build-v19-final-fixes', storage: createJSONStorage(() => localStorage) }
-  )
-);
+  updateActivityOrder: (tripId, dayIndex, newActivities) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+  
+  // 🔥 刪除活動時更安全
+  deleteActivity: (tripId, dayIndex, activityId) => updateStateAndSave(set, get, state => ({ 
+    trips: state.trips.map(trip => { 
+      if (trip.id !== tripId) return trip; 
+      const newItinerary = [...trip.dailyItinerary]; 
+      newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter(a => a && a.id !== activityId); 
+      return { ...trip, dailyItinerary: newItinerary }; 
+    }) 
+  }), tripId),
+  
+  addDayToTrip: (tripId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; let nextDateStr = trip.startDate; if (trip.dailyItinerary.length > 0) { const lastDay = trip.dailyItinerary[trip.dailyItinerary.length - 1]; const d = new Date(lastDay.date); d.setDate(d.getDate() + 1); nextDateStr = d.toISOString().split('T')[0]; } return { ...trip, endDate: nextDateStr, dailyItinerary: [...trip.dailyItinerary, { day: trip.dailyItinerary.length + 1, date: nextDateStr, weather: 'Sun', activities: [] }] }; }) }), tripId),
+  deleteDayFromTrip: (tripId, dayIndex) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+  updateDayCoverImage: (tripId, dayIndex, imageUrl) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].coverImage = imageUrl; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+  updateDayLocation: (tripId, dayIndex, location) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].customLocation = location; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+}),
+{ name: 'vm-build-v20-crash-fix', storage: createJSONStorage(() => localStorage) }));
