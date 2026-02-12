@@ -7,12 +7,12 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import TravelStats from "./TravelStats";
 
 const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg: string }> = {
-  Food: { icon: Utensils, label: "美食", color: "text-orange-600", bg: "bg-orange-50" },
-  Sightseeing: { icon: Camera, label: "景點", color: "text-blue-600", bg: "bg-blue-50" },
-  Transport: { icon: Train, label: "交通", color: "text-green-600", bg: "bg-green-50" },
-  Hotel: { icon: Bed, label: "住宿", color: "text-purple-600", bg: "bg-purple-50" },
-  Shopping: { icon: ShoppingBag, label: "購物", color: "text-pink-600", bg: "bg-pink-50" },
-  Other: { icon: MapPin, label: "其他", color: "text-gray-600", bg: "bg-gray-50" },
+  Food: { icon: Utensils, label: "美食", color: "text-gray-600", bg: "bg-gray-100" }, // 改為黑白灰風格
+  Sightseeing: { icon: Camera, label: "景點", color: "text-gray-600", bg: "bg-gray-100" },
+  Transport: { icon: Train, label: "交通", color: "text-gray-600", bg: "bg-gray-100" },
+  Hotel: { icon: Bed, label: "住宿", color: "text-gray-600", bg: "bg-gray-100" },
+  Shopping: { icon: ShoppingBag, label: "購物", color: "text-gray-600", bg: "bg-gray-100" },
+  Other: { icon: MapPin, label: "其他", color: "text-gray-600", bg: "bg-gray-100" },
 };
 
 interface Props { dayIndex: number; activities: Activity[]; tripId: string; onActivityClick: (id: string) => void; isReadOnly?: boolean; }
@@ -31,15 +31,15 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
         updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
     };
 
-    // 🔥 徹底根治 $0 問題：強制轉 Number 並檢查是否大於 0
-    const costValue = Number(activity.cost || 0);
-    const showCost = costValue > 0;
+    // 🔥 嚴格處理金額顯示：確保轉為數字，且必須大於 0 才顯示
+    const costValue = Number(activity.cost);
+    const hasCost = !isNaN(costValue) && costValue > 0;
 
     return (
-        <div className="relative group ml-4"> {/* 左邊留位俾個波波 */}
+        <div className="relative group ml-4">
             
-            {/* 🔥 Wanderlog 風格數字波波 (Overlay) */}
-            <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#00D1C1] text-white flex items-center justify-center font-bold text-sm shadow-md border-2 border-white z-20">
+            {/* 🔥 United Tokyo 風格數字波波：純黑底 + 白字 + 粗白邊 */}
+            <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm shadow-md border-4 border-white z-20">
                 {index + 1}
             </div>
 
@@ -50,7 +50,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                 {/* 左側 Icon & Time */}
                 <div className="flex flex-col items-center gap-2 min-w-[50px] pt-1">
                     <span className="text-[11px] font-mono text-gray-800 font-bold">{activity.time}</span>
-                    <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-10", activity.isVisited ? "bg-gray-800 text-white" : "bg-white border border-gray-200 text-gray-500")}>
+                    <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-10", activity.isVisited ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-500")}>
                         {activity.isVisited ? <CheckCircle2 size={14}/> : <config.icon size={14} />}
                     </div>
                 </div>
@@ -60,26 +60,28 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                     <div className="flex justify-between items-start mb-1">
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
                         
-                        {/* 🔥 只有 showCost 為 true 時才顯示 */}
-                        {showCost && (
-                            <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+                        {/* 🔥 只有 hasCost 為 true 時才顯示 */}
+                        {hasCost && (
+                            <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
                                 ¥ {costValue.toLocaleString()}
                             </span>
                         )}
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2 mb-2">
+                        {/* 標籤改為黑白灰風格 */}
                         <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
-                        {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
+                        
+                        {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-black font-bold">★ {activity.rating}</span>}
                         {activity.address && <span className="text-[9px] text-gray-400 flex items-center gap-0.5 bg-gray-50 px-1 rounded"><MapPin size={8}/> Map</span>}
                     </div>
                     
                     {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
                     
                     <div className={clsx("flex gap-3 mt-3 pt-3 border-t border-gray-50 transition-opacity", isReadOnly ? "" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100")}>
-                        <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
+                        <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-black font-bold hover:underline bg-gray-100 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
                         {!isReadOnly && (
-                            <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-green-600 hover:underline bg-green-50 px-2.5 py-1 rounded">
+                            <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-gray-500 font-bold hover:underline bg-gray-50 px-2.5 py-1 rounded">
                                 {activity.isVisited ? <><Circle size={10}/> 取消</> : <><CheckCircle2 size={10}/> 打卡</>}
                             </button>
                         )}
@@ -97,7 +99,6 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
   const handleDragEnd = (e: any, info: any) => { if (info.offset.x < -100) { if (confirm(`確定要刪除「${activity.location}」嗎？`)) deleteActivity(tripId, dayIndex, activity.id); } };
   const config = TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other;
   return (
-    // 🔥 overflow-visible 確保數字波波唔會被切走
     <div className="relative overflow-visible" ref={provided.innerRef} {...provided.draggableProps}>
       <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl my-1"><Trash2 className="text-white" size={20} /></motion.div>
       <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="relative z-10 group" {...provided.dragHandleProps}>
@@ -120,7 +121,6 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
               <Droppable droppableId={`day-${dayIndex}`}>
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-0 relative pl-2 py-2">
-                    {/* 左側連接線 */}
                     <div className="absolute left-[38px] top-4 bottom-4 w-[2px] bg-gray-100" />
                     {activities.map((activity, index) => (
                        <div key={activity.id} className="relative">
@@ -128,7 +128,7 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
                               {(provided) => (<SwipableItem activity={activity} index={index} tripId={tripId} dayIndex={dayIndex} onActivityClick={onActivityClick} provided={provided} />)}
                            </Draggable>
                            {index < activities.length - 1 && (
-                               <div className="pl-4"> {/* 為交通資訊留位 */}
+                               <div className="pl-4">
                                   <TravelStats origin={{ lat: Number(activities[index].lat), lng: Number(activities[index].lng) }} dest={{ lat: Number(activities[index+1].lat), lng: Number(activities[index+1].lng) }} />
                                </div>
                            )}
