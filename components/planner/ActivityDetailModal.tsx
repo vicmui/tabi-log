@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, Star, Image as ImageIcon, Edit, Trash2, Camera, MapPin } from "lucide-react";
+import { X, CheckCircle, Star, Image as ImageIcon, Edit, Trash2, Camera, MapPin, Loader2 } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +16,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
 
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit Fields
   const [editLocation, setEditLocation] = useState(activity?.location || "");
   const [editType, setEditType] = useState(activity?.type || "Food");
   const [editTime, setEditTime] = useState(activity?.time || "");
@@ -29,8 +31,12 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [rating, setRating] = useState(activity?.rating || 0);
   const [photos, setPhotos] = useState<string[]>(activity?.photos || []);
   const [expandedImg, setExpandedImg] = useState<string | null>(null);
+  
+  // 🔥 修正：補回 isUploading 狀態定義
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => { const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY; if (key) setApiKey(key); }, []);
+
   if (!activity) return null;
 
   const handleSave = () => {
@@ -38,7 +44,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       updateActivity(tripId, dayIndex, activityId, { 
           location: editLocation, type: editType, time: editTime, 
           note: editNote, address: editAddress, lat: editLat, lng: editLng,
-          cost: 0 // 強制 cost 為 0
+          cost: 0 
       });
       setIsEditing(false);
     } else {
@@ -55,6 +61,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       const file = e.target.files && e.target.files[0];
       if (!file || !trip) return;
       
+      setIsUploading(true);
       try {
           const filePath = `public/${trip.id}/activities/${uuidv4()}-${file.name}`;
           const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
@@ -63,7 +70,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           const newPhotos = [publicUrl, ...photos];
           setPhotos(newPhotos);
           updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
-      } catch(e: any) { alert("上傳失敗: " + e.message); }
+      } catch(e: any) { alert("上傳失敗: " + e.message); } 
+      finally { setIsUploading(false); }
   };
   
   const handleDeletePhoto = (urlToDelete: string) => {
@@ -113,11 +121,24 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
            ) : (
                <>
                  <div className="flex justify-between items-start mb-6"><div><h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2><div className="flex items-center gap-2 text-xs text-gray-500"><span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span><span>{activity.time}</span></div>{activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}</div><button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button></div>
-                 {/* 🔥 已移除費用顯示 */}
                  {activity.note && <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100"><p className="text-sm text-gray-600 leading-relaxed">{activity.note}</p></div>}
                  <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
                  <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">旅後回憶</label><textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="寫低感受..." className="w-full h-24 border border-gray-200 p-3 text-sm rounded-lg focus:outline-none focus:border-black resize-none"/></div>
-                 <div className="mb-4"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">相簿 Gallery</label><div className="flex gap-2 flex-wrap">{photos.map((url: string, i: number) => (<div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 relative group/photo" onClick={() => setExpandedImg(url)}><img src={url} className="w-full h-full object-cover"/><button onClick={(e)=>{e.stopPropagation(); handleDeletePhoto(url)}} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"><X size={10}/></button></div>))}{photos.length < 3 && <label className={clsx("w-20 h-20 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>{isUploading ? "..." : <Camera size={20}/>}<input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/></label>}</div></div>
+                 <div className="mb-4">
+                   <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">相簿 Gallery ({photos.length}/3)</label>
+                   <div className="flex gap-2 flex-wrap">
+                      {photos.map((url: string, i: number) => (
+                         <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 relative group/photo" onClick={() => setExpandedImg(url)}>
+                            <img src={url} className="w-full h-full object-cover"/>
+                            <button onClick={(e)=>{e.stopPropagation(); handleDeletePhoto(url)}} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"><X size={10}/></button>
+                         </div>
+                      ))}
+                      {photos.length < 3 && <label className={clsx("w-20 h-20 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>
+                         {isUploading ? <Loader2 className="animate-spin"/> : <Camera size={20}/>}
+                         <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/>
+                      </label>}
+                   </div>
+                 </div>
                </>
            )}
         </div>
