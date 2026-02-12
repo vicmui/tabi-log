@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, Star, Image as ImageIcon, Edit, Trash2, Camera, ArrowRightLeft, MapPin } from "lucide-react";
+import { X, CheckCircle, Star, Image as ImageIcon, Edit, Trash2, Camera, MapPin } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +16,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
 
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit Fields
   const [editLocation, setEditLocation] = useState(activity?.location || "");
   const [editType, setEditType] = useState(activity?.type || "Food");
   const [editTime, setEditTime] = useState(activity?.time || "");
@@ -24,26 +26,36 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [editLat, setEditLat] = useState(activity?.lat);
   const [editLng, setEditLng] = useState(activity?.lng);
   
+  // Google API Key State
   const [apiKey, setApiKey] = useState("");
+
+  // View Fields
   const [comment, setComment] = useState(activity?.comment || "");
   const [rating, setRating] = useState(activity?.rating || 0);
-  
-  // 🔥 相簿狀態
   const [photos, setPhotos] = useState<string[]>(activity?.photos || []);
-  const [isUploading, setIsUploading] = useState(false);
   const [expandedImg, setExpandedImg] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => { const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY; if (key) setApiKey(key); }, []);
 
   if (!activity) return null;
 
+  // 🔥 修正重點：handleSave 函數
   const handleSave = () => {
     if (isEditing) {
       updateActivity(tripId, dayIndex, activityId, { 
-          location: editLocation, type: editType, time: editTime, 
-          note: editNote, address: editAddress, lat: editLat, lng: editLng
+          location: editLocation, 
+          type: editType, 
+          time: editTime, 
+          note: editNote, 
+          address: editAddress, 
+          lat: editLat, 
+          lng: editLng,
+          cost: 0 // 確保 cost 永遠為 0
       });
       setIsEditing(false);
+      // 🔥 儲存變更後，亦都關閉彈窗
+      onClose();
     } else {
       updateActivity(tripId, dayIndex, activityId, { comment, rating, photos });
       onClose();
@@ -51,11 +63,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   };
 
   const toggleVisited = () => { updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited }); };
-  const handleDelete = () => { if(confirm(`確定刪除？`)) { deleteActivity(tripId, dayIndex, activity.id); onClose(); } };
+  const handleDelete = () => { if(confirm(`確定刪除「${activity.location}」嗎？`)) { deleteActivity(tripId, dayIndex, activity.id); onClose(); } };
 
-  // 🔥 上傳相片 (最多3張)
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (photos.length >= 3) { alert("最多只能上傳 3 張相片！"); return; }
+      if (photos.length >= 3) { alert("最多 3 張！"); return; }
       const file = e.target.files?.[0];
       if (!file || !trip) return;
       
@@ -64,19 +75,14 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           const filePath = `public/${trip.id}/activities/${uuidv4()}-${file.name}`;
           const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
           if (error) throw error;
-          
           const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
           const newPhotos = [publicUrl, ...photos];
           setPhotos(newPhotos);
           updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
-      } catch (e: any) { 
-          alert("上傳失敗: " + e.message); 
-      } finally {
-          setIsUploading(false);
-      }
+      } catch(e: any) { alert("上傳失敗: " + e.message); } 
+      finally { setIsUploading(false); }
   };
   
-  // 🔥 刪除單張相片
   const handleDeletePhoto = (urlToDelete: string) => {
       if(confirm("確定刪除這張相片？")) {
           const newPhotos = photos.filter(p => p !== urlToDelete);
@@ -85,7 +91,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       }
   };
 
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -93,6 +98,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         <div className="h-40 bg-gray-100 relative group shrink-0">
            <img src={photos.length > 0 ? photos[0] : "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?q=80&w=2000"} className="w-full h-full object-cover opacity-90" />
            <div className="absolute top-4 right-4 flex gap-2">
+               {!isEditing && <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/></label>}
                <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16}/></button>
                <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20}/></button>
            </div>
@@ -127,8 +133,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                  {activity.note && <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100"><p className="text-sm text-gray-600 leading-relaxed">{activity.note}</p></div>}
                  <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
                  <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">旅後回憶</label><textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="寫低感受..." className="w-full h-24 border border-gray-200 p-3 text-sm rounded-lg focus:outline-none focus:border-black resize-none"/></div>
-                 
-                 {/* 🔥 相簿功能 (實裝) */}
                  <div className="mb-4">
                    <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">相簿 Gallery ({photos.length}/3)</label>
                    <div className="flex gap-2 flex-wrap">
@@ -138,7 +142,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                             <button onClick={(e)=>{e.stopPropagation(); handleDeletePhoto(url)}} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"><X size={10}/></button>
                          </div>
                       ))}
-                      {photos.length < 3 && <label className="w-20 h-20 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors"><Camera size={20}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/></label>}
+                      {photos.length < 3 && <label className={clsx("w-20 h-20 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>
+                         {isUploading ? "..." : <Camera size={20}/>}
+                         <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/>
+                      </label>}
                    </div>
                  </div>
                </>
@@ -151,7 +158,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         </div>
       </motion.div>
 
-      {/* Lightbox (放大圖) */}
       <AnimatePresence>
         {expandedImg && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExpandedImg(null)} className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
