@@ -133,7 +133,7 @@ export default function PlannerPage() {
                     <span className={clsx("text-xs tracking-[0.15em] uppercase", activeDay === index ? "font-semibold text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span>
                     <span className="text-[9px] text-gray-400 font-medium uppercase">{format(parseISO(dayItem.date), 'EEE')}</span>
                   </div>
-                  <div className="text-[9px] mt-1 text-gray-300 font-light">{dayItem.date}</div>
+                  <div className="text-[9px] mt-1 text-gray-500 font-light">{dayItem.date}</div>
                   <div className="mt-2 flex items-center gap-2 text-[9px] text-gray-400">
                      <WeatherIcon code={info?.code} />
                      <span>{info ? info.temp : "15°/25°"}</span>
