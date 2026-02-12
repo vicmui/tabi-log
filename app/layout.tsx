@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import MobileNav from "@/components/layout/MobileNav";
 import { useTripStore } from "@/store/useTripStore";
@@ -11,15 +11,18 @@ import { differenceInDays, parseISO } from 'date-fns';
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], weight: ["300", "400", "500", "700"], variable: "--font-noto-sans" });
 
-const libraries: ("places" | "marker" | "geometry" | "routes")[] = ["places", "marker", "geometry", "routes"];
+// 🔥 關鍵修正：這是唯一的標準清單，其他檔案必須跟這個一模一樣！
+const LIBRARIES: ("places" | "marker" | "geometry" | "routes")[] = ["places", "marker", "geometry", "routes"];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { loadTripsFromCloud, isSyncing, trips, activeTripId, updateTrip } = useTripStore();
   
+  // 載入 Google Maps (這是全站第一次載入)
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
-    libraries: libraries,
+    libraries: LIBRARIES, // 使用標準清單
+    language: 'zh-HK',    // 強制中文地圖 (可選)
   });
 
   useEffect(() => { loadTripsFromCloud(); }, [loadTripsFromCloud]);
@@ -29,41 +32,52 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return () => { supabase.removeChannel(channel); };
   }, [loadTripsFromCloud]);
 
-  // 天氣 API 邏輯 (省略細節以保簡潔)
   useEffect(() => {
-    /* ... 保持之前的天氣代碼 ... */
+    const fetchAllWeather = async () => {
+        const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+        if (!trip || trip.dailyItinerary.length === 0) return;
+        const today = new Date();
+        const startDate = trip.dailyItinerary[0].date;
+        const endDate = trip.dailyItinerary[trip.dailyItinerary.length - 1].date;
+        const daysUntilTrip = differenceInDays(parseISO(startDate), today);
+        if (daysUntilTrip > 15 || daysUntilTrip < -7) return;
+
+        const lat = trip.dailyItinerary[0].activities.find(a=>a.lat)?.lat || 34.69;
+        const lng = trip.dailyItinerary[0].activities.find(a=>a.lng)?.lng || 135.50;
+        if(!startDate || !endDate) return;
+
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${startDate}&end_date=${endDate}`);
+            if(!res.ok) return;
+            const data = await res.json();
+            if (data.daily && data.daily.time) {
+                const updatedItinerary = trip.dailyItinerary.map((day) => {
+                    const idx = data.daily.time.indexOf(day.date);
+                    if (idx > -1) {
+                        return { ...day, weather: `${Math.round(data.daily.temperature_2m_min[idx])}°/${Math.round(data.daily.temperature_2m_max[idx])}°` };
+                    }
+                    return day;
+                });
+                updateTrip(trip.id, { dailyItinerary: updatedItinerary });
+            }
+        } catch (e) { console.error(e); }
+    };
+    const timer = setTimeout(fetchAllWeather, 2000); 
+    return () => clearTimeout(timer);
   }, [activeTripId, trips, updateTrip]);
 
   return (
     <html lang="zh-TW">
       <head>
         <title>VM&apos;s Build</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon-192.png" />
-        
-        {/* iOS PWA 支援 */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="VM's Build" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        
-        {/* Android 主題顏色 */}
-        <meta name="theme-color" content="#ffffff" />
-        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
       </head>
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans bg-white text-[#333333] antialiased font-light`}>
         {isSyncing && <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />}
-        {loadError && <div className="p-4 text-center bg-red-500 text-white text-xs">Map Loading Error.</div>}
-        
-        {isLoaded ? (
-            <div className="pb-24 md:pb-0 min-h-screen flex flex-col">
-                {children}
-            </div>
-        ) : (
-            <div className="p-10 text-center animate-pulse text-xs tracking-widest text-gray-400">LOADING MAP SERVICES...</div>
-        )}
-        
+        {loadError && <div className="p-4 text-center bg-red-500 text-white text-xs">Map Error: Check API Key</div>}
+        {isLoaded ? <div className="pb-24 md:pb-0">{children}</div> : <div className="p-10 text-center animate-pulse text-xs tracking-widest text-gray-400">LOADING MAPS...</div>}
         <MobileNav />
       </body>
     </html>
