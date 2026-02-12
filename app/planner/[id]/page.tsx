@@ -7,7 +7,8 @@ import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import ShareItinerary from "@/components/planner/ShareItinerary";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation, Share, Sun, Cloud, CloudSun, CloudRain, Snowflake } from "lucide-react";
+// 🔥 修正：這裡補回了 Edit 
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation, Share, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -81,19 +82,27 @@ export default function PlannerPage() {
       if (!error) { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); updateDayCoverImage(trip.id, activeDay, publicUrl); }
   };
 
+  const WeatherIcon = ({ code }: { code?: number }) => {
+    if (code === undefined) return <Sun size={12} className="text-gray-300" />;
+    if (code <= 1) return <Sun size={12} className="text-orange-400" />;
+    if (code <= 3) return <CloudSun size={12} className="text-gray-400" />;
+    if (code >= 51 && code <= 67) return <CloudRain size={12} className="text-blue-400" />;
+    return <Cloud size={12} className="text-gray-400" />;
+  };
+
   return (
-    <div className="flex h-screen bg-white font-sans text-[#333333] overflow-hidden">
+    <div className="flex h-screen bg-white font-sans text-jp-charcoal overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative overflow-hidden">
         
-        {/* 手機版 Header */}
+        {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
            <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-400"/></Link>
            <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
            <button onClick={() => setIsModalOpen(true)} className="bg-black text-white p-2 rounded-lg shadow-sm active:scale-95 transition-transform"><Plus size={20}/></button>
         </div>
 
-        {/* 桌面日子選單 */}
+        {/* Desktop Sidebar */}
         <div className="hidden md:flex w-72 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col shrink-0 z-20 pt-10">
           <div className="px-8 pb-8 border-b border-gray-50 sticky top-0 bg-white z-10">
             <Link href="/" className="flex items-center gap-2 text-[10px] text-gray-300 hover:text-black mb-6 transition-colors tracking-widest uppercase font-medium"><ArrowLeft size={10}/> BACK</Link>
@@ -109,7 +118,7 @@ export default function PlannerPage() {
                 <button key={dayItem.day} onClick={() => setActiveDay(index)} className={`w-full text-left py-6 px-8 transition-all duration-300 group relative border-b border-gray-50 last:border-0 ${activeDay === index ? "bg-gray-50" : "hover:bg-gray-50"}`}>
                   <div className="flex justify-between items-center relative z-10"><span className={clsx("text-xs tracking-[0.15em] uppercase", activeDay === index ? "font-semibold text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span><span className="text-[9px] text-gray-400 font-medium uppercase">{format(parseISO(dayItem.date), 'EEE')}</span></div>
                   <div className="text-[9px] mt-1 text-gray-300 font-light">{dayItem.date}</div>
-                  <div className="mt-2 flex items-center gap-2 text-[9px] text-gray-400"><span>{info ? info.temp : "15°/25°"}</span></div>
+                  <div className="mt-2 flex items-center gap-2 text-[9px] text-gray-400"><WeatherIcon code={info?.code} /><span>{info ? info.temp : "15°/25°"}</span></div>
                   {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-black" />}
                 </button>
               )
@@ -118,14 +127,14 @@ export default function PlannerPage() {
           </div>
         </div>
 
-        {/* 手機日子 Slider */}
+        {/* Mobile Slider */}
         <div className="md:hidden w-full bg-white border-b border-gray-100 z-30 shrink-0 shadow-sm overflow-hidden">
            <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar py-4 px-4 gap-3 items-center">
               {trip.dailyItinerary.map((dayItem, index) => {
                  const info = weatherMap[dayItem.date];
                  return (
                    <button key={dayItem.day} onClick={() => setActiveDay(index)} className={clsx(
-                     "flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-300 rounded-xl", 
+                     "flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-200 rounded-xl", 
                      activeDay === index ? "bg-black text-white border-black shadow-lg scale-105" : "bg-white text-gray-400 border-gray-100"
                    )}>
                       <span className="text-[9px] font-bold uppercase tracking-widest">{format(parseISO(dayItem.date), 'EEE')}</span><span className="text-xl font-bold leading-none my-1">{dayItem.day}</span><span className="text-[8px] font-medium opacity-60">{info ? info.temp : "15°/25°"}</span>
@@ -136,38 +145,24 @@ export default function PlannerPage() {
            </div>
         </div>
 
-        {/* ==================== 核心內容：Banner 改動位置 ==================== */}
+        {/* Content */}
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full no-scrollbar pb-32"> 
           <div className="h-44 md:h-80 relative w-full shrink-0 group">
-            {/* 🔥 修正：移除了所有 Gradient 遮罩，顯示 Full Color */}
-            <Image 
-                src={currentDailyItinerary?.coverImage || trip.coverImage || ""} 
-                alt="Cover" 
-                fill 
-                className="object-cover object-center" 
-                priority 
-            />
-            
-            {/* 文字改用 Drop Shadow 確保在複雜背景下也清晰 */}
-            <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
-               <div className="animate-fade-in-up">
-                 <h3 className="text-4xl md:text-7xl font-semibold tracking-tighter uppercase leading-none text-black drop-shadow-[0_2px_15px_rgba(255,255,255,0.8)]">
-                    Day {activeDay + 1}
-                 </h3>
-                 
-                 <button 
-                    onClick={handleEditLocation} 
-                    className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-md hover:bg-white transition-all z-20"
-                 >
-                    <MapPin size={10} /><span>{displayLocation}</span><Edit size={8} className="opacity-50"/>
-                    <span className="w-px h-3 bg-gray-300"></span><Clock size={10} /><span>{currentDailyItinerary?.date}</span>
-                 </button>
-               </div>
+            <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20 text-black">
+               <h3 className="text-4xl md:text-7xl font-semibold tracking-tighter uppercase leading-none text-black" style={{fontFamily: 'var(--font-inter)', textShadow: '0 2px 15px rgba(255,255,255,0.8)'}}>Day {activeDay + 1}</h3>
+               
+               <button 
+                  onClick={handleEditLocation} 
+                  className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-md hover:bg-white transition-all z-20"
+               >
+                  <MapPin size={10} /><span>{displayLocation}</span><Edit size={8} className="opacity-50"/>
+                  <span className="w-px h-3 bg-gray-300"></span><Clock size={10} /><span>{currentDailyItinerary?.date}</span>
+               </button>
+
             </div>
-            
-            <label className="absolute top-4 right-4 bg-white/80 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white shadow-sm">
-                <Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/>
-            </label>
+            <label className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white shadow-sm"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
           </div>
 
           <div className="px-4 md:px-12 py-6 max-w-5xl mx-auto min-h-[500px]">
