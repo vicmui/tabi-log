@@ -17,7 +17,8 @@ const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg:
 
 interface Props { dayIndex: number; activities: Activity[]; tripId: string; onActivityClick: (id: string) => void; isReadOnly?: boolean; }
 
-const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: any) => {
+// 🔥 修正：ItemContent 必須接收 tripId 和 dayIndex
+const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tripId, dayIndex }: any) => {
     const { updateActivity } = useTripStore();
     
     const handleNavigate = (e: React.MouseEvent) => {
@@ -26,12 +27,12 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: a
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=transit`, '_blank');
     };
 
+    // 🔥 修正重點：補回 tripId 和 dayIndex，打卡功能復活！
     const toggleCheck = (e: React.MouseEvent) => {
         e.stopPropagation();
-        updateActivity(activity.id, { isVisited: !activity.isVisited });
+        updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
     };
 
-    // 只有大於 0 才顯示費用
     const costValue = Number(activity.cost);
     const hasCost = !isNaN(costValue) && costValue > 0;
 
@@ -59,7 +60,6 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: a
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex justify-between items-start mb-1">
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
-                        
                         {/* 費用顯示 (僅當 > 0) */}
                         {hasCost && (
                             <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
@@ -69,19 +69,12 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: a
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {/* 類別標籤 */}
                         <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
-                        
-                        {/* 評分星星 */}
                         {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
-                        
-                        {/* 🔥 已移除 Map Tag */}
                     </div>
                     
-                    {/* 備註 */}
                     {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
                     
-                    {/* 操作按鈕 */}
                     <div className={clsx("flex gap-3 mt-3 pt-3 border-t border-gray-50 transition-opacity", isReadOnly ? "" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100")}>
                         <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
                         {!isReadOnly && (
@@ -106,6 +99,7 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
     <div className="relative overflow-visible" ref={provided.innerRef} {...provided.draggableProps}>
       <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl my-1"><Trash2 className="text-white" size={20} /></motion.div>
       <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="relative z-10 group" {...provided.dragHandleProps}>
+          {/* 🔥 傳遞 tripId, dayIndex 給 ItemContent */}
           <ItemContent activity={activity} onActivityClick={onActivityClick} isReadOnly={false} config={config} tripId={tripId} dayIndex={dayIndex} index={index} />
       </motion.div>
     </div>
