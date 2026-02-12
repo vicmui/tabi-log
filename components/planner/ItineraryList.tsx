@@ -6,18 +6,19 @@ import clsx from "clsx";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import TravelStats from "./TravelStats";
 
+// 🔥 1. 改返做彩色設定
 const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg: string }> = {
-  Food: { icon: Utensils, label: "美食", color: "text-gray-600", bg: "bg-gray-100" }, // 改為黑白灰風格
-  Sightseeing: { icon: Camera, label: "景點", color: "text-gray-600", bg: "bg-gray-100" },
-  Transport: { icon: Train, label: "交通", color: "text-gray-600", bg: "bg-gray-100" },
-  Hotel: { icon: Bed, label: "住宿", color: "text-gray-600", bg: "bg-gray-100" },
-  Shopping: { icon: ShoppingBag, label: "購物", color: "text-gray-600", bg: "bg-gray-100" },
-  Other: { icon: MapPin, label: "其他", color: "text-gray-600", bg: "bg-gray-100" },
+  Food: { icon: Utensils, label: "美食", color: "text-orange-600", bg: "bg-orange-50" },
+  Sightseeing: { icon: Camera, label: "景點", color: "text-blue-600", bg: "bg-blue-50" },
+  Transport: { icon: Train, label: "交通", color: "text-green-600", bg: "bg-green-50" },
+  Hotel: { icon: Bed, label: "住宿", color: "text-purple-600", bg: "bg-purple-50" },
+  Shopping: { icon: ShoppingBag, label: "購物", color: "text-pink-600", bg: "bg-pink-50" },
+  Other: { icon: MapPin, label: "其他", color: "text-gray-600", bg: "bg-gray-50" },
 };
 
 interface Props { dayIndex: number; activities: Activity[]; tripId: string; onActivityClick: (id: string) => void; isReadOnly?: boolean; }
 
-const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tripId, dayIndex }: any) => {
+const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index }: any) => {
     const { updateActivity } = useTripStore();
     
     const handleNavigate = (e: React.MouseEvent) => {
@@ -28,17 +29,17 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
 
     const toggleCheck = (e: React.MouseEvent) => {
         e.stopPropagation();
-        updateActivity(tripId, dayIndex, activity.id, { isVisited: !activity.isVisited });
+        updateActivity(activity.id, { isVisited: !activity.isVisited });
     };
 
-    // 🔥 嚴格處理金額顯示：確保轉為數字，且必須大於 0 才顯示
+    // 🔥 2. 嚴格檢查：只有大於 0 才顯示 (防止 0 或 "0" 出現)
     const costValue = Number(activity.cost);
     const hasCost = !isNaN(costValue) && costValue > 0;
 
     return (
         <div className="relative group ml-4">
             
-            {/* 🔥 United Tokyo 風格數字波波：純黑底 + 白字 + 粗白邊 */}
+            {/* 數字波波 (保持黑色型格) */}
             <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm shadow-md border-4 border-white z-20">
                 {index + 1}
             </div>
@@ -60,7 +61,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                     <div className="flex justify-between items-start mb-1">
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
                         
-                        {/* 🔥 只有 hasCost 為 true 時才顯示 */}
+                        {/* 🔥 價錢只會在這裡顯示，而且必須 > 0 */}
                         {hasCost && (
                             <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
                                 ¥ {costValue.toLocaleString()}
@@ -68,20 +69,21 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                         )}
                     </div>
                     
+                    {/* 🔥 標籤區：這裡我移除了任何可能顯示 "0" 的變數，只保留標籤、星星同地圖 */}
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {/* 標籤改為黑白灰風格 */}
+                        {/* 標籤 (彩色) */}
                         <span className={clsx("text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm", config.bg, config.color, "border-transparent")}>{config.label}</span>
                         
-                        {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-black font-bold">★ {activity.rating}</span>}
+                        {activity.rating && activity.rating > 0 && <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>}
                         {activity.address && <span className="text-[9px] text-gray-400 flex items-center gap-0.5 bg-gray-50 px-1 rounded"><MapPin size={8}/> Map</span>}
                     </div>
                     
                     {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
                     
                     <div className={clsx("flex gap-3 mt-3 pt-3 border-t border-gray-50 transition-opacity", isReadOnly ? "" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100")}>
-                        <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-black font-bold hover:underline bg-gray-100 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
+                        <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
                         {!isReadOnly && (
-                            <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-gray-500 font-bold hover:underline bg-gray-50 px-2.5 py-1 rounded">
+                            <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-green-600 font-bold hover:underline bg-green-50 px-2.5 py-1 rounded">
                                 {activity.isVisited ? <><Circle size={10}/> 取消</> : <><CheckCircle2 size={10}/> 打卡</>}
                             </button>
                         )}
