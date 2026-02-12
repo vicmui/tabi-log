@@ -11,6 +11,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
+  // 1. 強力數據清洗 (過濾 null 及 確保數值正確)
   const markers = useMemo(() => {
     if (!activities) return [];
     return activities
@@ -27,6 +28,7 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
 
   const path = useMemo(() => markers.map(m => ({ lat: m.lat, lng: m.lng })), [markers]);
 
+  // 2. 自動縮放邏輯
   useEffect(() => {
     if (mapRef.current) {
         if (markers.length > 0) {
@@ -53,10 +55,12 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden shadow-sm border border-gray-200 bg-gray-50 relative">
-      <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm border border-gray-200 text-[10px] font-bold text-gray-600 flex items-center gap-1">
-         <MapPin size={10} className={markers.length > 0 ? "text-green-500" : "text-gray-400"}/>
-         {markers.length > 0 ? `已定位 ${markers.length} 個地點` : "暫無座標資料"}
+      {/* 已定位地點顯示 */}
+      <div className="absolute top-3 left-3 z-10 bg-black/80 backdrop-blur text-white px-3 py-1.5 rounded-lg shadow-lg text-[10px] font-bold flex items-center gap-2 tracking-widest uppercase">
+         <MapPin size={10} className={markers.length > 0 ? "text-white" : "text-gray-500"}/>
+         {markers.length > 0 ? `LOCATED: ${markers.length} PLACES` : "NO COORDINATES"}
       </div>
+
       <GoogleMap 
         mapContainerStyle={containerStyle} 
         center={DEFAULT_CENTER} 
@@ -65,19 +69,74 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
             disableDefaultUI: true, 
             zoomControl: true, 
             clickableIcons: true, 
-            maxZoom: 18 
-            // 🔥 已移除樣式設定，恢復彩色
+            maxZoom: 18,
+            // 🔥 已移除自定義 styles，還原 Google Maps 原始彩色
         }} 
         onLoad={onLoad} 
         onClick={() => setSelectedMarker(null)}
       >
-        {markers.length > 1 && <PolylineF path={path} options={{ strokeColor: '#4285F4', strokeOpacity: 0.8, strokeWeight: 4, icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 2, strokeColor: '#4285F4' }, offset: '50%', repeat: '100px' }] }} />}
-        {markers.map((marker) => (<MarkerF key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} label={{ text: marker.label, color: 'white', fontWeight: 'bold', fontSize: '12px' }} onClick={() => setSelectedMarker(marker)} />))}
+        {/* 🔥 連接線：改為純黑色 (United Tokyo Style) */}
+        {markers.length > 1 && (
+            <PolylineF 
+                path={path} 
+                options={{ 
+                    strokeColor: '#000000', 
+                    strokeOpacity: 0.8, 
+                    strokeWeight: 3, 
+                    icons: [{ 
+                        icon: { 
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
+                            scale: 2, 
+                            strokeColor: '#000000',
+                            fillColor: '#000000',
+                            fillOpacity: 1
+                        }, 
+                        offset: '50%', 
+                        repeat: '100px' 
+                    }] 
+                }} 
+            />
+        )}
+
+        {/* 🔥 Pin (Markers)：改為純黑圓點 + 白色數字邊框 */}
+        {markers.map((marker) => (
+          <MarkerF 
+            key={marker.id} 
+            position={{ lat: marker.lat, lng: marker.lng }} 
+            label={{ 
+                text: marker.label, 
+                color: 'white', 
+                fontWeight: 'bold', 
+                fontSize: '11px' 
+            }} 
+            icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                fillColor: '#000000', // 純黑
+                fillOpacity: 1,
+                scale: 12,
+                strokeColor: '#ffffff', // 白色邊框
+                strokeWeight: 2,
+            }}
+            onClick={() => setSelectedMarker(marker)}
+          />
+        ))}
+
         {selectedMarker && (
-            <InfoWindowF position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }} onCloseClick={() => setSelectedMarker(null)} options={{ pixelOffset: new google.maps.Size(0, -12) }}>
+            <InfoWindowF 
+                position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }} 
+                onCloseClick={() => setSelectedMarker(null)} 
+                options={{ pixelOffset: new google.maps.Size(0, -12) }}
+            >
                 <div className="p-2 min-w-[140px] text-center">
                     <h3 className="font-bold text-sm mb-1 text-black font-sans">{selectedMarker.title}</h3>
-                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 w-full bg-blue-600 text-white text-[10px] py-1.5 rounded hover:opacity-80 transition-opacity no-underline font-bold tracking-widest uppercase mt-2"><Navigation size={10} /> Navigate</a>
+                    <a 
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="flex items-center justify-center gap-1 w-full bg-black text-white text-[10px] py-2 rounded hover:opacity-80 transition-opacity no-underline font-bold tracking-widest uppercase mt-2"
+                    >
+                        <Navigation size={10} /> Navigate
+                    </a>
                 </div>
             </InfoWindowF>
         )}
