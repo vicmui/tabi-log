@@ -95,12 +95,14 @@ export default function PlannerPage() {
       if (!error) { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); updateDayCoverImage(trip.id, activeDay, publicUrl); }
   };
 
-  const WeatherIcon = ({ code }: { code?: number }) => {
-    if (code === undefined) return <Sun size={12} className="text-gray-300" />;
-    if (code <= 1) return <Sun size={12} className="text-orange-400" />;
-    if (code <= 3) return <CloudSun size={12} className="text-gray-400" />;
-    if (code >= 51 && code <= 67) return <CloudRain size={12} className="text-blue-400" />;
-    return <Cloud size={12} className="text-gray-400" />;
+   const WeatherIcon = ({ code }: { code?: number }) => {
+    // 🔥 全部改為黑白灰
+    if (code === undefined) return <Cloud size={12} className="text-gray-400" />;
+    if (code <= 1) return <Sun size={12} className="text-gray-500" />; // 晴天
+    if (code <= 3) return <CloudSun size={12} className="text-gray-500" />; // 多雲
+    if (code >= 51 && code <= 67) return <CloudRain size={12} className="text-gray-500" />; // 雨天
+    if (code >= 71) return <Snowflake size={12} className="text-gray-500" />; // 雪天
+    return <Cloud size={12} className="text-gray-400" />; // 陰天
   };
 
   return (
