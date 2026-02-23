@@ -89,6 +89,8 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
   const [inputPrice, setInputPrice] = useState(initDetails.price ? initDetails.price.toString() : ""); 
   const [currency, setCurrency] = useState("JPY"); 
   const [address, setAddress] = useState(initDetails.address || "");
+  const [pickupLocation, setPickupLocation] = useState(initDetails.pickupLocation || "");
+  const [dropoffLocation, setDropoffLocation] = useState(initDetails.dropoffLocation || "");
   const [fileUrl, setFileUrl] = useState(initDetails.fileUrl || "");
   const [uploading, setUploading] = useState(false);
   const [airline, setAirline] = useState(initDetails.airline || "");
@@ -110,7 +112,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
     if (currency === "HKD") finalPrice = Math.round(Number(inputPrice) / rate);
     onSave({
         id: initialData?.id || uuidv4(), type, title, date,
-        details: { price: finalPrice, address, fileUrl, ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}), ...(type === 'Hotel' ? { checkIn, checkOut } : {}) }
+        details: { price: finalPrice, address, fileUrl, ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}), ...(type === 'Hotel' ? { checkIn, checkOut } : {}), ...(type === 'Rental' ? { pickupLocation, dropoffLocation } : {}) }
     });
     onClose();
   };
@@ -132,7 +134,23 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
                <div className="space-y-1"><label className="text-[10px] text-gray-400 uppercase tracking-widest">日期</label><input className="w-full border-b p-2 text-sm focus:border-black outline-none" type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
                {type === 'Flight' && (<><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="航空公司" value={airline} onChange={e=>setAirline(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="航班號" value={flightNum} onChange={e=>setFlightNum(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛 (HKG)" value={origin} onChange={e=>setOrigin(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達 (KIX)" value={destination} onChange={e=>setDestination(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="起飛時間" value={departTime} onChange={e=>setDepartTime(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="抵達時間" value={arriveTime} onChange={e=>setArriveTime(e.target.value)}/></div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="座位" value={seat} onChange={e=>setSeat(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="登機門" value={gate} onChange={e=>setGate(e.target.value)}/></div></>)}
                {type === 'Hotel' && (<><div className="space-y-1"><div className="flex justify-between items-center"><label className="text-[10px] text-gray-400 uppercase tracking-widest">地址</label>{apiKey && <button onClick={()=>setIsGoogleMode(!isGoogleMode)} className="text-[9px] text-blue-500 underline">{isGoogleMode ? "手動" : "搜尋"}</button>}</div>{isGoogleMode && apiKey ? (<GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ placeholder: "搜尋地點...", onChange: (val: any) => setAddress(val.label), styles: { control: (p) => ({ ...p, border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, boxShadow: 'none', minHeight: '36px' }) } }} />) : (<input className="w-full border-b p-2 text-sm" placeholder="輸入地址..." value={address} onChange={e=>setAddress(e.target.value)}/>)}</div><div className="flex gap-2"><input className="flex-1 border-b p-2 text-sm" placeholder="Check-in 時間" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/><input className="flex-1 border-b p-2 text-sm" placeholder="Check-out 時間" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/></div></>)}
-               {(type === 'Rental' || type === 'Ticket') && <input className="w-full border-b p-2 text-sm" placeholder="地址 / 取車點" value={address} onChange={e=>setAddress(e.target.value)}/>}
+               {type === 'Rental' && (<>
+                 <div className="flex gap-2">
+                   <input className="flex-1 border-b p-2 text-sm" placeholder="取車地點" value={pickupLocation} onChange={e=>setPickupLocation(e.target.value)}/>
+                   <input className="flex-1 border-b p-2 text-sm" placeholder="還車地點" value={dropoffLocation} onChange={e=>setDropoffLocation(e.target.value)}/>
+                 </div>
+                 <div className="flex gap-2">
+                   <input className="flex-1 border-b p-2 text-sm" placeholder="取車時間" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/>
+                   <input className="flex-1 border-b p-2 text-sm" placeholder="還車時間" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/>
+                 </div>
+               </>)}
+               {type === 'Ticket' && (<>
+                 <input className="w-full border-b p-2 text-sm" placeholder="地點 / 場館" value={address} onChange={e=>setAddress(e.target.value)}/>
+                 <div className="flex gap-2">
+                   <input className="flex-1 border-b p-2 text-sm" placeholder="入場時間" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/>
+                   <input className="flex-1 border-b p-2 text-sm" placeholder="座位 / 區域" value={seat} onChange={e=>setSeat(e.target.value)}/>
+                 </div>
+               </>)}
                <div className="relative"><div className="flex items-center border-b"><input className="w-full p-2 text-sm focus:outline-none" type="number" placeholder="費用" value={inputPrice} onChange={e=>setInputPrice(e.target.value)}/><button onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-xs font-bold px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center">{currency} <ArrowRightLeft size={10}/></button></div>{currency === "HKD" && inputPrice && (<p className="text-[10px] text-gray-400 mt-1 text-right">≈ ¥{Math.round(Number(inputPrice) / rate).toLocaleString()} (Rate: {rate})</p>)}</div>
                <div className="pt-4"><label className={`flex items-center justify-center gap-2 w-full p-3 border border-dashed rounded-lg cursor-pointer transition-colors ${fileUrl ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-300 text-gray-400 hover:bg-gray-50'}`}><input type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} />{uploading ? <span className="animate-pulse">上傳中...</span> : fileUrl ? <><CheckCircle2 size={16}/> 憑證已上傳 (點擊更換)</> : <><Upload size={16}/> 上傳憑證 (PDF/圖片)</>}</label></div>
            </div>
