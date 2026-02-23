@@ -85,7 +85,7 @@ export default function BudgetPage() {
     const filePath = `public/${trip.id}/receipts/${uuidv4()}-${file.name}`;
     const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
     if (error) { setAlertMsg("上傳失敗：" + error.message); } 
-    else { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setReceiptUrl(publicUrl); // silent success }
+    else { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setReceiptUrl(publicUrl); }
   };
 
   const handleDelete = (id: string) => { setDeletingExpenseId(id); };
