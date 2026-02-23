@@ -44,8 +44,48 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </div>
         ) : (
-          <div className="p-10 text-center animate-pulse text-xs tracking-widest text-gray-400">
-            {loadError ? "MAP KEY ERROR" : "INITIALIZING SERVICES..."}
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
+            <div className="relative flex flex-col items-center gap-8">
+              {/* Animated plane */}
+              <div className="relative w-64 h-16 flex items-center">
+                {/* Runway / dotted trail */}
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex gap-2 items-center">
+                  {[...Array(8)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-px flex-1 bg-gray-200"
+                      style={{ animationDelay: `${i * 0.1}s` }}
+                    />
+                  ))}
+                </div>
+                {/* Plane emoji flying across */}
+                <div
+                  className="absolute text-2xl"
+                  style={{
+                    animation: "flyAcross 2s ease-in-out infinite",
+                  }}
+                >
+                  ✈️
+                </div>
+              </div>
+
+              {/* Text */}
+              <div className="text-center">
+                <p className="text-[9px] tracking-[0.35em] text-gray-400 uppercase">
+                  {loadError ? "地圖服務載入失敗" : "正在起飛中..."}
+                </p>
+              </div>
+            </div>
+
+            {/* Inline keyframes */}
+            <style>{`
+              @keyframes flyAcross {
+                0%   { left: -8px;  opacity: 0; transform: translateY(4px); }
+                15%  { opacity: 1; }
+                85%  { opacity: 1; }
+                100% { left: calc(100% - 8px); opacity: 0; transform: translateY(-4px); }
+              }
+            `}</style>
           </div>
         )}
         

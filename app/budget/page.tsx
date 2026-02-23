@@ -30,6 +30,7 @@ export default function BudgetPage() {
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [tempBudget, setTempBudget] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   if (!trip) return <div className="p-10 text-center animate-pulse">Loading...</div>;
 
@@ -135,14 +136,14 @@ export default function BudgetPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-           <div className="bg-white p-8 shadow-sm h-fit border border-gray-100 sticky top-4 z-10 relative">
+           {/* Desktop: sticky sidebar form | Mobile: hidden, opened via FAB */}
+           <div className={`bg-white p-8 shadow-sm border border-gray-100 lg:sticky lg:top-4 lg:h-fit lg:z-10
+             hidden lg:block`}>
               <div className="flex justify-between items-center mb-6"><h3 className="font-serif font-bold">{editingExpenseId ? "編輯" : "新增"}支出</h3>{editingExpenseId && <button onClick={()=>{setEditingExpenseId(null); setItemName(""); setAmount(""); setReceiptUrl("")}} className="text-xs text-gray-400">取消</button>}</div>
               <div className="space-y-4">
                  <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full border-b p-2 text-sm" />
                  <input type="text" placeholder="項目" value={itemName} onChange={e=>setItemName(e.target.value)} className="w-full border-b p-2 text-sm" />
-                 
                  <div className="relative"><div className="flex items-center border-b"><input className="w-full p-2 text-xl focus:outline-none" type="number" placeholder="金額" value={amount} onChange={e=>setAmount(e.target.value)}/><button onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-xs font-bold px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center">{currency} <ArrowRightLeft size={10}/></button></div>{currency === "HKD" && amount && <p className="text-[10px] text-gray-400 mt-1 text-right">≈ ¥{Math.round(Number(amount) / rate).toLocaleString()}</p>}</div>
-
                  <div><label className="text-[10px]">付款:</label><div className="flex gap-2 mt-1">{trip.members.map(m => (<button key={m.id} onClick={()=>setPayer(m.id)} className={`flex-1 border py-2 text-xs ${payer===m.id?'bg-black text-white':'bg-gray-50'}`}>{m.name}</button>))}</div></div>
                  <div><div className="flex justify-between items-center mb-2"><label className="text-[10px]">分攤:</label><button onClick={()=>{ setIsCustomSplit(!isCustomSplit); if(!isCustomSplit) distributeEvenly(); }} className="flex items-center gap-1 text-[10px] bg-gray-100 px-2 py-1 rounded"><Settings2 size={10}/> {isCustomSplit ? "自訂" : "平均"}</button></div><div className="flex gap-2 flex-wrap mb-2"><button onClick={()=>setSplitWith(trip.members.map(m=>m.id))} className="text-[10px] underline mr-2">全員</button>{trip.members.map(m => (<button key={m.id} onClick={()=>{ setSplitWith(prev => prev.includes(m.id) ? prev.filter(id=>id!==m.id) : [...prev, m.id]) }} className={`px-3 py-1 text-xs border ${splitWith.includes(m.id)?'bg-gray-200':'text-gray-300'}`}>{m.name}</button>))}</div>{isCustomSplit && splitWith.length > 0 && (<div className="bg-gray-50 p-3 rounded space-y-2 border border-dashed">{splitWith.map(mid => { const m = trip.members.find(mem=>mem.id===mid); return (<div key={mid} className="flex justify-between"><span className="text-xs">{m?.name}</span><input type="number" className="w-20 border-b bg-transparent text-right text-sm" placeholder="0" value={customAmounts[mid] || ''} onChange={(e) => setCustomAmounts({...customAmounts, [mid]: e.target.value})}/></div>)})}</div>)}</div>
                  <div className="flex flex-wrap gap-2">{Object.keys(CAT_CONFIG).map(c => (<button key={c} onClick={()=>setCategory(c as any)} className={`px-2 py-1 text-[10px] border ${category===c?'bg-black text-white':'border-gray-200'}`}>{CAT_CONFIG[c as ExpenseCategory].label}</button>))}</div>
@@ -153,9 +154,52 @@ export default function BudgetPage() {
 
            <div className="lg:col-span-2 space-y-8 overflow-hidden">
               <div className="flex flex-col md:flex-row gap-8 items-center bg-white p-6 border border-gray-100"><div className="w-full md:w-1/2 h-[200px] md:h-[250px] relative z-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} innerRadius={60} outerRadius={80} dataKey="value">{chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CAT_CONFIG[entry.name as ExpenseCategory]?.color} stroke="none"/>)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div><div className="w-full md:w-1/2 space-y-3">{Object.keys(catStats).map(cat => { const percent = totalSpent > 0 ? Math.round((catStats[cat]/totalSpent)*100) : 0; const conf = CAT_CONFIG[cat as ExpenseCategory]; return (<div key={cat}><div className="flex justify-between text-xs mb-1"><span className="flex items-center gap-2"><conf.icon size={12} color={conf.color}/> {conf.label}</span><span>{percent}%</span></div><div className="h-1 bg-gray-100 w-full"><div className="h-full" style={{width: `${percent}%`, backgroundColor: conf.color}}/></div></div>)})}</div></div>
-              <div className="space-y-2">{trip.expenses.map(exp => (<div key={exp.id} className="bg-white p-4 flex justify-between items-center border-b hover:bg-gray-50 group"><div className="flex items-center gap-4"><div className="text-xs text-gray-400 font-mono w-20">{exp.date}</div><div><p className="font-bold text-sm flex items-center gap-2">{exp.itemName} {exp.receiptUrl && <a href={exp.receiptUrl} target="_blank"><Paperclip size={12}/></a>}</p><p className="text-[10px] text-gray-400">{CAT_CONFIG[exp.category].label} • Paid by {trip.members.find(m=>m.id===exp.payerId)?.name} {exp.customSplit ? '(自訂)' : ''}</p></div></div><div className="flex items-center gap-4"><span className="font-serif">¥{exp.amount.toLocaleString()}</span><div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>handleEditExpense(exp)}><Edit size={14}/></button><button onClick={()=>handleDelete(exp.id)}><Trash2 size={14}/></button></div></div></div>))}</div>
+              <div className="space-y-2">{trip.expenses.map(exp => (<div key={exp.id} className="bg-white p-4 flex justify-between items-center border-b hover:bg-gray-50 group"><div className="flex items-center gap-4"><div className="text-xs text-gray-400 font-mono w-20">{exp.date}</div><div><p className="font-bold text-sm flex items-center gap-2">{exp.itemName} {exp.receiptUrl && <a href={exp.receiptUrl} target="_blank"><Paperclip size={12}/></a>}</p><p className="text-[10px] text-gray-400">{CAT_CONFIG[exp.category].label} • Paid by {trip.members.find(m=>m.id===exp.payerId)?.name} {exp.customSplit ? '(自訂)' : ''}</p></div></div><div className="flex items-center gap-4"><span className="font-serif">¥{exp.amount.toLocaleString()}</span><div className="flex gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>{ handleEditExpense(exp); setIsFormOpen(true); }}><Edit size={14}/></button><button onClick={()=>handleDelete(exp.id)}><Trash2 size={14}/></button></div></div></div>))}</div>
            </div>
         </div>
+
+        {/* ── Mobile FAB ── */}
+        <button
+          onClick={() => { setEditingExpenseId(null); setItemName(""); setAmount(""); setReceiptUrl(""); setIsFormOpen(true); }}
+          className="fixed bottom-24 right-5 lg:hidden w-14 h-14 bg-neutral-900 text-white rounded-full shadow-xl flex items-center justify-center z-40 active:scale-95 transition-transform"
+          aria-label="新增支出"
+        >
+          <span className="text-2xl leading-none">+</span>
+        </button>
+
+        {/* ── Mobile Bottom Sheet ── */}
+        {isFormOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+              onClick={() => { setIsFormOpen(false); setEditingExpenseId(null); }}
+            />
+            {/* Sheet */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white rounded-t-2xl shadow-2xl max-h-[90dvh] overflow-y-auto">
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 bg-gray-200 rounded-full" />
+              </div>
+              <div className="p-6 pb-10">
+                <div className="flex justify-between items-center mb-5">
+                  <h3 className="font-serif font-bold text-lg">{editingExpenseId ? "編輯支出" : "新增支出"}</h3>
+                  <button onClick={() => { setIsFormOpen(false); setEditingExpenseId(null); }} className="text-xs text-gray-400 border border-gray-200 px-3 py-1 rounded-full">取消</button>
+                </div>
+                <div className="space-y-4">
+                  <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full border-b p-2 text-sm" />
+                  <input type="text" placeholder="項目" value={itemName} onChange={e=>setItemName(e.target.value)} className="w-full border-b p-2 text-sm" />
+                  <div className="relative"><div className="flex items-center border-b"><input className="w-full p-2 text-xl focus:outline-none" type="number" placeholder="金額" value={amount} onChange={e=>setAmount(e.target.value)}/><button onClick={()=>setCurrency(currency==="JPY"?"HKD":"JPY")} className="text-xs font-bold px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center">{currency} <ArrowRightLeft size={10}/></button></div>{currency === "HKD" && amount && <p className="text-[10px] text-gray-400 mt-1 text-right">≈ ¥{Math.round(Number(amount) / rate).toLocaleString()}</p>}</div>
+                  <div><label className="text-[10px]">付款:</label><div className="flex gap-2 mt-1">{trip.members.map(m => (<button key={m.id} onClick={()=>setPayer(m.id)} className={`flex-1 border py-2 text-xs ${payer===m.id?'bg-black text-white':'bg-gray-50'}`}>{m.name}</button>))}</div></div>
+                  <div><div className="flex justify-between items-center mb-2"><label className="text-[10px]">分攤:</label><button onClick={()=>{ setIsCustomSplit(!isCustomSplit); if(!isCustomSplit) distributeEvenly(); }} className="flex items-center gap-1 text-[10px] bg-gray-100 px-2 py-1 rounded"><Settings2 size={10}/> {isCustomSplit ? "自訂" : "平均"}</button></div><div className="flex gap-2 flex-wrap mb-2"><button onClick={()=>setSplitWith(trip.members.map(m=>m.id))} className="text-[10px] underline mr-2">全員</button>{trip.members.map(m => (<button key={m.id} onClick={()=>{ setSplitWith(prev => prev.includes(m.id) ? prev.filter(id=>id!==m.id) : [...prev, m.id]) }} className={`px-3 py-1 text-xs border ${splitWith.includes(m.id)?'bg-gray-200':'text-gray-300'}`}>{m.name}</button>))}</div>{isCustomSplit && splitWith.length > 0 && (<div className="bg-gray-50 p-3 rounded space-y-2 border border-dashed">{splitWith.map(mid => { const m = trip.members.find(mem=>mem.id===mid); return (<div key={mid} className="flex justify-between"><span className="text-xs">{m?.name}</span><input type="number" className="w-20 border-b bg-transparent text-right text-sm" placeholder="0" value={customAmounts[mid] || ''} onChange={(e) => setCustomAmounts({...customAmounts, [mid]: e.target.value})}/></div>)})}</div>)}</div>
+                  <div className="flex flex-wrap gap-2">{Object.keys(CAT_CONFIG).map(c => (<button key={c} onClick={()=>setCategory(c as any)} className={`px-2 py-1 text-[10px] border ${category===c?'bg-black text-white':'border-gray-200'}`}>{CAT_CONFIG[c as ExpenseCategory].label}</button>))}</div>
+                  <label className="flex items-center gap-2 text-[10px] text-gray-400 border border-dashed w-full justify-center py-3 cursor-pointer"><input type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} /><Upload size={14}/> {receiptUrl ? "已上傳" : "上傳單據"}</label>
+                  <button onClick={() => { handleAdd(); setIsFormOpen(false); }} className="w-full bg-neutral-900 text-white py-3.5 uppercase text-xs tracking-widest hover:bg-black rounded-xl">{editingExpenseId ? "更新" : "新增"}</button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
