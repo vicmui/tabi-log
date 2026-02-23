@@ -110,8 +110,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
            {isEditing ? (
                <div className="space-y-5">
                   <div><label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label><input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} /></div>
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                      <label className="text-[10px] text-blue-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map</label>
+                  <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                      <label className="text-[10px] text-neutral-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map</label>
                       {apiKey ? (
                         <div className="bg-white border p-1 rounded">
                            <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ 

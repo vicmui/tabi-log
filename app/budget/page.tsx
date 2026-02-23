@@ -102,10 +102,40 @@ export default function BudgetPage() {
 
         <div className="mb-10"><h2 className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">結算建議</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{debts.length > 0 ? debts.map((d, idx) => (<div key={idx} className="bg-white p-6 border-l-4 border-jp-charcoal shadow-sm flex items-center justify-between"><div className="flex items-center gap-2 text-sm"><span className="font-bold">{getMemberName(d.from)}</span><ArrowRight size={14} className="text-gray-400"/><span className="font-bold">{getMemberName(d.to)}</span></div><span className="font-serif text-xl font-bold">¥{Math.round(d.amount).toLocaleString()}</span></div>)) : <div className="text-gray-400 text-sm">目前無債務</div>}</div></div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10"><div className="bg-jp-charcoal text-white p-6 shadow-lg relative group cursor-pointer" onClick={() => {setTempBudget(trip.budgetTotal.toString()); setIsEditingBudget(true)}}><p className="text-[10px] tracking-widest opacity-60 uppercase">總預算 <Edit size={10} className="inline ml-1 opacity-50 group-hover:opacity-100"/></p>{isEditingBudget ? (<div className="flex items-center gap-2 mt-2"><input autoFocus className="text-black px-2 py-1 w-32 rounded text-lg" type="number" value={tempBudget} onClick={(e)=>e.stopPropagation()} onChange={(e)=>setTempBudget(e.target.value)}/><button className="bg-white text-black px-2 py-1 text-xs rounded" onClick={(e)=>{ e.stopPropagation(); updateBudgetTotal(trip.id, Number(tempBudget)); setIsEditingBudget(false); }}>OK</button></div>) : (<h2 className="text-3xl font-serif font-bold">¥{trip.budgetTotal.toLocaleString()}</h2>)}</div><div className="bg-white p-6 shadow-sm border border-gray-100"><p className="text-[10px] tracking-widest text-gray-400 uppercase">已花費</p><h2 className="text-3xl font-serif font-bold text-blue-600">¥{totalSpent.toLocaleString()}</h2></div><div className={isOverBudget ? "bg-red-500 text-white p-6 shadow-sm" : "bg-white p-6 shadow-sm border border-gray-100"}><p className="text-[10px] tracking-widest opacity-60 uppercase">剩餘</p><h2 className="text-3xl font-serif font-bold">¥{remaining.toLocaleString()}</h2></div></div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-10"><div className="col-span-2 md:col-span-1 bg-jp-charcoal text-white p-6 shadow-lg relative group cursor-pointer" onClick={() => {setTempBudget(trip.budgetTotal.toString()); setIsEditingBudget(true)}}><p className="text-[10px] tracking-widest opacity-60 uppercase">總預算 <Edit size={10} className="inline ml-1 opacity-50 group-hover:opacity-100"/></p>{isEditingBudget ? (<div className="flex items-center gap-2 mt-2"><input autoFocus className="text-black px-2 py-1 w-32 rounded text-lg" type="number" value={tempBudget} onClick={(e)=>e.stopPropagation()} onChange={(e)=>setTempBudget(e.target.value)}/><button className="bg-white text-black px-2 py-1 text-xs rounded" onClick={(e)=>{ e.stopPropagation(); updateBudgetTotal(trip.id, Number(tempBudget)); setIsEditingBudget(false); }}>OK</button></div>) : (<h2 className="text-3xl font-serif font-bold">¥{trip.budgetTotal.toLocaleString()}</h2>)}</div><div className="bg-white p-6 shadow-sm border border-gray-100"><p className="text-[10px] tracking-widest text-gray-400 uppercase">已花費</p><h2 className="text-3xl font-serif font-bold text-neutral-900">¥{totalSpent.toLocaleString()}</h2></div><div className={isOverBudget ? "bg-red-500 text-white p-6 shadow-sm" : "bg-white p-6 shadow-sm border border-gray-100"}><p className="text-[10px] tracking-widest opacity-60 uppercase">剩餘</p><h2 className="text-3xl font-serif font-bold">¥{remaining.toLocaleString()}</h2></div></div>
+
+        {/* Budget Progress Bar */}
+        <div className="mb-10 bg-white p-6 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] tracking-[0.2em] text-gray-400 uppercase">預算使用進度</span>
+            <span className="text-[10px] text-gray-400 font-mono">
+              {trip.budgetTotal > 0 ? Math.min(Math.round((totalSpent / trip.budgetTotal) * 100), 100) : 0}%
+            </span>
+          </div>
+          <div className="h-1 bg-gray-100 w-full rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${trip.budgetTotal > 0 ? Math.min((totalSpent / trip.budgetTotal) * 100, 100) : 0}%`,
+                backgroundColor: trip.budgetTotal > 0
+                  ? (totalSpent / trip.budgetTotal) < 0.6 ? "#16a34a"
+                  : (totalSpent / trip.budgetTotal) < 0.85 ? "#d97706"
+                  : "#dc2626"
+                  : "#16a34a"
+              }}
+            />
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">
+            {!isOverBudget
+              ? trip.budgetTotal > 0 && (totalSpent / trip.budgetTotal) >= 0.85 ? "🔴 接近預算上限"
+              : trip.budgetTotal > 0 && (totalSpent / trip.budgetTotal) >= 0.6 ? "🟡 注意消費步伐"
+              : "💚 預算充裕"
+              : "⛔ 已超出預算"}
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-           <div className="bg-white p-8 shadow-sm h-fit border border-gray-100 sticky top-4">
+           <div className="bg-white p-8 shadow-sm h-fit border border-gray-100 sticky top-4 z-10 relative">
               <div className="flex justify-between items-center mb-6"><h3 className="font-serif font-bold">{editingExpenseId ? "編輯" : "新增"}支出</h3>{editingExpenseId && <button onClick={()=>{setEditingExpenseId(null); setItemName(""); setAmount(""); setReceiptUrl("")}} className="text-xs text-gray-400">取消</button>}</div>
               <div className="space-y-4">
                  <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full border-b p-2 text-sm" />
@@ -121,8 +151,8 @@ export default function BudgetPage() {
               </div>
            </div>
 
-           <div className="lg:col-span-2 space-y-8">
-              <div className="flex flex-col md:flex-row gap-8 items-center bg-white p-6 border border-gray-100"><div className="w-full md:w-1/2 h-[250px]"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} innerRadius={60} outerRadius={80} dataKey="value">{chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CAT_CONFIG[entry.name as ExpenseCategory]?.color} stroke="none"/>)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div><div className="w-full md:w-1/2 space-y-3">{Object.keys(catStats).map(cat => { const percent = totalSpent > 0 ? Math.round((catStats[cat]/totalSpent)*100) : 0; const conf = CAT_CONFIG[cat as ExpenseCategory]; return (<div key={cat}><div className="flex justify-between text-xs mb-1"><span className="flex items-center gap-2"><conf.icon size={12} color={conf.color}/> {conf.label}</span><span>{percent}%</span></div><div className="h-1 bg-gray-100 w-full"><div className="h-full" style={{width: `${percent}%`, backgroundColor: conf.color}}/></div></div>)})}</div></div>
+           <div className="lg:col-span-2 space-y-8 overflow-hidden">
+              <div className="flex flex-col md:flex-row gap-8 items-center bg-white p-6 border border-gray-100"><div className="w-full md:w-1/2 h-[200px] md:h-[250px] relative z-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} innerRadius={60} outerRadius={80} dataKey="value">{chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={CAT_CONFIG[entry.name as ExpenseCategory]?.color} stroke="none"/>)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div><div className="w-full md:w-1/2 space-y-3">{Object.keys(catStats).map(cat => { const percent = totalSpent > 0 ? Math.round((catStats[cat]/totalSpent)*100) : 0; const conf = CAT_CONFIG[cat as ExpenseCategory]; return (<div key={cat}><div className="flex justify-between text-xs mb-1"><span className="flex items-center gap-2"><conf.icon size={12} color={conf.color}/> {conf.label}</span><span>{percent}%</span></div><div className="h-1 bg-gray-100 w-full"><div className="h-full" style={{width: `${percent}%`, backgroundColor: conf.color}}/></div></div>)})}</div></div>
               <div className="space-y-2">{trip.expenses.map(exp => (<div key={exp.id} className="bg-white p-4 flex justify-between items-center border-b hover:bg-gray-50 group"><div className="flex items-center gap-4"><div className="text-xs text-gray-400 font-mono w-20">{exp.date}</div><div><p className="font-bold text-sm flex items-center gap-2">{exp.itemName} {exp.receiptUrl && <a href={exp.receiptUrl} target="_blank"><Paperclip size={12}/></a>}</p><p className="text-[10px] text-gray-400">{CAT_CONFIG[exp.category].label} • Paid by {trip.members.find(m=>m.id===exp.payerId)?.name} {exp.customSplit ? '(自訂)' : ''}</p></div></div><div className="flex items-center gap-4"><span className="font-serif">¥{exp.amount.toLocaleString()}</span><div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>handleEditExpense(exp)}><Edit size={14}/></button><button onClick={()=>handleDelete(exp.id)}><Trash2 size={14}/></button></div></div></div>))}</div>
            </div>
         </div>

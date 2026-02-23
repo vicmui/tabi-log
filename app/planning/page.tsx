@@ -18,7 +18,7 @@ const SortablePlanItem = ({ item, trip, onEdit }: { item: PlanItem, trip: any, o
 
     const { togglePlanItem, deletePlanItem } = useTripStore();
     const assigned = trip.members.find((m: any) => m.id === item.assigneeId);
-    const priorityColor = { High: "text-red-500", Medium: "text-yellow-500", Low: "text-blue-500" };
+    const priorityColor = { High: "border border-neutral-800 text-neutral-800", Medium: "border border-neutral-400 text-neutral-500", Low: "border border-neutral-300 text-neutral-400" };
 
     return (
         <div ref={setNodeRef} style={style} className={clsx("p-4 border bg-white hover:shadow-md transition-shadow relative group rounded-lg flex items-start gap-4", item.isCompleted && "opacity-50")}>
@@ -29,7 +29,7 @@ const SortablePlanItem = ({ item, trip, onEdit }: { item: PlanItem, trip: any, o
                 <div className="flex-1">
                     <p className={clsx("font-medium", item.isCompleted && "line-through text-gray-400")}>{item.text}</p>
                     <div className="flex items-center gap-4 mt-2">
-                        <span className={`text-[9px] uppercase font-bold ${priorityColor[item.priority]}`}>{item.priority}</span>
+                        <span className={`text-[9px] uppercase font-semibold tracking-widest px-2 py-0.5 rounded-sm ${priorityColor[item.priority]}`}>{item.priority}</span>
                         {item.location && <p className="text-xs text-gray-400">📍 {item.location}</p>}
                     </div>
                     {assigned && (
