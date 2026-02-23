@@ -102,7 +102,7 @@ export default function PlanningPage() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]; if (!file) return; setIsUploading(true);
-      try { const filePath = `public/${trip.id}/planning/${uuidv4()}-${file.name}`; const { error } = await supabase.storage.from('trip_files').upload(filePath, file); if (error) throw error; const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setImageUrl(publicUrl); } catch (error: any) { alert("上傳失敗: " + error.message); } finally { setIsUploading(false); }
+      try { const filePath = `public/${trip.id}/planning/${uuidv4()}-${file.name}`; const { error } = await supabase.storage.from('trip_files').upload(filePath, file); if (error) throw error; const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setImageUrl(publicUrl); } catch (error: any) { console.error("上傳失敗:", error.message); } finally { setIsUploading(false); }
   };
 
   return (

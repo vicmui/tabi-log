@@ -7,17 +7,19 @@ import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 export default function BookingsPage() {
   const { trips, activeTripId, addBooking, updateBooking, deleteBooking } = useTripStore();
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
 
   if (!trip) return <div className="p-12 text-center text-gray-400 animate-pulse">載入中...</div>;
 
   const handleEdit = (booking: Booking) => { setEditingBooking(booking); setIsModalOpen(true); };
-  const handleDelete = (id: string) => { if(confirm("確定要刪除此預訂嗎？")) deleteBooking(trip.id, id); };
+  const handleDelete = (id: string) => { setDeletingBookingId(id); };
 
   return (
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
@@ -34,6 +36,15 @@ export default function BookingsPage() {
         </div>
         
         {isModalOpen && <BookingModal initialData={editingBooking} trip={trip} onClose={()=>setIsModalOpen(false)} onSave={(b: Booking) => { if(editingBooking) updateBooking(trip.id, editingBooking.id, b); else addBooking(trip.id, b); }} />}
+
+        <ConfirmDialog
+          isOpen={!!deletingBookingId}
+          title="刪除預訂"
+          message="確定要刪除此預訂記錄嗎？此操作無法復原。"
+          confirmLabel="刪除" cancelLabel="取消" danger
+          onConfirm={() => { if (deletingBookingId) deleteBooking(trip.id, deletingBookingId); setDeletingBookingId(null); }}
+          onCancel={() => setDeletingBookingId(null)}
+        />
       </main>
     </div>
   );
@@ -43,7 +54,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking, onEdit: 
   const isFlight = booking.type === "Flight";
   const details = booking.details || {};
   const typeName = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };
-  const handleViewFile = () => { if (details.fileUrl) window.open(details.fileUrl, '_blank'); else alert("未上傳憑證"); };
+  const handleViewFile = () => { if (details.fileUrl) window.open(details.fileUrl, '_blank'); else { /* no alert - button is disabled when no file */ } };
   
   // 🔥 新增：導航功能
   const handleNavigate = () => {
@@ -106,7 +117,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return; setUploading(true);
-    try { const fileExt = file.name.split('.').pop(); const fileName = `${uuidv4()}.${fileExt}`; const filePath = `public/${trip.id}/bookings/${fileName}`; const { error } = await supabase.storage.from('trip_files').upload(filePath, file); if (error) throw error; const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setFileUrl(publicUrl); } catch (error: any) { alert("上傳失敗: " + error.message); } finally { setUploading(false); }
+    try { const fileExt = file.name.split('.').pop(); const fileName = `${uuidv4()}.${fileExt}`; const filePath = `public/${trip.id}/bookings/${fileName}`; const { error } = await supabase.storage.from('trip_files').upload(filePath, file); if (error) throw error; const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setFileUrl(publicUrl); } catch (error: any) { console.error("上傳失敗:", error.message); } finally { setUploading(false); }
   };
 
   const TYPE_LABELS: Record<BookingType, string> = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };

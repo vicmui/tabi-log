@@ -13,6 +13,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import clsx from "clsx";
 import EditTripModal from "@/components/dashboard/EditTripModal";
+import { ConfirmDialog, AlertDialog, PromptDialog } from "@/components/ui/Dialog";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -30,6 +31,11 @@ export default function PlannerPage() {
   const [editStartDate, setEditStartDate] = useState("");
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [weatherMap, setWeatherMap] = useState<Record<string, { temp: string; code: number }>>({});
+  // Custom dialogs (replacing browser prompt/confirm/alert)
+  const [confirmDeleteDay, setConfirmDeleteDay] = useState(false);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [promptLocation, setPromptLocation] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
   const trip = trips.find((t) => t.id === params.id);
@@ -77,16 +83,20 @@ export default function PlannerPage() {
   const currentDailyItinerary = trip.dailyItinerary[activeDay];
   const displayLocation = currentDailyItinerary?.customLocation || (currentDailyItinerary?.activities && currentDailyItinerary.activities.length > 0 ? currentDailyItinerary.activities[0].location.split(' ')[0] : "自由探索");
 
-  const handleEditLocation = () => {
-      const newLoc = prompt("修改當日地點名稱:", displayLocation);
-      if (newLoc) updateDayLocation(trip.id, activeDay, newLoc);
+  const handleEditLocation = () => setPromptLocation(true);
+  const handleDeleteDay = () => {
+    if (trip.dailyItinerary.length <= 1) { setAlertMsg("最少保留一天！"); return; }
+    setConfirmDeleteDay(true);
   };
-
+  const handleCopyShareLink = () => {
+    const url = `${window.location.origin}/share/${trip.id}`;
+    navigator.clipboard.writeText(url);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+  const handleOpenDayRoute = () => { if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { setAlertMsg("請至少安排兩個地點才可以開啟路線！"); return; } const acts = currentDailyItinerary.activities.filter(a => a && (a.address || a.location)); const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location); const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location); const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|'); window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank'); };
   const handleAddActivity = (data: any) => { addActivity(trip.id, activeDay, data); setIsModalOpen(false); };
-  const handleDeleteDay = () => { if (trip.dailyItinerary.length <= 1) { alert("最少保留一天！"); return; } if (confirm(`確定要刪除 Day ${activeDay + 1} 嗎？`)) { deleteDayFromTrip(trip.id, activeDay); } };
   const handleSaveSettings = () => { updateTripSettings(trip.id, editTitle, editStartDate, trip.coverImage || ""); setIsSettingsOpen(false); };
-  const handleCopyShareLink = () => { const url = `${window.location.origin}/share/${trip.id}`; navigator.clipboard.writeText(url); alert("已複製分享連結！"); };
-  const handleOpenDayRoute = () => { if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點"); return; } const acts = currentDailyItinerary.activities.filter(a => a && (a.address || a.location)); const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location); const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location); const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|'); window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank'); };
   
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]; if (!file) return;
@@ -214,6 +224,29 @@ export default function PlannerPage() {
           <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} />
           {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
           {isSettingsOpen && <EditTripModal trip={trip} onClose={()=>setIsSettingsOpen(false)} />}
+
+          <ConfirmDialog
+            isOpen={confirmDeleteDay}
+            title={`刪除 Day ${activeDay + 1}`}
+            message="確定要刪除這一天的行程嗎？所有活動將一併移除。"
+            confirmLabel="刪除" cancelLabel="取消" danger
+            onConfirm={() => { deleteDayFromTrip(trip.id, activeDay); setConfirmDeleteDay(false); }}
+            onCancel={() => setConfirmDeleteDay(false)}
+          />
+          <AlertDialog
+            isOpen={!!alertMsg}
+            message={alertMsg || ""}
+            onClose={() => setAlertMsg(null)}
+          />
+          <PromptDialog
+            isOpen={promptLocation}
+            title="修改地點名稱"
+            message="輸入今日的地點名稱"
+            defaultValue={displayLocation}
+            placeholder="例：大阪 心齋橋"
+            onConfirm={(val) => { updateDayLocation(trip.id, activeDay, val); setPromptLocation(false); }}
+            onCancel={() => setPromptLocation(false)}
+          />
         </div>
       </main>
     </div>

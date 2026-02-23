@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, ArrowRight, Settings2, Edit, Trash2, Upload, Paperclip, ArrowRightLeft } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 const CAT_CONFIG: Record<ExpenseCategory, { label: string; color: string; icon: any }> = {
   Food: { label: "餐飲", color: "#F97316", icon: Utensils }, Transport: { label: "交通", color: "#22C55E", icon: Train }, Accommodation: { label: "住宿", color: "#A855F7", icon: Bed }, Sightseeing: { label: "觀光", color: "#3B82F6", icon: Camera }, Shopping: { label: "購物", color: "#EC4899", icon: ShoppingBag }, Other: { label: "其他", color: "#64748B", icon: MapPin },
@@ -31,6 +32,8 @@ export default function BudgetPage() {
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [tempBudget, setTempBudget] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   if (!trip) return <div className="p-10 text-center animate-pulse">Loading...</div>;
 
@@ -47,8 +50,7 @@ export default function BudgetPage() {
     const finalSplit = splitWith.length > 0 ? splitWith : trip.members.map(m=>m.id);
 
     if(!amount || !itemName || !finalPayer) {
-        alert("請填寫金額、項目名稱及付款人！");
-        return;
+        setAlertMsg("請填寫金額、項目名稱及付款人！"); return;
     }
 
     let finalAmount = Number(amount);
@@ -82,11 +84,11 @@ export default function BudgetPage() {
     const file = e.target.files?.[0]; if (!file || !trip) return;
     const filePath = `public/${trip.id}/receipts/${uuidv4()}-${file.name}`;
     const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
-    if (error) { alert("上傳失敗: " + error.message); } 
-    else { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setReceiptUrl(publicUrl); alert("收據上傳成功！"); }
+    if (error) { setAlertMsg("上傳失敗：" + error.message); } 
+    else { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setReceiptUrl(publicUrl); // silent success }
   };
 
-  const handleDelete = (id: string) => { if(confirm("確定刪除？")) deleteExpense(trip.id, id); };
+  const handleDelete = (id: string) => { setDeletingExpenseId(id); };
   const distributeEvenly = () => { if(!amount || splitWith.length === 0) return; const splitAmt = (Number(amount) / splitWith.length).toFixed(0); const newMap: Record<string, string> = {}; splitWith.forEach(id => newMap[id] = splitAmt); setCustomAmounts(newMap); };
   
   // 計算邏輯保持不變...
@@ -201,6 +203,20 @@ export default function BudgetPage() {
           </>
         )}
       </main>
+
+      <ConfirmDialog
+        isOpen={!!deletingExpenseId}
+        title="刪除支出"
+        message="確定要刪除這筆支出記錄嗎？"
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => { if (deletingExpenseId) deleteExpense(trip.id, deletingExpenseId); setDeletingExpenseId(null); }}
+        onCancel={() => setDeletingExpenseId(null)}
+      />
+      <AlertDialog
+        isOpen={!!alertMsg}
+        message={alertMsg || ""}
+        onClose={() => setAlertMsg(null)}
+      />
     </div>
   );
 }
