@@ -10,13 +10,14 @@ import clsx from "clsx";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ConfirmDialog } from "@/components/ui/Dialog";
 
 // 可拖曳的 Item 組件
-const SortablePlanItem = ({ item, trip, onEdit }: { item: PlanItem, trip: any, onEdit: (item: PlanItem)=>void }) => {
+const SortablePlanItem = ({ item, trip, onEdit, onDeleteRequest }: { item: PlanItem, trip: any, onEdit: (item: PlanItem)=>void, onDeleteRequest: (id: string) => void }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({id: item.id});
     const style = { transform: CSS.Transform.toString(transform), transition };
 
-    const { togglePlanItem, deletePlanItem } = useTripStore();
+    const { togglePlanItem } = useTripStore();
     const assigned = trip.members.find((m: any) => m.id === item.assigneeId);
     const priorityColor = { High: "border border-neutral-800 text-neutral-800", Medium: "border border-neutral-400 text-neutral-500", Low: "border border-neutral-300 text-neutral-400" };
 
@@ -43,7 +44,7 @@ const SortablePlanItem = ({ item, trip, onEdit }: { item: PlanItem, trip: any, o
             {item.imageUrl && <img src={item.imageUrl} className="w-20 h-20 rounded-lg object-contain bg-white border border-gray-100 p-1"/>}
             <div className="absolute top-4 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => onEdit(item)} className="p-1 text-gray-400 hover:text-black"><Edit size={14}/></button>
-                <button onClick={() => deletePlanItem(trip.id, item.id)} className="p-1 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                <button onClick={() => onDeleteRequest(item.id)} className="p-1 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
             </div>
             <div {...attributes} {...listeners} className="absolute inset-y-0 right-10 flex items-center px-2 cursor-grab touch-none text-gray-300">
                 <GripVertical size={16} />
@@ -54,6 +55,7 @@ const SortablePlanItem = ({ item, trip, onEdit }: { item: PlanItem, trip: any, o
 
 export default function PlanningPage() {
   const { trips, activeTripId, addPlanItem, updatePlanItem, deletePlanItem, updatePlanOrder } = useTripStore();
+  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : (trips.length > 0 ? trips[0] : null);
   
   const [activeTab, setActiveTab] = useState("Packing");
@@ -120,7 +122,7 @@ export default function PlanningPage() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                  <SortableContext items={currentItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
                     {currentItems.map(item => (
-                        <SortablePlanItem key={item.id} item={item} trip={trip} onEdit={handleEdit} />
+                        <SortablePlanItem key={item.id} item={item} trip={trip} onEdit={handleEdit} onDeleteRequest={(id) => setDeletingPlanId(id)} />
                     ))}
                  </SortableContext>
               </DndContext>
@@ -137,6 +139,15 @@ export default function PlanningPage() {
            </div>
         </div>
       </main>
+
+      <ConfirmDialog
+        isOpen={!!deletingPlanId}
+        title="刪除項目"
+        message="確定要刪除這個項目嗎？"
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => { if (deletingPlanId) deletePlanItem(trip.id, deletingPlanId); setDeletingPlanId(null); }}
+        onCancel={() => setDeletingPlanId(null)}
+      />
     </div>
   );
 }
