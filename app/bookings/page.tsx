@@ -112,7 +112,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
     if (currency === "HKD") finalPrice = Math.round(Number(inputPrice) / rate);
     onSave({
         id: initialData?.id || uuidv4(), type, title, date,
-        details: { price: finalPrice, address, fileUrl, ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}), ...(type === 'Hotel' ? { checkIn, checkOut } : {}), ...(type === 'Rental' ? { pickupLocation, dropoffLocation } : {}) }
+        details: { price: finalPrice, address, fileUrl, ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}), ...(type === 'Hotel' ? { checkIn, checkOut } : {}), ...(type === 'Rental' ? { pickupLocation, dropoffLocation, checkIn, checkOut } : {}), ...(type === 'Ticket' ? { checkIn, seat } : {}) }
     });
     onClose();
   };

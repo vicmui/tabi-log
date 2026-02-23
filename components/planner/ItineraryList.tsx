@@ -5,6 +5,8 @@ import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, AlignLeft, Trash2, C
 import clsx from "clsx";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import TravelStats from "./TravelStats";
+import { ConfirmDialog } from "@/components/ui/Dialog";
+import { useState } from "react";
 
 const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg: string }> = {
   Food: { icon: Utensils, label: "美食", color: "text-orange-600", bg: "bg-orange-50" },
@@ -88,15 +90,26 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
   const { deleteActivity } = useTripStore();
   const x = useMotionValue(0);
   const bgOpacity = useTransform(x, [-100, 0], [1, 0]);
-  const handleDragEnd = (e: any, info: any) => { if (info.offset.x < -100) { if (confirm(`確定要刪除「${activity.location}」嗎？`)) deleteActivity(tripId, dayIndex, activity.id); } };
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const handleDragEnd = (e: any, info: any) => { if (info.offset.x < -100) { setPendingDelete(true); } };
   const config = TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other;
   return (
-    <motion.div layout transition={{ duration: 0.2 }} className="relative overflow-visible" ref={provided.innerRef} {...provided.draggableProps}>
-      <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl my-1"><Trash2 className="text-white" size={20} /></motion.div>
-      <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="relative z-10 group" {...provided.dragHandleProps}>
-          <ItemContent activity={activity} onActivityClick={onActivityClick} isReadOnly={false} config={config} tripId={tripId} dayIndex={dayIndex} index={index} />
+    <>
+      <motion.div layout transition={{ duration: 0.2 }} className="relative overflow-visible" ref={provided.innerRef} {...provided.draggableProps}>
+        <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl my-1"><Trash2 className="text-white" size={20} /></motion.div>
+        <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="relative z-10 group" {...provided.dragHandleProps}>
+            <ItemContent activity={activity} onActivityClick={onActivityClick} isReadOnly={false} config={config} tripId={tripId} dayIndex={dayIndex} index={index} />
+        </motion.div>
       </motion.div>
-    </motion.div>
+      <ConfirmDialog
+        isOpen={pendingDelete}
+        title="刪除活動"
+        message={`確定要刪除「${activity.location}」嗎？`}
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => { deleteActivity(tripId, dayIndex, activity.id); setPendingDelete(false); }}
+        onCancel={() => setPendingDelete(false)}
+      />
+    </>
   );
 };
 

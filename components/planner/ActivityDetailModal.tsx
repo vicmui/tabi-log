@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import GooglePlacesAutocomplete, { geocodeByPlaceId, getLatLng } from 'react-google-places-autocomplete';
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 const TYPES = [{ type: "Food", label: "美食" }, { type: "Sightseeing", label: "景點" }, { type: "Shopping", label: "購物" }, { type: "Transport", label: "交通" }, { type: "Hotel", label: "住宿" }, { type: "Other", label: "其他" }];
 
@@ -37,6 +38,12 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   
   // 🔥 修正：補回 isUploading 狀態定義
   const [isUploading, setIsUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
+  // Dialog states
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   useEffect(() => { const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY; if (key) setApiKey(key); }, []);
 
@@ -62,10 +69,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   };
 
   const toggleVisited = () => { updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited }); };
-  const handleDelete = () => { if(confirm(`確定刪除「${activity.location}」嗎？`)) { deleteActivity(tripId, dayIndex, activity.id); onClose(); } };
+  const handleDelete = () => setConfirmDelete(true);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (photos.length >= 3) { alert("最多 3 張！"); return; }
+      if (photos.length >= 3) { setAlertMsg("最多上傳 3 張相片！"); return; }
       const file = e.target.files && e.target.files[0];
       if (!file || !trip) return;
       
@@ -79,19 +86,13 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           setPhotos(newPhotos);
           updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
       } catch(e: any) { 
-          alert("上傳失敗: " + e.message); 
+          setAlertMsg("上傳失敗：" + e.message);
       } finally {
           setIsUploading(false);
       }
   };
   
-  const handleDeletePhoto = (urlToDelete: string) => {
-      if(confirm("確定刪除這張相片？")) {
-          const newPhotos = photos.filter(p => p !== urlToDelete);
-          setPhotos(newPhotos);
-          updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
-      }
-  };
+  const handleDeletePhoto = (urlToDelete: string) => setConfirmDeletePhoto(urlToDelete);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -125,7 +126,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                                        setEditLat(lat); setEditLng(lng); 
                                        if(!editLocation) setEditLocation(val.label.split(',')[0]);
                                    } catch(e) { 
-                                       alert("無法獲取座標，請檢查 API Key。"); 
+                                       setAlertMsg("無法獲取座標，請檢查 API Key。");
                                    }
                                }, 
                                styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
@@ -177,5 +178,34 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         )}
       </AnimatePresence>
     </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title="刪除景點"
+        message={`確定要刪除「${activity.location}」嗎？`}
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => { deleteActivity(tripId, dayIndex, activity.id); onClose(); }}
+        onCancel={() => setConfirmDelete(false)}
+      />
+      <ConfirmDialog
+        isOpen={!!confirmDeletePhoto}
+        title="刪除相片"
+        message="確定要刪除這張相片嗎？"
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => {
+          if (confirmDeletePhoto) {
+            const newPhotos = photos.filter(p => p !== confirmDeletePhoto);
+            setPhotos(newPhotos);
+            updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
+          }
+          setConfirmDeletePhoto(null);
+        }}
+        onCancel={() => setConfirmDeletePhoto(null)}
+      />
+      <AlertDialog
+        isOpen={!!alertMsg}
+        message={alertMsg || ""}
+        onClose={() => setAlertMsg(null)}
+      />
   );
 }
