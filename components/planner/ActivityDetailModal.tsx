@@ -36,11 +36,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [photos, setPhotos] = useState<string[]>(activity?.photos || []);
   const [expandedImg, setExpandedImg] = useState<string | null>(null);
   
-  // 🔥 修正：補回 isUploading 狀態定義
+  // States
   const [isUploading, setIsUploading] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
-  // Dialog states
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
@@ -95,90 +92,92 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const handleDeletePhoto = (urlToDelete: string) => setConfirmDeletePhoto(urlToDelete);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg relative z-10 shadow-2xl overflow-hidden rounded-xl max-h-[90vh] flex flex-col">
-        <div className="h-40 bg-gray-100 relative group shrink-0">
-           <img src={photos.length > 0 ? photos[0] : "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?q=80&w=2000"} className="w-full h-full object-cover opacity-90" />
-           <div className="absolute top-4 right-4 flex gap-2">
-               {!isEditing && <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/></label>}
-               <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16}/></button>
-               <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20}/></button>
-           </div>
-        </div>
-        
-        <div className="p-8 overflow-y-auto">
-           {isEditing ? (
-               <div className="space-y-5">
-                  <div><label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label><input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} /></div>
-                  <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                      <label className="text-[10px] text-neutral-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map</label>
-                      {apiKey ? (
-                        <div className="bg-white border p-1 rounded">
-                           <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ 
-                               placeholder: "輸入地點獲取座標...",
-                               onChange: async (val: any) => { 
-                                   if (!val) return; 
-                                   setEditAddress(val.label); 
-                                   try {
-                                       const results = await geocodeByPlaceId(val.value.place_id); 
-                                       const { lat, lng } = await getLatLng(results[0]); 
-                                       setEditLat(lat); setEditLng(lng); 
-                                       if(!editLocation) setEditLocation(val.label.split(',')[0]);
-                                   } catch(e) { 
-                                       setAlertMsg("無法獲取座標，請檢查 API Key。");
-                                   }
-                               }, 
-                               styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
-                           }} />
-                        </div>
-                      ) : <p className="text-xs text-red-500">API Key Missing</p>}
-                      <div className="flex items-center gap-2 mt-2"><span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-500")}/> <span className="text-[10px] text-gray-500">{editLat && editLng ? `座標鎖定` : "未有座標"}</span></div>
-                  </div>
-                  <div className="flex gap-4"><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">時間</label><input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} /></div><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">類別</label><select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>{TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}</select></div></div>
-                  <div><label className="text-xs text-gray-400 uppercase tracking-widest">備註</label><textarea value={editNote} onChange={e=>setEditNote(e.target.value)} className="w-full h-20 border border-gray-200 p-2 text-sm rounded-lg"/></div>
-               </div>
-           ) : (
-               <>
-                 <div className="flex justify-between items-start mb-6"><div><h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2><div className="flex items-center gap-2 text-xs text-gray-500"><span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span><span>{activity.time}</span></div>{activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}</div><button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button></div>
-                 {activity.note && <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100"><p className="text-sm text-gray-600 leading-relaxed">{activity.note}</p></div>}
-                 <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
-                 <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">旅後回憶</label><textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="寫低感受..." className="w-full h-24 border border-gray-200 p-3 text-sm rounded-lg focus:outline-none focus:border-black resize-none"/></div>
-                 <div className="mb-4">
-                   <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">相簿 Gallery ({photos.length}/3)</label>
-                   <div className="flex gap-2 flex-wrap">
-                      {photos.map((url: string, i: number) => (
-                         <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 relative group/photo" onClick={() => setExpandedImg(url)}>
-                            <img src={url} className="w-full h-full object-cover"/>
-                            <button onClick={(e)=>{e.stopPropagation(); handleDeletePhoto(url)}} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"><X size={10}/></button>
-                         </div>
-                      ))}
-                      {photos.length < 3 && <label className={clsx("w-20 h-20 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>
-                         {isUploading ? <Loader2 className="animate-spin"/> : <Camera size={20}/>}
-                         <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/>
-                      </label>}
-                   </div>
+    <> {/* Added Fragment Here */}
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg relative z-10 shadow-2xl overflow-hidden rounded-xl max-h-[90vh] flex flex-col">
+          <div className="h-40 bg-gray-100 relative group shrink-0">
+             <img src={photos.length > 0 ? photos[0] : "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?q=80&w=2000"} className="w-full h-full object-cover opacity-90" alt="Activity" />
+             <div className="absolute top-4 right-4 flex gap-2">
+                 {!isEditing && <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/></label>}
+                 <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16}/></button>
+                 <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20}/></button>
+             </div>
+          </div>
+          
+          <div className="p-8 overflow-y-auto">
+             {isEditing ? (
+                 <div className="space-y-5">
+                    <div><label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label><input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none" value={editLocation} onChange={e=>setEditLocation(e.target.value)} /></div>
+                    <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                        <label className="text-[10px] text-neutral-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map</label>
+                        {apiKey ? (
+                          <div className="bg-white border p-1 rounded">
+                             <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{ 
+                                 placeholder: "輸入地點獲取座標...",
+                                 onChange: async (val: any) => { 
+                                     if (!val) return; 
+                                     setEditAddress(val.label); 
+                                     try {
+                                         const results = await geocodeByPlaceId(val.value.place_id); 
+                                         const { lat, lng } = await getLatLng(results[0]); 
+                                         setEditLat(lat); setEditLng(lng); 
+                                         if(!editLocation) setEditLocation(val.label.split(',')[0]);
+                                     } catch(e) { 
+                                         setAlertMsg("無法獲取座標，請檢查 API Key。");
+                                     }
+                                 }, 
+                                 styles: { control: (p) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) } 
+                             }} />
+                          </div>
+                        ) : <p className="text-xs text-red-500">API Key Missing</p>}
+                        <div className="flex items-center gap-2 mt-2"><span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-500")}/> <span className="text-[10px] text-gray-500">{editLat && editLng ? `座標鎖定` : "未有座標"}</span></div>
+                    </div>
+                    <div className="flex gap-4"><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">時間</label><input className="w-full border-b p-1" value={editTime} onChange={e=>setEditTime(e.target.value)} /></div><div className="flex-1"><label className="text-xs text-gray-400 uppercase tracking-widest">類別</label><select className="w-full border-b p-1 bg-white" value={editType} onChange={e=>setEditType(e.target.value)}>{TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}</select></div></div>
+                    <div><label className="text-xs text-gray-400 uppercase tracking-widest">備註</label><textarea value={editNote} onChange={e=>setEditNote(e.target.value)} className="w-full h-20 border border-gray-200 p-2 text-sm rounded-lg"/></div>
                  </div>
-               </>
-           )}
-        </div>
-        
-        <div className="p-6 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
-           <button onClick={handleDelete} className="text-gray-400 p-3 rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
-           <button onClick={handleSave} className="flex-1 bg-[#333333] text-white py-3 text-xs font-bold tracking-[0.2em] uppercase rounded-lg hover:bg-black transition-colors shadow-lg">{isEditing ? "儲存變更" : "儲存紀錄"}</button>
-        </div>
-      </motion.div>
+             ) : (
+                 <>
+                   <div className="flex justify-between items-start mb-6"><div><h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2><div className="flex items-center gap-2 text-xs text-gray-500"><span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span><span>{activity.time}</span></div>{activity.address && <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><MapPin size={10}/> {activity.address}</p>}</div><button onClick={toggleVisited} className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase rounded-lg transition-colors", activity.isVisited ? "bg-black text-white" : "text-gray-400")}><CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}</button></div>
+                   {activity.note && <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100"><p className="text-sm text-gray-600 leading-relaxed">{activity.note}</p></div>}
+                   <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label><div className="flex gap-2">{[1,2,3,4,5].map(star => (<button key={star} onClick={() => setRating(star)} className={clsx("transition-colors", star <= rating ? "text-yellow-500" : "text-gray-200")}><Star size={24} fill={star <= rating ? "currentColor" : "none"} /></button>))}</div></div>
+                   <div className="mb-6"><label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">旅後回憶</label><textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="寫低感受..." className="w-full h-24 border border-gray-200 p-3 text-sm rounded-lg focus:outline-none focus:border-black resize-none"/></div>
+                   <div className="mb-4">
+                     <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">相簿 Gallery ({photos.length}/3)</label>
+                     <div className="flex gap-2 flex-wrap">
+                        {photos.map((url: string, i: number) => (
+                           <div key={i} className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 relative group/photo" onClick={() => setExpandedImg(url)}>
+                              <img src={url} className="w-full h-full object-cover" alt="Memory" />
+                              <button onClick={(e)=>{e.stopPropagation(); handleDeletePhoto(url)}} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"><X size={10}/></button>
+                           </div>
+                        ))}
+                        {photos.length < 3 && <label className={clsx("w-20 h-20 border border-dashed rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>
+                           {isUploading ? <Loader2 className="animate-spin"/> : <Camera size={20}/>}
+                           <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/>
+                        </label>}
+                     </div>
+                   </div>
+                 </>
+             )}
+          </div>
+          
+          <div className="p-6 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
+             <button onClick={handleDelete} className="text-gray-400 p-3 rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+             <button onClick={handleSave} className="flex-1 bg-[#333333] text-white py-3 text-xs font-bold tracking-[0.2em] uppercase rounded-lg hover:bg-black transition-colors shadow-lg">{isEditing ? "儲存變更" : "儲存紀錄"}</button>
+          </div>
+        </motion.div>
 
-      <AnimatePresence>
-        {expandedImg && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExpandedImg(null)} className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
-                <img src={expandedImg} className="max-w-full max-h-full rounded-lg shadow-2xl" />
-                <button className="absolute top-4 right-4 text-white/80 hover:text-white"><X size={32}/></button>
-            </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        <AnimatePresence>
+          {expandedImg && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setExpandedImg(null)} className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
+                  <img src={expandedImg} className="max-w-full max-h-full rounded-lg shadow-2xl" alt="Expanded" />
+                  <button className="absolute top-4 right-4 text-white/80 hover:text-white"><X size={32}/></button>
+              </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
+      {/* Dialogs are now siblings inside the fragment */}
       <ConfirmDialog
         isOpen={confirmDelete}
         title="刪除景點"
@@ -207,5 +206,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         message={alertMsg || ""}
         onClose={() => setAlertMsg(null)}
       />
+    </> /* Closed Fragment Here */
   );
 }
