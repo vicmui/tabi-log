@@ -4,6 +4,7 @@ import { useTripStore } from "@/store/useTripStore";
 import { X, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
+import { AlertDialog } from "@/components/ui/Dialog";
 
 export default function EditTripModal({ trip, onClose }: any) {
   const { updateTripSettings } = useTripStore();
@@ -11,6 +12,7 @@ export default function EditTripModal({ trip, onClose }: any) {
   const [startDate, setStartDate] = useState(trip.startDate);
   const [coverImage, setCoverImage] = useState(trip.coverImage);
   const [uploading, setUploading] = useState(false);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,7 +24,7 @@ export default function EditTripModal({ trip, onClose }: any) {
         const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
         setCoverImage(publicUrl);
     } else {
-        alert("上傳失敗");
+        setAlertMsg("封面上傳失敗，請重試。");
     }
     setUploading(false);
   };
@@ -44,7 +46,7 @@ export default function EditTripModal({ trip, onClose }: any) {
           <div>
               <label className="text-xs text-gray-400 block mb-2">封面圖片</label>
               <div className="h-32 w-full bg-gray-100 rounded-lg overflow-hidden relative group">
-                  <img src={coverImage} className="w-full h-full object-cover" />
+                  {coverImage ? <img src={coverImage} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />}
                   <label className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-white">
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                       <div className="flex flex-col items-center"><Upload size={20}/><span className="text-xs mt-1">{uploading ? "上傳中..." : "更換封面"}</span></div>
@@ -57,6 +59,7 @@ export default function EditTripModal({ trip, onClose }: any) {
            <button onClick={handleSave} className="flex-1 bg-black text-white py-3 text-xs tracking-widest uppercase">儲存</button>
         </div>
       </div>
+      <AlertDialog isOpen={!!alertMsg} message={alertMsg || ""} onClose={() => setAlertMsg(null)} />
     </div>
   );
 }

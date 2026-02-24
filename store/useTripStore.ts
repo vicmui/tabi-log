@@ -57,7 +57,33 @@ export const useTripStore = create<TripState>()(
     (set, get) => ({
       trips: [INITIAL_TRIP], activeTripId: null, isSyncing: false,
       setActiveTrip: (id) => set({ activeTripId: id }),
-      loadTripsFromCloud: async () => { set({ isSyncing: true }); const { data, error } = await supabase.from('trips').select('*'); if (!error && data) { const loadedTrips = data.map(row => { const trip = row.content as Trip; trip.dailyItinerary.forEach(day => { if (day.activities) { day.activities = day.activities.filter(a => !!a && !!a.id); } }); return trip; }); set({ trips: loadedTrips }); if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips[0].id }); } set({ isSyncing: false }); },
+      loadTripsFromCloud: async () => { 
+        set({ isSyncing: true }); 
+        const { data, error } = await supabase.from('trips').select('*'); 
+        if (!error && data) { 
+          const localTrips = get().trips;
+          const loadedTrips = data.map(row => { 
+            const cloudTrip = row.content as Trip; 
+            // 🔥 Smart merge: preserve local coverImages if cloud version is missing them
+            const localTrip = localTrips.find(t => t.id === cloudTrip.id);
+            cloudTrip.dailyItinerary.forEach((day, i) => { 
+              if (day.activities) { day.activities = day.activities.filter(a => !!a && !!a.id); }
+              // Preserve day coverImage from local if cloud doesn't have it
+              if (!day.coverImage && localTrip?.dailyItinerary[i]?.coverImage) {
+                day.coverImage = localTrip.dailyItinerary[i].coverImage;
+              }
+            }); 
+            // Preserve trip-level coverImage from local if cloud doesn't have it
+            if (!cloudTrip.coverImage && localTrip?.coverImage) {
+              cloudTrip.coverImage = localTrip.coverImage;
+            }
+            return cloudTrip; 
+          }); 
+          set({ trips: loadedTrips }); 
+          if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips[0].id }); 
+        } 
+        set({ isSyncing: false }); 
+      },
       saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); set({ isSyncing: false }); },
       importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if(newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
       addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },

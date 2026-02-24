@@ -10,7 +10,6 @@ export default function ShareItinerary({ elementId, tripTitle, day }: { elementI
     setLoading(true);
     const element = document.getElementById(elementId);
     if (!element) {
-        alert("找不到行程內容");
         setLoading(false);
         return;
     }
@@ -29,7 +28,6 @@ export default function ShareItinerary({ elementId, tripTitle, day }: { elementI
       link.click();
     } catch (err) {
       console.error("Screenshot failed", err);
-      alert("截圖失敗，請稍後再試");
     } finally {
       setLoading(false);
     }
