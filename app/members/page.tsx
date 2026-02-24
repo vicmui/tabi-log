@@ -6,7 +6,7 @@ import { useTripStore, Member } from "@/store/useTripStore";
 import { User, Plus, Trash2, Camera, Edit2, X, Check, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
-import clsx from "clsx";
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 export default function MembersPage() {
   const { trips, activeTripId, updateTrip, isSyncing } = useTripStore();
@@ -17,6 +17,8 @@ export default function MembersPage() {
   const [nameInput, setNameInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   useEffect(() => { setIsMounted(true) }, []);
 
@@ -64,7 +66,7 @@ export default function MembersPage() {
         const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
         setAvatarUrl(publicUrl);
     } catch (error: any) {
-        alert("上傳失敗: " + (error.message || "未知錯誤"));
+        setAlertMsg("上傳失敗：" + (error.message || "未知錯誤"));
     } finally {
         setIsSubmitting(false);
     }
@@ -85,18 +87,13 @@ export default function MembersPage() {
         resetForm();
     } catch (error) {
         console.error(error);
-        alert("儲存失敗，請重試。");
+        setAlertMsg("儲存失敗，請重試。");
     } finally {
         setIsSubmitting(false);
     }
   };
 
-  const handleDeleteMember = (id: string) => {
-    if (confirm("確定要刪除這位成員嗎？\n(注意：相關的記帳紀錄可能會受影響)")) {
-      updateTrip(trip.id, { members: trip.members.filter(m => m.id !== id) });
-      if (editingMemberId === id) resetForm();
-    }
-  };
+  const handleDeleteMember = (id: string) => setDeletingMemberId(id);
 
   return (
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
@@ -143,6 +140,26 @@ export default function MembersPage() {
           </div>
         </div>
       </main>
+
+      <ConfirmDialog
+        isOpen={!!deletingMemberId}
+        title="刪除成員"
+        message={"確定要刪除這位成員嗎？\n（注意：相關的記帳紀錄可能會受影響）"}
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => {
+          if (deletingMemberId) {
+            updateTrip(trip.id, { members: trip.members.filter(m => m.id !== deletingMemberId) });
+            if (editingMemberId === deletingMemberId) resetForm();
+          }
+          setDeletingMemberId(null);
+        }}
+        onCancel={() => setDeletingMemberId(null)}
+      />
+      <AlertDialog
+        isOpen={!!alertMsg}
+        message={alertMsg || ""}
+        onClose={() => setAlertMsg(null)}
+      />
     </div>
   );
 }
