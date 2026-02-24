@@ -6,6 +6,7 @@ import { useTripStore, Member } from "@/store/useTripStore";
 import { User, Plus, Trash2, Camera, Edit2, X, Check, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
+import clsx from "clsx";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 export default function MembersPage() {
