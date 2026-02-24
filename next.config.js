@@ -4,7 +4,6 @@ const withPWA = require("next-pwa")({
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
-    // 1. Google Maps API — cache first, long TTL
     {
       urlPattern: /^https:\/\/maps\.(googleapis|gstatic)\.com\/.*/i,
       handler: "CacheFirst",
@@ -14,7 +13,6 @@ const withPWA = require("next-pwa")({
         cacheableResponse: { statuses: [0, 200] },
       },
     },
-    // 2. Supabase REST/storage — network first, fall back to cache
     {
       urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
       handler: "NetworkFirst",
@@ -25,7 +23,6 @@ const withPWA = require("next-pwa")({
         networkTimeoutSeconds: 5,
       },
     },
-    // 3. Next.js static assets — cache first
     {
       urlPattern: /\/_next\/static\/.*/i,
       handler: "CacheFirst",
@@ -35,7 +32,6 @@ const withPWA = require("next-pwa")({
         cacheableResponse: { statuses: [0, 200] },
       },
     },
-    // 4. Images (avatars, receipts, etc.) — stale while revalidate
     {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
       handler: "StaleWhileRevalidate",
@@ -45,7 +41,6 @@ const withPWA = require("next-pwa")({
         cacheableResponse: { statuses: [0, 200] },
       },
     },
-    // 5. All page navigations — network first with offline fallback
     {
       urlPattern: /^https?.*/,
       handler: "NetworkFirst",
@@ -62,6 +57,19 @@ const withPWA = require("next-pwa")({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactCompiler: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lxtcaiooublurbttwjiy.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+      },
+    ],
+  },
 };
 
 module.exports = withPWA(nextConfig);
