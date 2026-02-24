@@ -35,12 +35,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [rating, setRating] = useState(activity?.rating || 0);
   const [photos, setPhotos] = useState<string[]>(activity?.photos || []);
   const [expandedImg, setExpandedImg] = useState<string | null>(null);
-  
-  // 🔥 修正：補回 isUploading 狀態定義
   const [isUploading, setIsUploading] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
-  // Dialog states
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
