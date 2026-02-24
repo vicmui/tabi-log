@@ -54,7 +54,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           address: editAddress, 
           lat: editLat, 
           lng: editLng,
-          cost: 0 
       });
       setIsEditing(false);
     } else {
