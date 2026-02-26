@@ -39,17 +39,17 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
 
     return (
         <div className="relative group ml-4">
-            <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm shadow-md border-4 border-white z-20">
+            <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm border-4 border-white z-20">
                 {index + 1}
             </div>
 
             <div 
-                className="flex items-start gap-4 p-4 pl-6 cursor-pointer bg-white relative z-10 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow" 
+                className="flex items-start gap-4 p-4 pl-6 cursor-pointer bg-white relative z-10 rounded-none border border-gray-200 hover:shadow-md transition-shadow" 
                 onClick={() => !isReadOnly && onActivityClick && onActivityClick(activity.id)}
             >
                 <div className="flex flex-col items-center gap-2 min-w-[50px] pt-1">
                     <span className="text-[11px] font-mono text-gray-800 font-bold">{activity.time}</span>
-                    <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-10", activity.isVisited ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-500")}>
+                    <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center z-10", activity.isVisited ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-500")}>
                         {activity.isVisited ? <CheckCircle2 size={14}/> : <config.icon size={14} />}
                     </div>
                 </div>
@@ -96,7 +96,7 @@ const SwipableItem = ({ activity, index, tripId, dayIndex, onActivityClick, prov
   return (
     <>
       <motion.div layout transition={{ duration: 0.2 }} className="relative overflow-visible" ref={provided.innerRef} {...provided.draggableProps}>
-        <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-xl my-1"><Trash2 className="text-white" size={20} /></motion.div>
+        <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-none my-1"><Trash2 className="text-white" size={20} /></motion.div>
         <motion.div drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }} onDragEnd={handleDragEnd} style={{ x }} className="relative z-10 group" {...provided.dragHandleProps}>
             <ItemContent activity={activity} onActivityClick={onActivityClick} isReadOnly={false} config={config} tripId={tripId} dayIndex={dayIndex} index={index} />
         </motion.div>

@@ -77,7 +77,7 @@ export default function TravelStats({ origin, dest }: Props) {
       ) : (
         // ── Expanded: show mode picker + result ──
         <div className="relative z-10 flex items-center gap-2 flex-wrap">
-          <div className="flex bg-gray-100 border border-gray-200 rounded-full p-0.5 shadow-sm">
+          <div className="flex bg-gray-100 border border-gray-200 rounded-full p-0.5">
             {(["WALKING", "TRANSIT", "DRIVING"] as TravelMode[]).map((m) => {
               const Icon = MODE_CONFIG[m].icon;
               return (
@@ -85,8 +85,7 @@ export default function TravelStats({ origin, dest }: Props) {
                   key={m}
                   onClick={() => setMode(m)}
                   className={clsx(
-                    "p-1.5 rounded-full transition-colors",
-                    mode === m ? "bg-black text-white shadow" : "text-gray-400 hover:bg-gray-200"
+                    "p-1.5 rounded-full transition-colors " + (mode === m ? "text-white" : "text-gray-400 hover:bg-gray-200")
                   )}
                   title={MODE_CONFIG[m].label}
                 >

@@ -111,7 +111,7 @@ export default function MembersPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {trip.members.map(member => (
-            <div key={member.id} className={clsx("group relative bg-white border p-6 flex flex-col items-center transition-all duration-300 rounded-xl", editingMemberId === member.id ? "border-black shadow-md ring-1 ring-black" : "border-gray-200 hover:shadow-lg")}>
+            <div key={member.id} className={clsx("group relative bg-white border p-6 flex flex-col items-center transition-all duration-300 rounded-none", editingMemberId === member.id ? "border-black ring-1 ring-black" : "border-gray-200 hover:shadow-lg")}>
               <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-2 border-gray-100 bg-gray-50 relative group/avatar">
                  <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
               </div>
@@ -124,18 +124,18 @@ export default function MembersPage() {
             </div>
           ))}
 
-          <div className={clsx("border border-dashed p-6 flex flex-col items-center justify-center gap-4 rounded-xl transition-colors", editingMemberId ? "bg-white border-black" : "bg-gray-50 border-gray-300")}>
+          <div className={clsx("border border-dashed p-6 flex flex-col items-center justify-center gap-4 rounded-none transition-colors", editingMemberId ? "bg-white border-black" : "bg-gray-50 border-gray-300")}>
              <div className="w-full flex justify-between items-center mb-2">
                  <span className="text-xs font-bold tracking-widest uppercase text-gray-400">{editingMemberId ? "編輯資料" : "新增成員"}</span>
                  {editingMemberId && <button onClick={resetForm} className="text-gray-400 hover:text-black"><X size={16}/></button>}
              </div>
-             <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all shadow-sm">
+             <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all">
                 {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"/> : <div className="flex flex-col items-center gap-1"><Camera size={20} /><span className="text-[9px]">上傳</span></div>}
                 {isSubmitting && !nameInput && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><Loader2 className="w-5 h-5 text-white animate-spin"/></div>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={isSubmitting} />
              </label>
              <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="輸入名字..." className="bg-transparent border-b border-gray-300 text-center py-2 focus:outline-none focus:border-black w-full text-lg font-serif placeholder-gray-400" disabled={isSubmitting} />
-             <button onClick={handleSave} disabled={!nameInput.trim() || isSubmitting} className={clsx("text-white px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all w-full rounded-lg flex items-center justify-center gap-2", (!nameInput.trim() || isSubmitting) ? "bg-gray-300 cursor-not-allowed" : "bg-[#333333] hover:bg-black shadow-lg active:scale-95")}>
+             <button onClick={handleSave} disabled={!nameInput.trim() || isSubmitting} className={clsx("text-white px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all w-full rounded-none flex items-center justify-center gap-2", (!nameInput.trim() || isSubmitting) ? "bg-gray-300 cursor-not-allowed" : "bg-[#333333] hover:bg-black active:scale-95")}>
                {isSubmitting ? "處理中..." : <>{editingMemberId ? <Check size={14}/> : <Plus size={14}/>} {editingMemberId ? "更新資料" : "確認新增"}</>}
              </button>
           </div>

@@ -124,7 +124,7 @@ export default function PlannerPage() {
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
            <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-400"/></Link>
            <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
-           <button onClick={() => setIsModalOpen(true)} className="bg-black text-white p-2 rounded-lg shadow-sm active:scale-95 transition-transform"><Plus size={20}/></button>
+           <button onClick={() => setIsModalOpen(true)} className="text-white p-2 rounded-none active:scale-95 transition-transform" style={{ backgroundColor: 'var(--accent)' }}><Plus size={20}/></button>
         </div>
 
         {/* Desktop Sidebar (Day List) */}
@@ -150,7 +150,7 @@ export default function PlannerPage() {
                      <WeatherIcon code={info?.code} />
                      <span>{info ? info.temp : "15°/25°"}</span>
                   </div>
-                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-black" />}
+                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[4px]" style={{ backgroundColor: 'var(--accent)' }} />}
                 </button>
               )
             })}
@@ -159,14 +159,14 @@ export default function PlannerPage() {
         </div>
 
         {/* Mobile Day Picker Slider */}
-        <div className="md:hidden w-full bg-white border-b border-gray-100 z-30 shrink-0 shadow-sm overflow-hidden">
+        <div className="md:hidden w-full bg-white border-b border-gray-100 z-30 shrink-0 overflow-hidden">
            <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar py-4 px-4 gap-3 items-center">
               {trip.dailyItinerary.map((dayItem, index) => {
                  const info = weatherMap[dayItem.date];
                  return (
                    <button key={dayItem.day} onClick={() => setActiveDay(index)} className={clsx(
-                     "flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-300 rounded-xl", 
-                     activeDay === index ? "bg-black text-white border-black shadow-lg scale-105" : "bg-white text-gray-400 border-gray-100"
+                     "flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-300 rounded-none", 
+                     activeDay === index ? "bg-black text-white border-black scale-105" : "bg-white text-gray-400 border-gray-100"
                    )}>
                       <span className="text-[9px] font-bold uppercase tracking-widest">{format(parseISO(dayItem.date), 'EEE')}</span>
                       <span className="text-xl font-bold leading-none my-1">{format(parseISO(dayItem.date), 'd')}</span>
@@ -178,7 +178,7 @@ export default function PlannerPage() {
                    </button>
                  )
               })}
-              <button onClick={() => addDayToTrip(trip.id)} className="flex-shrink-0 flex items-center justify-center w-12 h-24 border border-dashed border-gray-200 text-gray-300 rounded-xl snap-center"><Plus size={20}/></button>
+              <button onClick={() => addDayToTrip(trip.id)} className="flex-shrink-0 flex items-center justify-center w-12 h-24 border border-dashed border-gray-200 text-gray-300 rounded-none snap-center"><Plus size={20}/></button>
            </div>
         </div>
 
@@ -195,7 +195,7 @@ export default function PlannerPage() {
             <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20">
                <div className="animate-fade-in-up">
                  <h3 className="text-4xl md:text-7xl font-bold tracking-tight uppercase leading-none text-black drop-shadow-[0_2px_15px_rgba(255,255,255,0.8)]">Day {activeDay + 1}</h3>
-                 <button onClick={handleEditLocation} className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-md hover:bg-white transition-all z-20">
+                 <button onClick={handleEditLocation} className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full hover:bg-white transition-all z-20">
                     <MapPin size={10} /><span>{displayLocation}</span><Edit size={8} className="opacity-50"/>
                     <span className="w-px h-3 bg-gray-300"></span><Clock size={10} /><span>{currentDailyItinerary?.date}</span>
                  </button>
@@ -209,10 +209,10 @@ export default function PlannerPage() {
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4"><span className="text-[11px] font-bold tracking-[0.2em] text-black uppercase">行程規劃</span><button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 p-1"><CalendarX size={16} /></button></div>
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
-                      <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /> <span className="hidden sm:inline">分享</span></button>
-                      <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /> <span className="hidden sm:inline">路線</span></button>
-                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={14} /> <span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /> <span className="hidden sm:inline">列表</span></>}</button>
-                      <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors shadow-lg uppercase rounded-xl font-bold"><Plus size={12} /> 新增活動</button>
+                      <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-none bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /> <span className="hidden sm:inline">分享</span></button>
+                      <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-none bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /> <span className="hidden sm:inline">路線</span></button>
+                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-none bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={14} /> <span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /> <span className="hidden sm:inline">列表</span></>}</button>
+                      <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest text-white px-6 py-2.5 transition-colors uppercase rounded-none font-bold" style={{ backgroundColor: 'var(--accent)' }}><Plus size={12} /> 新增活動</button>
                   </div>
                </div>
             </div>
@@ -221,7 +221,7 @@ export default function PlannerPage() {
                 {viewMode === 'list' ? (
                     currentDailyItinerary ? <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary.activities} tripId={trip.id} onActivityClick={(id) => setSelectedActivityId(id)} /> : <div className="text-center py-20 text-gray-300 text-[10px] uppercase tracking-widest">今日暫無行程安排</div>
                 ) : (
-                    <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
+                    <div className="h-[65dvh] w-full border border-gray-200 rounded-none overflow-hidden bg-gray-50"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
                 )}
             </div>
           </div>

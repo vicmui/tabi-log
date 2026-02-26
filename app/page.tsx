@@ -43,7 +43,7 @@ export default function Home() {
              <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">我的旅程</h1>
              <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
            </div>
-           <button onClick={() => setIsNewTripOpen(true)} className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95 text-xs tracking-widest uppercase rounded">
+           <button onClick={() => setIsNewTripOpen(true)} className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors active:scale-95 text-xs tracking-widest uppercase rounded">
              <Plus size={16} /> 新增旅程
            </button>
         </div>
@@ -56,7 +56,7 @@ export default function Home() {
                 const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0;
 
                 return (
-                  <div key={trip.id} onClick={() => setActiveTrip(trip.id)} className="relative group cursor-pointer bg-white border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden h-[360px] flex flex-col rounded-lg">
+                  <div key={trip.id} onClick={() => setActiveTrip(trip.id)} className="relative group cursor-pointer bg-white border border-gray-100 hover:border border-gray-200 transition-all duration-300 overflow-hidden h-[360px] flex flex-col rounded-none">
                       <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
                       <div className="h-1/2 w-full relative overflow-hidden">
                           <img src={trip.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"/>

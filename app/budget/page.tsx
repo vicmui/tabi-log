@@ -85,7 +85,7 @@ export default function BudgetPage() {
     const filePath = `public/${trip.id}/receipts/${uuidv4()}-${file.name}`;
     const { error } = await supabase.storage.from('trip_files').upload(filePath, file);
     if (error) { setAlertMsg("上傳失敗：" + error.message); } 
-    else { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setReceiptUrl(publicUrl); }
+    else { const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath); setReceiptUrl(publicUrl); // silent success }
   };
 
   const handleDelete = (id: string) => { setDeletingExpenseId(id); };
@@ -103,12 +103,12 @@ export default function BudgetPage() {
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 overflow-y-auto h-screen bg-gray-50 pb-24">
         <header className="mb-10"><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預算分帳</h1><div className="flex items-center gap-4"><TripSwitcher /></div></header>
 
-        <div className="mb-10"><h2 className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">結算建議</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{debts.length > 0 ? debts.map((d, idx) => (<div key={idx} className="bg-white p-6 border-l-4 border-jp-charcoal shadow-sm flex items-center justify-between"><div className="flex items-center gap-2 text-sm"><span className="font-bold">{getMemberName(d.from)}</span><ArrowRight size={14} className="text-gray-400"/><span className="font-bold">{getMemberName(d.to)}</span></div><span className="font-serif text-xl font-bold">¥{Math.round(d.amount).toLocaleString()}</span></div>)) : <div className="text-gray-400 text-sm">目前無債務</div>}</div></div>
+        <div className="mb-10"><h2 className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">結算建議</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{debts.length > 0 ? debts.map((d, idx) => (<div key={idx} className="bg-white p-6 border-l-4 border-jp-charcoal flex items-center justify-between"><div className="flex items-center gap-2 text-sm"><span className="font-bold">{getMemberName(d.from)}</span><ArrowRight size={14} className="text-gray-400"/><span className="font-bold">{getMemberName(d.to)}</span></div><span className="font-serif text-xl font-bold">¥{Math.round(d.amount).toLocaleString()}</span></div>)) : <div className="text-gray-400 text-sm">目前無債務</div>}</div></div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-10"><div className="col-span-2 md:col-span-1 bg-jp-charcoal text-white p-6 shadow-lg relative group cursor-pointer" onClick={() => {setTempBudget(trip.budgetTotal.toString()); setIsEditingBudget(true)}}><p className="text-[10px] tracking-widest opacity-60 uppercase">總預算 <Edit size={10} className="inline ml-1 opacity-50 group-hover:opacity-100"/></p>{isEditingBudget ? (<div className="flex items-center gap-2 mt-2"><input autoFocus className="text-black px-2 py-1 w-32 rounded text-lg" type="number" value={tempBudget} onClick={(e)=>e.stopPropagation()} onChange={(e)=>setTempBudget(e.target.value)}/><button className="bg-white text-black px-2 py-1 text-xs rounded" onClick={(e)=>{ e.stopPropagation(); updateBudgetTotal(trip.id, Number(tempBudget)); setIsEditingBudget(false); }}>OK</button></div>) : (<h2 className="text-3xl font-serif font-bold">¥{trip.budgetTotal.toLocaleString()}</h2>)}</div><div className="bg-white p-6 shadow-sm border border-gray-100"><p className="text-[10px] tracking-widest text-gray-400 uppercase">已花費</p><h2 className="text-3xl font-serif font-bold text-neutral-900">¥{totalSpent.toLocaleString()}</h2></div><div className={isOverBudget ? "bg-red-500 text-white p-6 shadow-sm" : "bg-white p-6 shadow-sm border border-gray-100"}><p className="text-[10px] tracking-widest opacity-60 uppercase">剩餘</p><h2 className="text-3xl font-serif font-bold">¥{remaining.toLocaleString()}</h2></div></div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-10"><div className="col-span-2 md:col-span-1 bg-jp-charcoal text-white p-6 relative group cursor-pointer" onClick={() => {setTempBudget(trip.budgetTotal.toString()); setIsEditingBudget(true)}}><p className="text-[10px] tracking-widest opacity-60 uppercase">總預算 <Edit size={10} className="inline ml-1 opacity-50 group-hover:opacity-100"/></p>{isEditingBudget ? (<div className="flex items-center gap-2 mt-2"><input autoFocus className="text-black px-2 py-1 w-32 rounded text-lg" type="number" value={tempBudget} onClick={(e)=>e.stopPropagation()} onChange={(e)=>setTempBudget(e.target.value)}/><button className="bg-white text-black px-2 py-1 text-xs rounded" onClick={(e)=>{ e.stopPropagation(); updateBudgetTotal(trip.id, Number(tempBudget)); setIsEditingBudget(false); }}>OK</button></div>) : (<h2 className="text-3xl font-serif font-bold">¥{trip.budgetTotal.toLocaleString()}</h2>)}</div><div className="bg-white p-6 border border-gray-100"><p className="text-[10px] tracking-widest text-gray-400 uppercase">已花費</p><h2 className="text-3xl font-serif font-bold text-neutral-900">¥{totalSpent.toLocaleString()}</h2></div><div className={isOverBudget ? "bg-red-500 text-white p-6" : "bg-white p-6 border border-gray-100"}><p className="text-[10px] tracking-widest opacity-60 uppercase">剩餘</p><h2 className="text-3xl font-serif font-bold">¥{remaining.toLocaleString()}</h2></div></div>
 
         {/* Budget Progress Bar */}
-        <div className="mb-10 bg-white p-6 border border-gray-100 shadow-sm">
+        <div className="mb-10 bg-white p-6 border border-gray-100">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[10px] tracking-[0.2em] text-gray-400 uppercase">預算使用進度</span>
             <span className="text-[10px] text-gray-400 font-mono">
@@ -139,7 +139,7 @@ export default function BudgetPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
            {/* Desktop: sticky sidebar form | Mobile: hidden, opened via FAB */}
-           <div className={`bg-white p-8 shadow-sm border border-gray-100 lg:sticky lg:top-4 lg:h-fit lg:z-10
+           <div className={`bg-white p-8 border border-gray-100 lg:sticky lg:top-4 lg:h-fit lg:z-10
              hidden lg:block`}>
               <div className="flex justify-between items-center mb-6"><h3 className="font-serif font-bold">{editingExpenseId ? "編輯" : "新增"}支出</h3>{editingExpenseId && <button onClick={()=>{setEditingExpenseId(null); setItemName(""); setAmount(""); setReceiptUrl("")}} className="text-xs text-gray-400">取消</button>}</div>
               <div className="space-y-4">
@@ -163,7 +163,7 @@ export default function BudgetPage() {
         {/* ── Mobile FAB ── */}
         <button
           onClick={() => { setEditingExpenseId(null); setItemName(""); setAmount(""); setReceiptUrl(""); setIsFormOpen(true); }}
-          className="fixed bottom-24 right-5 lg:hidden w-14 h-14 bg-neutral-900 text-white rounded-full shadow-xl flex items-center justify-center z-40 active:scale-95 transition-transform"
+          className="fixed bottom-24 right-5 lg:hidden w-14 h-14 bg-accent text-white rounded-full border border-gray-200 flex items-center justify-center z-40 active:scale-95 transition-transform"
           aria-label="新增支出"
         >
           <span className="text-2xl leading-none">+</span>
@@ -178,7 +178,7 @@ export default function BudgetPage() {
               onClick={() => { setIsFormOpen(false); setEditingExpenseId(null); }}
             />
             {/* Sheet */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white rounded-t-2xl shadow-2xl max-h-[90dvh] overflow-y-auto">
+            <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white rounded-t-2xl border border-gray-200 max-h-[90dvh] overflow-y-auto">
               {/* Handle */}
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 bg-gray-200 rounded-full" />
@@ -196,7 +196,7 @@ export default function BudgetPage() {
                   <div><div className="flex justify-between items-center mb-2"><label className="text-[10px]">分攤:</label><button onClick={()=>{ setIsCustomSplit(!isCustomSplit); if(!isCustomSplit) distributeEvenly(); }} className="flex items-center gap-1 text-[10px] bg-gray-100 px-2 py-1 rounded"><Settings2 size={10}/> {isCustomSplit ? "自訂" : "平均"}</button></div><div className="flex gap-2 flex-wrap mb-2"><button onClick={()=>setSplitWith(trip.members.map(m=>m.id))} className="text-[10px] underline mr-2">全員</button>{trip.members.map(m => (<button key={m.id} onClick={()=>{ setSplitWith(prev => prev.includes(m.id) ? prev.filter(id=>id!==m.id) : [...prev, m.id]) }} className={`px-3 py-1 text-xs border ${splitWith.includes(m.id)?'bg-gray-200':'text-gray-300'}`}>{m.name}</button>))}</div>{isCustomSplit && splitWith.length > 0 && (<div className="bg-gray-50 p-3 rounded space-y-2 border border-dashed">{splitWith.map(mid => { const m = trip.members.find(mem=>mem.id===mid); return (<div key={mid} className="flex justify-between"><span className="text-xs">{m?.name}</span><input type="number" className="w-20 border-b bg-transparent text-right text-sm" placeholder="0" value={customAmounts[mid] || ''} onChange={(e) => setCustomAmounts({...customAmounts, [mid]: e.target.value})}/></div>)})}</div>)}</div>
                   <div className="flex flex-wrap gap-2">{Object.keys(CAT_CONFIG).map(c => (<button key={c} onClick={()=>setCategory(c as any)} className={`px-2 py-1 text-[10px] border ${category===c?'bg-black text-white':'border-gray-200'}`}>{CAT_CONFIG[c as ExpenseCategory].label}</button>))}</div>
                   <label className="flex items-center gap-2 text-[10px] text-gray-400 border border-dashed w-full justify-center py-3 cursor-pointer"><input type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} /><Upload size={14}/> {receiptUrl ? "已上傳" : "上傳單據"}</label>
-                  <button onClick={() => { handleAdd(); setIsFormOpen(false); }} className="w-full bg-neutral-900 text-white py-3.5 uppercase text-xs tracking-widest hover:bg-black rounded-xl">{editingExpenseId ? "更新" : "新增"}</button>
+                  <button onClick={() => { handleAdd(); setIsFormOpen(false); }} className="w-full bg-accent text-white py-3.5 uppercase text-xs tracking-widest hover:bg-accent rounded-none">{editingExpenseId ? "更新" : "新增"}</button>
                 </div>
               </div>
             </div>

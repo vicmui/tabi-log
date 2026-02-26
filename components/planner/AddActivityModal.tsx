@@ -48,7 +48,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 32 }}
-            className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white z-[101] shadow-2xl rounded-2xl overflow-hidden"
+            className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white z-[101] border border-gray-200 rounded-none overflow-hidden"
           >
             {/* Header strip — shows selected category color accent */}
             <div className="h-1 w-full bg-neutral-900" />
@@ -78,9 +78,9 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
                       <button
                         key={t.type} type="button" onClick={() => setType(t.type)}
                         className={clsx(
-                          "flex flex-col items-center justify-center py-2.5 gap-1 rounded-xl border transition-all",
+                          "flex flex-col items-center justify-center py-2.5 gap-1 rounded-none border transition-all",
                           type === t.type
-                            ? "bg-neutral-900 text-white border-neutral-900 shadow-sm"
+                            ? "bg-neutral-900 text-white border-neutral-900"
                             : "bg-white text-gray-300 border-gray-100 hover:border-gray-300 hover:text-gray-500"
                         )}
                       >
@@ -159,7 +159,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit }: Props) {
                 <button
                   type="submit" disabled={!canSubmit}
                   className={clsx(
-                    "w-full py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-xl transition-all",
+                    "w-full py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all",
                     canSubmit
                       ? "bg-neutral-900 text-white hover:bg-black active:scale-[0.99]"
                       : "bg-gray-100 text-gray-300 cursor-not-allowed"

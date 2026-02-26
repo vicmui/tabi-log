@@ -45,7 +45,7 @@ export default function TripCard({ trip }: { trip: Trip }) {
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
         {countdownText && (
-          <div className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase rounded-full shadow-sm ${isOngoing ? 'bg-black text-white' : 'bg-white/90 text-black backdrop-blur-sm'}`}>
+          <div className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase rounded-full ${isOngoing ? 'bg-black text-white' : 'bg-white/90 text-black backdrop-blur-sm'}`}>
             {countdownText}
           </div>
         )}

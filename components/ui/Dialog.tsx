@@ -21,7 +21,7 @@ function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNod
           exit={{ opacity: 0, y: 6, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 420, damping: 34 }}
           onClick={e => e.stopPropagation()}
-          className="w-full max-w-sm bg-white rounded-2xl overflow-hidden shadow-2xl"
+          className="w-full max-w-sm bg-white rounded-none overflow-hidden border border-gray-200"
         >
           {children}
         </motion.div>
@@ -205,9 +205,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
         <button
           onClick={handleSubmit}
           disabled={!title.trim()}
-          className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-xl transition-all ${
-            title.trim() ? "bg-neutral-900 text-white hover:bg-black" : "bg-gray-100 text-gray-300 cursor-not-allowed"
-          }`}
+          className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${!title.trim() ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "text-white"}`} style={title.trim() ? { backgroundColor: 'var(--accent)' } : {}}
         >
           建立旅程
         </button>

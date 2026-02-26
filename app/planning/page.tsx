@@ -22,7 +22,7 @@ const SortablePlanItem = ({ item, trip, onEdit, onDeleteRequest }: { item: PlanI
     const priorityColor = { High: "border border-neutral-800 text-neutral-800", Medium: "border border-neutral-400 text-neutral-500", Low: "border border-neutral-300 text-neutral-400" };
 
     return (
-        <div ref={setNodeRef} style={style} className={clsx("p-4 border bg-white hover:shadow-md transition-shadow relative group rounded-lg flex items-start gap-4", item.isCompleted && "opacity-50")}>
+        <div ref={setNodeRef} style={style} className={clsx("p-4 border bg-white hover:shadow-md transition-shadow relative group rounded-none flex items-start gap-4", item.isCompleted && "opacity-50")}>
             <div className="flex-1 flex items-start gap-4">
                 <button onClick={() => togglePlanItem(trip.id, item.id)} className={clsx("mt-1", item.isCompleted ? "text-gray-400" : "text-black")}>
                     {item.isCompleted ? <CheckCircle2 size={20}/> : <Circle size={20}/>}
@@ -41,7 +41,7 @@ const SortablePlanItem = ({ item, trip, onEdit, onDeleteRequest }: { item: PlanI
                     )}
                 </div>
             </div>
-            {item.imageUrl && <img src={item.imageUrl} className="w-20 h-20 rounded-lg object-contain bg-white border border-gray-100 p-1"/>}
+            {item.imageUrl && <img src={item.imageUrl} className="w-20 h-20 rounded-none object-contain bg-white border border-gray-100 p-1"/>}
             <div className="absolute top-4 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => onEdit(item)} className="p-1 text-gray-400 hover:text-black"><Edit size={14}/></button>
                 <button onClick={() => onDeleteRequest(item.id)} className="p-1 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
@@ -129,12 +129,12 @@ export default function PlanningPage() {
            </div>
            
            {/* Add/Edit Form */}
-           <div className={clsx("border border-dashed p-6 bg-gray-50 rounded-lg h-fit sticky top-10", editingItemId ? "border-black bg-white" : "border-gray-300")}>
+           <div className={clsx("border border-dashed p-6 bg-gray-50 rounded-none h-fit sticky top-10", editingItemId ? "border-black bg-white" : "border-gray-300")}>
               <div className="flex justify-between items-center mb-4"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{editingItemId ? "編輯項目" : "新增項目"}</span>{editingItemId && <button onClick={handleCancelEdit}><X size={14} className="text-gray-400 hover:text-black"/></button>}</div>
               <input value={text} onChange={e=>setText(e.target.value)} placeholder="項目名稱..." className="w-full bg-transparent border-b mb-3 text-sm p-1 focus:border-black outline-none"/>
               {activeTab === 'Shopping' && (<><input value={location} onChange={e=>setLocation(e.target.value)} placeholder="購買地點..." className="w-full bg-transparent border-b mb-3 text-sm p-1 focus:border-black outline-none"/><input type="number" value={estimatedCost} onChange={e=>setEstimatedCost(e.target.value)} placeholder="預算 (¥)..." className="w-full bg-transparent border-b mb-3 text-sm p-1 focus:border-black outline-none"/><div className="mb-3">{imageUrl ? (<div className="relative w-full h-24 rounded overflow-hidden group"><img src={imageUrl} className="w-full h-full object-cover" /><button onClick={()=>setImageUrl("")} className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full"><X size={12}/></button></div>) : (<label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-black transition-colors border border-dashed border-gray-300 p-3 rounded justify-center bg-white">{isUploading ? "上傳中..." : <><ImageIcon size={14}/> 上傳圖片</>}<input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} /></label>)}</div></>)}
               <div className="flex gap-2 mb-3">{['High','Medium','Low'].map(p=>(<button key={p} onClick={()=>setPriority(p as any)} className={`text-[10px] border px-2 py-1 rounded ${priority===p?'bg-black text-white':'bg-white text-gray-400'}`}>{p}</button>))}</div>
-              <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar"><span className="text-[10px] text-gray-400 flex items-center shrink-0">指派:</span>{trip.members.map(m => (<button key={m.id} onClick={()=>setAssignee(m.id === assignee ? "" : m.id)} className={`w-6 h-6 rounded-full border shrink-0 overflow-hidden ${assignee===m.id ? 'border-black scale-110 shadow-sm' : 'border-transparent opacity-50'}`}><img src={m.avatar} className="w-full h-full object-cover"/></button>))}</div>
+              <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar"><span className="text-[10px] text-gray-400 flex items-center shrink-0">指派:</span>{trip.members.map(m => (<button key={m.id} onClick={()=>setAssignee(m.id === assignee ? "" : m.id)} className={`w-6 h-6 rounded-full border shrink-0 overflow-hidden ${assignee===m.id ? 'border-black scale-110' : 'border-transparent opacity-50'}`}><img src={m.avatar} className="w-full h-full object-cover"/></button>))}</div>
               <button onClick={handleSave} className="w-full bg-jp-charcoal text-white py-2 text-xs uppercase tracking-widest hover:bg-black rounded transition-colors">{editingItemId ? "更新" : "新增"}</button>
            </div>
         </div>
