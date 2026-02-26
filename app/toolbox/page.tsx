@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
-import { RefreshCw, ArrowRightLeft, Download, Upload, Save, AlertTriangle, Loader2, CheckCircle2, Wifi, WifiOff } from "lucide-react";
+import { RefreshCw, ArrowRightLeft, Download, Upload, Save, AlertTriangle, Loader2, CheckCircle2, Wifi, WifiOff, HardDrive, Signal } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 
 // Common travel currencies for quick select
@@ -20,6 +20,8 @@ export default function ToolboxPage() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState(false);
   const [importStatus, setImportStatus] = useState("");
+  const [cacheStatus, setCacheStatus] = useState<"idle"|"caching"|"done"|"error">("idle");
+  const [cacheProgress, setCacheProgress] = useState(0);
 
   useEffect(() => {
     if (trip?.exchangeRate) setRate(trip.exchangeRate);
@@ -62,6 +64,43 @@ export default function ToolboxPage() {
   };
 
   const result = amount ? (parseFloat(amount) * rate).toFixed(2) : "0";
+
+  // 🔥 Manual precache all app routes + current trip assets
+  const handlePrecacheAll = async () => {
+    setCacheStatus("caching");
+    setCacheProgress(0);
+    const routes = ["/", "/bookings", "/planner", "/budget", "/planning", "/toolbox", "/members"];
+    // Add active trip planner routes
+    if (trip) {
+      trip.dailyItinerary.forEach((_, i) => routes.push(`/planner/${trip.id}?day=${i}`));
+    }
+    try {
+      const cache = await caches.open("app-manual-cache-v1");
+      let done = 0;
+      for (const route of routes) {
+        try {
+          await cache.add(route);
+        } catch { /* some routes may fail, continue */ }
+        done++;
+        setCacheProgress(Math.round((done / routes.length) * 100));
+      }
+      // Also cache current trip cover images
+      if (trip) {
+        const images = trip.dailyItinerary
+          .map(d => d.coverImage)
+          .filter(Boolean) as string[];
+        const imgCache = await caches.open("app-manual-cache-v1");
+        for (const img of images) {
+          try { await imgCache.add(img); } catch {}
+        }
+      }
+      setCacheStatus("done");
+      setTimeout(() => { setCacheStatus("idle"); setCacheProgress(0); }, 3000);
+    } catch {
+      setCacheStatus("error");
+      setTimeout(() => setCacheStatus("idle"), 3000);
+    }
+  };
 
   const handleExport = () => {
     const dataStr = JSON.stringify(trips, null, 2);
@@ -193,7 +232,75 @@ export default function ToolboxPage() {
             </div>
           </div>
 
-          {/* ── 資料備份 ── */}
+          {/* ── 離線緩存 ── */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
+              <HardDrive size={16} />
+              <h2 className="text-xs font-bold tracking-[0.2em] uppercase">離線緩存</h2>
+            </div>
+            <div className="bg-white p-8 border border-gray-100 space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <p className="text-sm font-bold mb-1">一鍵下載離線版</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    預先緩存所有頁面至本機 — 上機後開 Airplane Mode 照用。<br/>
+                    行程資料存於本機，即使無網絡亦可查閱。
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 text-[9px] text-gray-400">
+                  <Signal size={10} />
+                  <span className="tracking-widest uppercase">Offline Ready</span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {cacheStatus === "caching" && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[9px] text-gray-400 tracking-widest uppercase">
+                    <span>緩存中...</span>
+                    <span>{cacheProgress}%</span>
+                  </div>
+                  <div className="h-[2px] bg-gray-100 w-full">
+                    <div
+                      className="h-full bg-black transition-all duration-300"
+                      style={{ width: `${cacheProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {cacheStatus === "done" && (
+                <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 border border-green-100 px-4 py-3">
+                  <CheckCircle2 size={14} />
+                  <span className="font-bold tracking-widest uppercase">緩存完成 — 可安心開飛行模式</span>
+                </div>
+              )}
+
+              {cacheStatus === "error" && (
+                <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 border border-red-100 px-4 py-3">
+                  <WifiOff size={14} />
+                  <span className="font-bold tracking-widest uppercase">緩存失敗，請確保網絡正常後重試</span>
+                </div>
+              )}
+
+              <button
+                onClick={handlePrecacheAll}
+                disabled={cacheStatus === "caching"}
+                className="w-full flex items-center justify-center gap-2 border border-black bg-black text-white py-4 text-xs font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50"
+              >
+                {cacheStatus === "caching"
+                  ? <><Loader2 size={14} className="animate-spin" /> 緩存中 {cacheProgress}%</>
+                  : <><HardDrive size={14} /> 立即緩存離線版</>
+                }
+              </button>
+
+              <p className="text-[9px] text-gray-300 tracking-widest text-center uppercase">
+                建議每次出發前重新緩存以獲取最新資料
+              </p>
+            </div>
+          </div>
+
+          {/* ── 資料備份 ── */
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
               <Save size={16} />
