@@ -17,6 +17,7 @@ export default function MembersPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [roleInput, setRoleInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export default function MembersPage() {
     setEditingMemberId(member.id);
     setNameInput(member.name);
     setAvatarUrl(member.avatar);
+    setRoleInput(member.role || "");
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
@@ -49,6 +51,7 @@ export default function MembersPage() {
     setEditingMemberId(null);
     setNameInput("");
     setAvatarUrl("");
+    setRoleInput("");
     setIsSubmitting(false);
   };
 
@@ -79,9 +82,9 @@ export default function MembersPage() {
     try {
         let updatedMembers = [...trip.members];
         if (editingMemberId) {
-            updatedMembers = updatedMembers.map(m => m.id === editingMemberId ? { ...m, name: nameInput, avatar: avatarUrl || m.avatar } : m);
+            updatedMembers = updatedMembers.map(m => m.id === editingMemberId ? { ...m, name: nameInput, avatar: avatarUrl || m.avatar, role: roleInput || m.role } : m);
         } else {
-            const newMember = { id: uuidv4(), name: nameInput, avatar: avatarUrl || getRandomAvatar(nameInput) };
+            const newMember = { id: uuidv4(), name: nameInput, avatar: avatarUrl || getRandomAvatar(nameInput), role: roleInput || "旅伴" };
             updatedMembers.push(newMember);
         }
         updateTrip(trip.id, { members: updatedMembers });
@@ -116,7 +119,7 @@ export default function MembersPage() {
                  <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
               </div>
               <h3 className="text-xl font-bold font-serif mb-1">{member.name}</h3>
-              <p className="text-[10px] text-gray-400 tracking-widest uppercase">旅伴</p>
+              <p className="text-[10px] text-gray-400 tracking-widest uppercase">{member.role || "旅伴"}</p>
               <div className="absolute top-4 right-4 flex gap-2">
                  <button onClick={() => startEditing(member)} className="text-gray-400 hover:text-black transition-colors p-1"><Edit2 size={14} /></button>
                  <button onClick={() => handleDeleteMember(member.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={14} /></button>
@@ -135,6 +138,7 @@ export default function MembersPage() {
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={isSubmitting} />
              </label>
              <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="輸入名字..." className="bg-transparent border-b border-gray-300 text-center py-2 focus:outline-none focus:border-black w-full text-lg font-serif placeholder-gray-400" disabled={isSubmitting} />
+             <input type="text" value={roleInput} onChange={(e) => setRoleInput(e.target.value)} placeholder="身份（如：主辦、媽咪、旅伴...）" className="bg-transparent border-b border-gray-200 text-center py-1.5 focus:outline-none focus:border-black w-full text-xs text-gray-400 tracking-widest uppercase placeholder-gray-300" disabled={isSubmitting} />
              <button onClick={handleSave} disabled={!nameInput.trim() || isSubmitting} className={clsx("text-white px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all w-full rounded-none flex items-center justify-center gap-2", (!nameInput.trim() || isSubmitting) ? "bg-gray-300 cursor-not-allowed" : "bg-[#333333] hover:bg-black active:scale-95")}>
                {isSubmitting ? "處理中..." : <>{editingMemberId ? <Check size={14}/> : <Plus size={14}/>} {editingMemberId ? "更新資料" : "確認新增"}</>}
              </button>
