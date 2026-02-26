@@ -37,7 +37,7 @@ export default function SharePage() {
   const shoppingItems = trip.plans.filter(p => p.category === 'Shopping');
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#333333] pb-24">
+    <div className="min-h-screen bg-white font-sans text-[#333333] pb-12">
       {/* 唯讀 Header */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 px-6 py-4 flex flex-col gap-2">
           <div className="flex justify-between items-start">
@@ -73,7 +73,7 @@ export default function SharePage() {
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                   <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar snap-x">
                       {trip.dailyItinerary.map((day, idx) => (
-                          <button key={idx} onClick={() => setActiveDay(idx)} className={clsx("flex-shrink-0 w-16 h-20 border rounded-xl flex flex-col items-center justify-center transition-all snap-center", activeDay === idx ? "bg-black text-white shadow-lg scale-105" : "bg-gray-50 text-gray-400")}>
+                          <button key={idx} onClick={() => setActiveDay(idx)} className={clsx("flex-shrink-0 w-16 h-20 border rounded-none flex flex-col items-center justify-center transition-all snap-center", activeDay === idx ? "bg-black text-white border-black" : "bg-white text-gray-400 border-gray-200")}>
                               <span className="text-[9px] uppercase font-bold">{format(parseISO(day.date), 'EEE')}</span>
                               <span className="text-xl font-bold">{day.day}</span>
                           </button>
@@ -81,12 +81,12 @@ export default function SharePage() {
                   </div>
                   <div className="flex justify-between items-center border-b pb-2">
                       <h2 className="text-sm font-bold tracking-widest uppercase">Day {activeDay + 1}</h2>
-                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="text-[10px] border px-3 py-1 rounded-full uppercase font-bold">{viewMode === 'list' ? "地圖" : "列表"}</button>
+                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="text-[10px] border border-gray-200 px-3 py-1 rounded-none uppercase font-bold text-gray-500 hover:border-black transition-colors">{viewMode === 'list' ? "地圖" : "列表"}</button>
                   </div>
                   {viewMode === 'list' ? (
                       <ItineraryList dayIndex={activeDay} activities={currentDailyItinerary?.activities || []} tripId={trip.id} isReadOnly={true} onActivityClick={()=>{}} />
                   ) : (
-                      <div className="h-[60vh] border rounded-2xl overflow-hidden shadow-sm"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
+                      <div className="h-[60vh] border rounded-none overflow-hidden"><TripMap activities={currentDailyItinerary?.activities || []} /></div>
                   )}
               </div>
           )}
@@ -96,16 +96,16 @@ export default function SharePage() {
                   <h2 className="text-sm font-bold tracking-widest uppercase border-b pb-2">預訂憑證總覽</h2>
                   <div className="grid grid-cols-1 gap-6">
                       {trip.bookings.length > 0 ? trip.bookings.map(b => (
-                          <div key={b.id} className="border border-gray-100 rounded-2xl p-5 bg-white shadow-sm relative">
+                          <div key={b.id} className="border border-gray-100 rounded-none p-5 bg-white relative">
                               <div className="flex justify-between mb-4">
                                   <div className="flex items-center gap-3">
-                                      <div className="p-2 bg-gray-100 rounded-lg">{b.type === 'Flight' ? <Plane size={20}/> : <Building size={20}/>}</div>
+                                      <div className="p-2 bg-gray-100 rounded-none">{b.type === 'Flight' ? <Plane size={20}/> : <Building size={20}/>}</div>
                                       <div><p className="text-[10px] text-gray-400 uppercase tracking-widest">{b.type}</p><p className="font-bold">{b.title}</p></div>
                                   </div>
-                                  <span className="font-mono text-[10px] bg-gray-50 px-2 py-1 rounded">{b.date}</span>
+                                  <span className="font-mono text-[10px] bg-gray-50 px-2 py-1 rounded-none border border-gray-100">{b.date}</span>
                               </div>
                               {b.details.address && <p className="text-xs text-gray-500 flex items-center gap-1 mb-3"><MapPin size={12}/> {b.details.address}</p>}
-                              {b.details.fileUrl && (<button onClick={() => window.open(b.details.fileUrl, '_blank')} className="w-full py-2 bg-black text-white text-[10px] font-bold uppercase rounded-lg">查看憑證</button>)}
+                              {b.details.fileUrl && (<button onClick={() => window.open(b.details.fileUrl, '_blank')} className="w-full py-2 bg-black text-white text-[10px] font-bold uppercase rounded-none">查看憑證</button>)}
                           </div>
                       )) : <div className="text-center py-20 text-gray-300 text-xs">目前沒有預訂紀錄</div>}
                   </div>
@@ -114,7 +114,7 @@ export default function SharePage() {
 
           {activeTab === 'budget' && (
               <div className="space-y-6 animate-in fade-in">
-                  <div className="bg-black text-white p-6 rounded-2xl shadow-xl flex justify-between items-center">
+                  <div className="bg-black text-white p-6 rounded-none border border-gray-200 flex justify-between items-center">
                       <div><p className="text-[10px] tracking-widest opacity-60 uppercase mb-1">Total Spent</p><h2 className="text-4xl font-bold font-serif">¥{trip.expenses.reduce((acc, e) => acc + e.amount, 0).toLocaleString()}</h2></div>
                       <Wallet size={40} className="opacity-20" />
                   </div>
@@ -133,7 +133,7 @@ export default function SharePage() {
               <div className="space-y-10 animate-in fade-in">
                   <section><h2 className="text-xs font-bold tracking-widest uppercase border-b pb-2 mb-4 text-gray-400">行李清單</h2><div className="grid grid-cols-1 gap-2">{packingItems.map(p => <SharePlanItem key={p.id} item={p} members={trip.members} />)}</div></section>
                   <section><h2 className="text-xs font-bold tracking-widest uppercase border-b pb-2 mb-4 text-gray-400">待辦事項</h2><div className="grid grid-cols-1 gap-2">{todoItems.map(p => <SharePlanItem key={p.id} item={p} members={trip.members} />)}</div></section>
-                  <section><h2 className="text-xs font-bold tracking-widest uppercase border-b pb-2 mb-4 text-gray-400">購物清單</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{shoppingItems.map(p => (<div key={p.id} className="border border-gray-100 rounded-xl p-4 flex gap-4">{p.imageUrl && <img src={p.imageUrl} className="w-20 h-20 rounded-lg object-contain bg-white border border-gray-100"/>}<div className="flex-1"><p className="font-bold text-sm">{p.text}</p><p className="text-[10px] text-gray-400 mt-1 uppercase">預算: ¥{p.estimatedCost || '--'}</p><p className="text-[10px] text-gray-400 uppercase">地點: {p.location || '未定'}</p></div></div>))}</div></section>
+                  <section><h2 className="text-xs font-bold tracking-widest uppercase border-b pb-2 mb-4 text-gray-400">購物清單</h2><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{shoppingItems.map(p => (<div key={p.id} className="border border-gray-100 rounded-none p-4 flex gap-4">{p.imageUrl && <img src={p.imageUrl} className="w-20 h-20 rounded-none object-contain bg-white border border-gray-100"/>}<div className="flex-1"><p className="font-bold text-sm">{p.text}</p><p className="text-[10px] text-gray-400 mt-1 uppercase">預算: ¥{p.estimatedCost || '--'}</p><p className="text-[10px] text-gray-400 uppercase">地點: {p.location || '未定'}</p></div></div>))}</div></section>
               </div>
           )}
       </div>
@@ -145,10 +145,10 @@ export default function SharePage() {
 function SharePlanItem({ item, members }: { item: PlanItem, members: Member[] }) {
     const assigned = members.find(m => m.id === item.assigneeId);
     return (
-        <div className="flex items-center gap-4 p-4 border border-gray-50 rounded-xl bg-gray-50/30">
+        <div className="flex items-center gap-4 p-4 border border-gray-50 rounded-none bg-gray-50/30">
             {item.isCompleted ? <CheckCircle2 className="text-black" size={20}/> : <Circle className="text-gray-200" size={20}/>}
             <div className="flex-1"><p className={clsx("text-sm font-medium", item.isCompleted && "line-through text-gray-300")}>{item.text}</p></div>
-            {assigned && <img src={assigned.avatar} title={assigned.name} className="w-6 h-6 rounded-full border border-white shadow-sm"/>}
+            {assigned && <img src={assigned.avatar} title={assigned.name} className="w-6 h-6 rounded-full border border-white"/>}
         </div>
     );
 }

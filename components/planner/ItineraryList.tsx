@@ -59,7 +59,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                         <h4 className={clsx("text-sm font-bold tracking-wide leading-tight mr-2", activity.isVisited ? "text-gray-400 line-through" : "text-black")}>{activity.location}</h4>
                         {/* 🔥 嚴格控制：只有 > 0 才 Render */}
                         {hasCost && (
-                            <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                            <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 rounded-none border border-gray-100">
                                 ¥ {costValue.toLocaleString()}
                             </span>
                         )}
@@ -73,9 +73,9 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                     {activity.note && (<div className="flex items-start gap-1 text-gray-500 mt-1"><AlignLeft size={10} className="mt-[2px] shrink-0"/><p className="text-[11px] line-clamp-2 leading-relaxed">{activity.note}</p></div>)}
                     
                     <div className={clsx("flex gap-3 mt-3 pt-3 border-t border-gray-50 transition-opacity", isReadOnly ? "" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100")}>
-                        <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2.5 py-1 rounded"><Navigation size={10} fill="currentColor" /> 導航</button>
+                        <button onClick={handleNavigate} className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline bg-blue-50 px-2.5 py-1 rounded-none border border-blue-100"><Navigation size={10} fill="currentColor" /> 導航</button>
                         {!isReadOnly && (
-                            <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-green-600 hover:underline bg-green-50 px-2.5 py-1 rounded">
+                            <button onClick={toggleCheck} className="flex items-center gap-1 text-[10px] text-green-600 hover:underline bg-green-50 px-2.5 py-1 rounded-none border border-green-100">
                                 {activity.isVisited ? <><Circle size={10}/> 取消</> : <><CheckCircle2 size={10}/> 打卡</>}
                             </button>
                         )}

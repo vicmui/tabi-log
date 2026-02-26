@@ -16,6 +16,8 @@ const MENU_ITEMS = [
 
 export default function MobileNav() {
   const pathname = usePathname();
+  // Hide entirely on share pages - read-only view for others
+  if (pathname.startsWith('/share')) return null;
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
       <div className="flex justify-between items-center px-1 py-2 overflow-x-auto no-scrollbar">
