@@ -36,7 +36,7 @@ export default function Sidebar() {
                   ? "border-l-[3px] pl-2 -ml-2"
                   : "border-l-[3px] border-transparent pl-2 -ml-2 group-hover:border-gray-200"
               )}
-              style={isActive ? { borderColor: 'var(--accent)' } : {}}>
+              >
                 <span className={clsx(
                   "text-xs tracking-[0.15em] transition-all duration-200 uppercase",
                   isActive ? "text-black font-bold" : "text-gray-400 group-hover:text-gray-600 font-medium"

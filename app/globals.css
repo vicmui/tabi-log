@@ -2,62 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ─────────────────────────────────────────────────────── */
 :root {
-  --accent: #0891b2;          /* Teal — primary accent */
-  --accent-light: #e0f2fe;    /* Teal tint for hover/bg */
   --foreground-rgb: 51, 51, 51;
   --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 255, 255, 255;
 }
 
-body {
-  color: #333333;
-  background: white;
-}
+body { color: #333333; background: white; }
 
-/* ── Accent utilities ───────────────────────────────────────────────────── */
-.bg-accent          { background-color: var(--accent); }
-.text-accent        { color: var(--accent); }
-.border-accent      { border-color: var(--accent); }
-.hover\:bg-accent:hover   { background-color: var(--accent); }
-.hover\:text-accent:hover { color: var(--accent); }
-
-/* ── UT: active sidebar indicator ──────────────────────────────────────── */
-.sidebar-active {
-  color: #1a1a1a;
-  font-weight: 700;
-  border-left: 3px solid var(--accent);
-  padding-left: 0.5rem;
-  margin-left: -0.5rem;
-}
-
-/* ── UT: primary CTA button ─────────────────────────────────────────────── */
-.btn-primary {
-  background-color: var(--accent);
-  color: white;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding: 0.75rem 1.5rem;
-  transition: background-color 0.15s;
-  border-radius: 0;
-}
-.btn-primary:hover { background-color: #0e7490; }
-.btn-primary:disabled { background-color: #d1d5db; cursor: not-allowed; }
-
-/* ── Input / placeholder ────────────────────────────────────────────────── */
-::placeholder {
-  color: #9CA3AF !important;
-  opacity: 1;
-}
+::placeholder { color: #9CA3AF !important; opacity: 1; }
 input, select, textarea { color: #111111; }
 label { color: #6B7280; }
 
-/* ── Scrollbar hidden ───────────────────────────────────────────────────── */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ── Safe area ──────────────────────────────────────────────────────────── */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }

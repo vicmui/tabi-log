@@ -88,9 +88,14 @@ export default function PlannerPage() {
     if (trip.dailyItinerary.length <= 1) { setAlertMsg("最少保留一天！"); return; }
     setConfirmDeleteDay(true);
   };
-  const handleCopyShareLink = () => {
+  const handleCopyShareLink = async () => {
     const url = `${window.location.origin}/share/${trip.id}`;
-    navigator.clipboard.writeText(url);
+    if (navigator.share) {
+      try { await navigator.share({ title: trip.title, text: `我嘅旅行手帳 - ${trip.title}`, url }); return; }
+      catch { return; }
+    }
+    try { await navigator.clipboard.writeText(url); }
+    catch { const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); }
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2000);
   };
@@ -124,7 +129,7 @@ export default function PlannerPage() {
         <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
            <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-400"/></Link>
            <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
-           <button onClick={() => setIsModalOpen(true)} className="text-white p-2 rounded-none active:scale-95 transition-transform" style={{ backgroundColor: 'var(--accent)' }}><Plus size={20}/></button>
+           <button onClick={() => setIsModalOpen(true)} className="text-white p-2 rounded-none active:scale-95 transition-transform" style={{ backgroundColor: '#1a1a1a' }}><Plus size={20}/></button>
         </div>
 
         {/* Desktop Sidebar (Day List) */}
@@ -150,7 +155,7 @@ export default function PlannerPage() {
                      <WeatherIcon code={info?.code} />
                      <span>{info ? info.temp : "15°/25°"}</span>
                   </div>
-                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[4px]" style={{ backgroundColor: 'var(--accent)' }} />}
+                  {activeDay === index && <div className="absolute left-0 top-0 bottom-0 w-[4px]" style={{ backgroundColor: '#1a1a1a' }} />}
                 </button>
               )
             })}
@@ -212,7 +217,7 @@ export default function PlannerPage() {
                       <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-none bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /> <span className="hidden sm:inline">分享</span></button>
                       <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-none bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /> <span className="hidden sm:inline">路線</span></button>
                       <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-none bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={14} /> <span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /> <span className="hidden sm:inline">列表</span></>}</button>
-                      <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest text-white px-6 py-2.5 transition-colors uppercase rounded-none font-bold" style={{ backgroundColor: 'var(--accent)' }}><Plus size={12} /> 新增活動</button>
+                      <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest text-white px-6 py-2.5 transition-colors uppercase rounded-none font-bold" style={{ backgroundColor: '#1a1a1a' }}><Plus size={12} /> 新增活動</button>
                   </div>
                </div>
             </div>

@@ -29,19 +29,18 @@ export default function MobileNav() {
             >
               {/* Active top bar */}
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px]" style={{ backgroundColor: 'var(--accent)' }} />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-black" />
               )}
               <item.icon
                 size={20}
                 strokeWidth={isActive ? 2.5 : 1.5}
-                style={isActive ? { color: 'var(--accent)' } : {}}
-                className={isActive ? '' : 'text-gray-400'}
+                className={isActive ? 'text-black' : 'text-gray-400'}
               />
               <span className={clsx(
                 "text-[9px] font-medium tracking-wide",
-                isActive ? "font-bold" : "text-gray-400"
+                isActive ? "font-bold text-black" : "text-gray-400"
               )}
-              style={isActive ? { color: 'var(--accent)' } : {}}>
+              >
                 {item.label}
               </span>
             </Link>
