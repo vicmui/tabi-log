@@ -1,68 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Try these models in order until one works
-const MODELS = [
-  "gemini-2.0-flash-exp",
-  "gemini-exp-1206",
-  "gemini-2.0-pro-exp",
-  "gemini-1.5-pro",
-];
-
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ suggestions: [], error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    return NextResponse.json({ suggestions: [], error: "ANTHROPIC_API_KEY not configured in Vercel" }, { status: 500 });
   }
 
-  const { destination, tripDays } = await req.json();
+  try {
+    const { destination, tripDays } = await req.json();
 
-  const prompt = `You are a travel expert. User is going to "${destination}" for ${tripDays} days.
-Return ONLY a JSON array of 3 must-visit places. No markdown, no explanation, just the array.
-[{"name":"place name in local language","category":"one of: 美食 景點 購物 自然 文化 夜生活","note":"one sentence Chinese description"}]`;
+    const prompt = `You are a travel expert. User is visiting "${destination}" for ${tripDays} days.
+Return ONLY a JSON array of exactly 3 must-visit places. No markdown, no explanation, just the raw JSON array.
+Use local language for place names. Example format:
+[{"name":"道頓堀","category":"景點","note":"大阪最著名的霓虹燈美食街"},{"name":"黑門市場","category":"美食","note":"新鮮海鮮和日本小食的天堂"},{"name":"心齋橋筋","category":"購物","note":"大阪最熱鬧的購物步行街"}]
+category must be one of: 美食 景點 購物 自然 文化 夜生活`;
 
-  for (const model of MODELS) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.5, maxOutputTokens: 512 },
-        }),
-      });
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
 
-      const data = await response.json();
-      if (!response.ok) continue; // try next model
+    const data = await response.json();
 
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      if (!text) continue;
-
-      const clean = text.replace(/```json|```/g, "").trim();
-
-      // Try direct parse
-      try {
-        const parsed = JSON.parse(clean);
-        const arr = Array.isArray(parsed) ? parsed : (parsed.places || parsed.suggestions || []);
-        if (arr.length > 0) return NextResponse.json({ suggestions: arr, model });
-      } catch (_e) {}
-
-      // Extract array from text
-      const match = clean.match(/\[[\s\S]*?\]/);
-      if (match) {
-        try {
-          const arr = JSON.parse(match[0]);
-          if (Array.isArray(arr) && arr.length > 0) return NextResponse.json({ suggestions: arr, model });
-        } catch (_e) {}
-      }
-    } catch (_e) {
-      continue; // try next model
+    if (!response.ok) {
+      return NextResponse.json({ suggestions: [], error: data?.error?.message || "API error" }, { status: 500 });
     }
-  }
 
-  // All models failed — return a helpful error
-  return NextResponse.json({
-    suggestions: [],
-    error: "All Gemini models unavailable. Please check your API key at aistudio.google.com/apikey"
-  }, { status: 500 });
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+
+    try {
+      const parsed = JSON.parse(clean);
+      const arr = Array.isArray(parsed) ? parsed : [];
+      if (arr.length > 0) return NextResponse.json({ suggestions: arr });
+    } catch (_e) {}
+
+    const match = clean.match(/\[[\s\S]*?\]/);
+    if (match) {
+      try {
+        const arr = JSON.parse(match[0]);
+        if (Array.isArray(arr) && arr.length > 0) return NextResponse.json({ suggestions: arr });
+      } catch (_e) {}
+    }
+
+    return NextResponse.json({ suggestions: [], error: "Could not parse response" }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json({ suggestions: [], error: e?.message || "Unknown error" }, { status: 500 });
+  }
 }

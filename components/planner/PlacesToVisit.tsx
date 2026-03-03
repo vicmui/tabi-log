@@ -227,7 +227,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <a
-                            href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((place.lat && place.lng) ? place.lat + "," + place.lng : (place.address || place.name))}
+                            href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place.name + (place.address ? " " + place.address : ""))}
                             target="_blank"
                             rel="noreferrer"
                             className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
