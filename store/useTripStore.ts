@@ -10,7 +10,7 @@ export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightsee
 export interface Expense { id: string; amount: number; category: ExpenseCategory; itemName: string; note: string; date: string; payerId: string; splitWithIds: string[]; customSplit?: Record<string, number>; receiptUrl?: string; }
 export type Priority = 'High' | 'Medium' | 'Low';
 export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string; }
-export interface PlaceToVisit { id: string; name: string; category?: string; note?: string; isVisited: boolean; order: number; suggestedBy?: 'ai' | 'user'; }
+export interface PlaceToVisit { id: string; name: string; address?: string; lat?: number; lng?: number; category?: string; note?: string; isVisited: boolean; order: number; suggestedBy?: 'ai' | 'user'; }
 export interface Activity { id: string; time: string; type: string; location: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; customLocation?: string; }
 export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; placesToVisit?: PlaceToVisit[]; }
