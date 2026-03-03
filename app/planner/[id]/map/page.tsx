@@ -21,7 +21,7 @@ const DEST_CENTERS = {
   singapore:{lat:1.3521,lng:103.8198}, bangkok:{lat:13.7563,lng:100.5018},
   seoul:{lat:37.5665,lng:126.9780},
 };
-function getTripCenter(title) {
+function getTripCenter(title: string) {
   const s = title.toLowerCase();
   if (/osaka/.test(s)) return DEST_CENTERS.osaka;
   if (/tokyo/.test(s)) return DEST_CENTERS.tokyo;
