@@ -225,9 +225,20 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             </div>
                           )}
                         </div>
-                        <button onClick={() => deletePlaceToVisit(trip.id, place.id)} className="text-gray-200 hover:text-red-400 transition-colors flex-shrink-0">
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <a
+                            href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((place.lat && place.lng) ? place.lat + "," + place.lng : (place.address || place.name))}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 text-gray-300 hover:text-blue-500 transition-colors"
+                            title="導航"
+                          >
+                            <MapPin size={14} />
+                          </a>
+                          <button onClick={() => deletePlaceToVisit(trip.id, place.id)} className="p-1.5 text-gray-200 hover:text-red-400 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </Draggable>
