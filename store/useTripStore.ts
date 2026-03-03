@@ -83,6 +83,8 @@ export const useTripStore = create<TripState>()(
             if (!cloudTrip.coverImage && localTrip?.coverImage) {
               cloudTrip.coverImage = localTrip.coverImage;
             }
+            // 🔥 Migrate: ensure placesToVisit exists for trips saved before this field was added
+            if (!cloudTrip.placesToVisit) cloudTrip.placesToVisit = [];
             return cloudTrip; 
           }); 
           set({ trips: loadedTrips }); 

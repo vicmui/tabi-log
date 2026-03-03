@@ -1,9 +1,10 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useTripStore, PlaceToVisit, Trip } from "@/store/useTripStore";
 import { CheckCircle2, Circle, Trash2, GripVertical, Plus, Sparkles, Loader2, MapPin, Search } from "lucide-react";
 import clsx from "clsx";
+import { ConfirmDialog } from "@/components/ui/Dialog";
 
 const CATEGORY_STYLES: Record<string, string> = {
   美食: "bg-orange-50 text-orange-600 border-orange-200",
@@ -30,6 +31,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiDone, setAiDone] = useState(false);
+  const [deletingPlaceId, setDeletingPlaceId] = useState<string | null>(null);
 
   // Init Google Places Autocomplete
   useEffect(() => {
@@ -235,7 +237,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                             導航
                           </a>
-                          <button onClick={() => deletePlaceToVisit(trip.id, place.id)} className="p-1.5 text-gray-200 hover:text-red-400 transition-colors">
+                          <button onClick={() => setDeletingPlaceId(place.id)} className="p-1.5 text-gray-200 hover:text-red-400 transition-colors">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -249,6 +251,15 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
           </Droppable>
         </DragDropContext>
       )}
+
+      <ConfirmDialog
+        isOpen={!!deletingPlaceId}
+        title="刪除景點"
+        message="確定要刪除這個景點嗎？"
+        confirmLabel="刪除" cancelLabel="取消" danger
+        onConfirm={() => { if (deletingPlaceId) deletePlaceToVisit(trip.id, deletingPlaceId); setDeletingPlaceId(null); }}
+        onCancel={() => setDeletingPlaceId(null)}
+      />
     </div>
   );
 }
