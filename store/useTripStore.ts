@@ -13,7 +13,7 @@ export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping
 export interface PlaceToVisit { id: string; name: string; address?: string; lat?: number; lng?: number; category?: string; note?: string; isVisited: boolean; order: number; suggestedBy?: 'ai' | 'user'; }
 export interface Activity { id: string; time: string; type: string; location: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; customLocation?: string; }
-export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; placesToVisit?: PlaceToVisit[]; }
+export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; localCurrency?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; placesToVisit?: PlaceToVisit[]; }
 
 interface TripState {
   trips: Trip[]; activeTripId: string | null; isSyncing: boolean;
@@ -85,6 +85,22 @@ export const useTripStore = create<TripState>()(
             }
             // 🔥 Migrate: ensure placesToVisit exists for trips saved before this field was added
             if (!cloudTrip.placesToVisit) cloudTrip.placesToVisit = [];
+            if (!cloudTrip.localCurrency) {
+              const s = cloudTrip.title.toLowerCase();
+              if (/japan|osaka|tokyo|kyoto|hokkaido/.test(s)) cloudTrip.localCurrency = 'JPY';
+              else if (/taiwan|taipei|taichung|tainan/.test(s)) cloudTrip.localCurrency = 'TWD';
+              else if (/hongkong|hong.kong/.test(s)) cloudTrip.localCurrency = 'HKD';
+              else if (/korea|seoul/.test(s)) cloudTrip.localCurrency = 'KRW';
+              else if (/singapore/.test(s)) cloudTrip.localCurrency = 'SGD';
+              else if (/thailand|bangkok/.test(s)) cloudTrip.localCurrency = 'THB';
+              else if (s.includes('\u65e5\u672c') || s.includes('\u5927\u962a') || s.includes('\u6771\u4eac')) cloudTrip.localCurrency = 'JPY';
+              else if (s.includes('\u53f0\u7063') || s.includes('\u53f0\u5317') || s.includes('\u53f0\u4e2d') || s.includes('\u53f0\u5357')) cloudTrip.localCurrency = 'TWD';
+              else if (s.includes('\u9999\u6e2f')) cloudTrip.localCurrency = 'HKD';
+              else if (s.includes('\u97d3\u570b') || s.includes('\u9996\u723e')) cloudTrip.localCurrency = 'KRW';
+              else if (s.includes('\u65b0\u52a0\u5761')) cloudTrip.localCurrency = 'SGD';
+              else if (s.includes('\u6cf0\u570b') || s.includes('\u66fc\u8c37')) cloudTrip.localCurrency = 'THB';
+              else cloudTrip.localCurrency = 'HKD';
+            }
             return cloudTrip; 
           }); 
           set({ trips: loadedTrips }); 
@@ -94,7 +110,26 @@ export const useTripStore = create<TripState>()(
       },
       saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); set({ isSyncing: false }); },
       importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if(newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
-      addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, placesToVisit: [], plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
+      addTrip: (tripData) => { const detectCurrency = (t: string) => {
+        const s = t.toLowerCase();
+        if (/japan|osaka|tokyo|kyoto|hokkaido/.test(s)) return 'JPY';
+        if (/taiwan|taipei|taichung|tainan/.test(s)) return 'TWD';
+        if (/hongkong|hong.kong/.test(s)) return 'HKD';
+        if (/korea|seoul|busan/.test(s)) return 'KRW';
+        if (/singapore/.test(s)) return 'SGD';
+        if (/thailand|bangkok/.test(s)) return 'THB';
+        if (/europe|paris|london/.test(s)) return 'EUR';
+        if (/usa|america/.test(s)) return 'USD';
+        // Chinese keywords
+        if (s.includes('\u65e5\u672c') || s.includes('\u5927\u962a') || s.includes('\u6771\u4eac') || s.includes('\u4eac\u90fd') || s.includes('\u5317\u6d77\u9053')) return 'JPY';
+        if (s.includes('\u53f0\u7063') || s.includes('\u53f0\u5317') || s.includes('\u53f0\u4e2d') || s.includes('\u53f0\u5357')) return 'TWD';
+        if (s.includes('\u9999\u6e2f')) return 'HKD';
+        if (s.includes('\u97d3\u570b') || s.includes('\u9996\u723e')) return 'KRW';
+        if (s.includes('\u65b0\u52a0\u5761')) return 'SGD';
+        if (s.includes('\u6cf0\u570b') || s.includes('\u66fc\u8c37')) return 'THB';
+        return 'HKD';
+      };
+      const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, localCurrency: detectCurrency(tripData.title), members: [], bookings: [], expenses: [], dailyItinerary: [], budgetTotal: 0, placesToVisit: [], plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
       deleteTrip: async (tripId) => { set({ isSyncing: true }); await supabase.from('trips').delete().eq('id', tripId); set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
       updateTrip: (tripId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) }), tripId),
       updateTripSettings: (tripId, title, newStartDate, coverImage) => updateStateAndSave(set, get, (state) => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T')[0] }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T')[0] }; }) }), tripId),

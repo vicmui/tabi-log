@@ -190,8 +190,8 @@ export default function PlannerPage() {
         {/* Main Content */}
         <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full no-scrollbar pb-32"> 
           <div className="h-44 md:h-80 relative w-full shrink-0 group">
-            {(currentDailyItinerary?.coverImage || trip.coverImage) ? (
-              <Image src={currentDailyItinerary?.coverImage || trip.coverImage || ""} alt="Cover" fill className="object-cover object-center" priority style={{ filter: "grayscale(60%) contrast(1.05) brightness(0.88)" }} />
+            {(currentDailyItinerary?.coverImage || trip.coverImage || DEFAULT_DAY_COVERS[activeDay % DEFAULT_DAY_COVERS.length]) ? (
+              <Image src={currentDailyItinerary?.coverImage || trip.coverImage || DEFAULT_DAY_COVERS[activeDay % DEFAULT_DAY_COVERS.length]} alt="Cover" fill className="object-cover object-center" priority style={{ filter: "grayscale(60%) contrast(1.05) brightness(0.88)" }} />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 via-neutral-300 to-neutral-400" />
             )}

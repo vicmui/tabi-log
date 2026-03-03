@@ -14,6 +14,27 @@ const DAY_COLORS = [
 
 const containerStyle = { width: "100%", height: "100vh" };
 const DEFAULT_CENTER = { lat: 34.6937, lng: 135.5023 };
+const DEST_CENTERS = {
+  osaka:{lat:34.6937,lng:135.5023}, tokyo:{lat:35.6762,lng:139.6503},
+  kyoto:{lat:35.0116,lng:135.7681}, taipei:{lat:25.0330,lng:121.5654},
+  taichung:{lat:24.1477,lng:120.6736}, hongkong:{lat:22.3193,lng:114.1694},
+  singapore:{lat:1.3521,lng:103.8198}, bangkok:{lat:13.7563,lng:100.5018},
+  seoul:{lat:37.5665,lng:126.9780},
+};
+function getTripCenter(title) {
+  const s = title.toLowerCase();
+  if (/osaka/.test(s)) return DEST_CENTERS.osaka;
+  if (/tokyo/.test(s)) return DEST_CENTERS.tokyo;
+  if (/kyoto/.test(s)) return DEST_CENTERS.kyoto;
+  if (/taichung/.test(s)) return DEST_CENTERS.taichung;
+  if (/taipei|taiwan/.test(s)) return DEST_CENTERS.taipei;
+  if (/hongkong|hong.kong/.test(s)) return DEST_CENTERS.hongkong;
+  if (/singapore/.test(s)) return DEST_CENTERS.singapore;
+  if (/bangkok|thailand/.test(s)) return DEST_CENTERS.bangkok;
+  if (/seoul|korea/.test(s)) return DEST_CENTERS.seoul;
+  return DEFAULT_CENTER;
+}
+
 
 const mapOptions = {
   disableDefaultUI: true,
@@ -108,7 +129,7 @@ export default function FullTripMapPage() {
     <div className="relative w-screen h-screen overflow-hidden">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={DEFAULT_CENTER}
+        center={trip ? getTripCenter(trip.title) : DEFAULT_CENTER}
         zoom={12}
         options={mapOptions}
         onLoad={onLoad}

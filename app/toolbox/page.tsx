@@ -13,7 +13,7 @@ export default function ToolboxPage() {
 
   const [amount, setAmount] = useState<string>("");
   const [rate, setRate] = useState(0.052);
-  const [currencyFrom, setCurrencyFrom] = useState("JPY");
+  const [currencyFrom, setCurrencyFrom] = useState(trip?.localCurrency || "HKD");
   const [currencyTo, setCurrencyTo] = useState("HKD");
   const [isFetching, setIsFetching] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -24,7 +24,8 @@ export default function ToolboxPage() {
 
   useEffect(() => {
     if (trip?.exchangeRate) setRate(trip.exchangeRate);
-  }, [trip]);
+    if (trip?.localCurrency) setCurrencyFrom(trip.localCurrency);
+  }, [trip?.id]);
 
   const handleRateChange = (newRate: number) => {
     setRate(newRate);
