@@ -201,7 +201,7 @@ export default function FullTripMapPage() {
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-8 left-4 bg-white border border-gray-200 shadow-sm overflow-hidden" style={{ minWidth: 200, maxWidth: 230 }}>
+      <div className="absolute bottom-20 md:bottom-8 left-4 bg-white border border-gray-200 shadow-sm overflow-hidden" style={{ minWidth: 200, maxWidth: 230 }}>
         <button
           onClick={() => setLegendOpen((v) => !v)}
           className="w-full flex items-center justify-between px-4 py-3 text-[9px] font-bold tracking-widest uppercase border-b border-gray-100 hover:bg-gray-50"
@@ -212,7 +212,7 @@ export default function FullTripMapPage() {
 
         {legendOpen && (
           <>
-            <div className="max-h-[45vh] overflow-y-auto">
+            <div className="max-h-[30vh] md:max-h-[45vh] overflow-y-auto">
               {dayData.map((d) => {
                 const isHidden = hiddenDays.has(d.day);
                 const dateStr = d.date ? format(parseISO(d.date), "M/d EEE") : "";
