@@ -1,6 +1,6 @@
 "use client";
-import { useMemo, useState, useCallback, useRef } from "react";
-import { GoogleMap, useJsApiLoader, MarkerF, PolylineF, InfoWindowF } from "@react-google-maps/api";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { GoogleMap, MarkerF, PolylineF, InfoWindowF } from "@react-google-maps/api";
 import { useTripStore } from "@/store/useTripStore";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -40,11 +40,14 @@ export default function FullTripMapPage() {
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
   const [hiddenDays, setHiddenDays] = useState<Set<number>>(new Set());
   const [legendOpen, setLegendOpen] = useState(true);
+  const [isReady, setIsReady] = useState(typeof window !== "undefined" && !!(window as any).google?.maps);
 
-  const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!,
-  });
+  // layout.tsx already loaded Google Maps — just wait for it to be ready
+  useEffect(() => {
+    if ((window as any).google?.maps) { setIsReady(true); return; }
+    const t = setInterval(() => { if ((window as any).google?.maps) { setIsReady(true); clearInterval(t); } }, 200);
+    return () => clearInterval(t);
+  }, []);
 
   const dayData = useMemo(() => {
     if (!trip) return [];
@@ -89,7 +92,7 @@ export default function FullTripMapPage() {
     });
   };
 
-  if (!isLoaded) {
+  if (!isReady) {
     return (
       <div className="flex items-center justify-center h-screen bg-white text-xs tracking-widest text-gray-400 uppercase animate-pulse">
         地圖載入中...

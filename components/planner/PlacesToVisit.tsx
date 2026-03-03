@@ -107,7 +107,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
         body: JSON.stringify({ destination: trip.title, tripDays: trip.dailyItinerary.length }),
       });
       const data = await res.json();
-      if (data.suggestions && Array.isArray(data.suggestions)) {
+      if (data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
         const existingNames = places.map((p) => p.name.toLowerCase());
         data.suggestions.forEach((s: { name: string; category?: string; note?: string }) => {
           if (!existingNames.includes(s.name.toLowerCase())) {
@@ -118,7 +118,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
         setAiDone(true);
         setTimeout(() => setAiDone(false), 3000);
       } else {
-        setAiError("未能獲取建議，請稍後重試");
+        setAiError(data.error || "未能獲取建議，請檢查 GEMINI_API_KEY 是否已在 Vercel 設定");
       }
     } catch (_e) {
       setAiError("AI建議失敗，請稍後重試");
