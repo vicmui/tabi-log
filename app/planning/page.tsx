@@ -11,6 +11,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ConfirmDialog } from "@/components/ui/Dialog";
+import PlacesToVisit from "@/components/planner/PlacesToVisit";
 
 // 可拖曳的 Item 組件
 const SortablePlanItem = ({ item, trip, onEdit, onDeleteRequest }: { item: PlanItem, trip: any, onEdit: (item: PlanItem)=>void, onDeleteRequest: (id: string) => void }) => {
@@ -89,7 +90,7 @@ export default function PlanningPage() {
   };
 
   if (!trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
-  const tabNames: Record<string, string> = { Packing: "行李清單", Todo: "待辦事項", Shopping: "購物清單" };
+  const tabNames: Record<string, string> = { Packing: "行李清單", Todo: "待辦事項", Shopping: "購物清單", Places: "景點清單" };
 
   const handleEdit = (item: PlanItem) => { setEditingItemId(item.id); setText(item.text); setPriority(item.priority); setLocation(item.location || ""); setEstimatedCost(item.estimatedCost ? item.estimatedCost.toString() : ""); setAssignee(item.assigneeId || ""); setImageUrl(item.imageUrl || ""); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
   const handleCancelEdit = () => { setEditingItemId(null); setText(""); setLocation(""); setEstimatedCost(""); setAssignee(""); setImageUrl(""); };
@@ -113,9 +114,12 @@ export default function PlanningPage() {
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 pb-24">
         <header className="mb-10"><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">行前準備</h1><div className="flex items-center gap-4"><TripSwitcher /></div></header>
         <div className="flex gap-8 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
-           {['Packing','Todo','Shopping'].map(t => (<button key={t} onClick={()=>{setActiveTab(t); handleCancelEdit();}} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-300'}`}>{tabNames[t]}</button>))}
+           {['Packing','Todo','Shopping','Places'].map(t => (<button key={t} onClick={()=>{setActiveTab(t); handleCancelEdit();}} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-300'}`}>{tabNames[t]}</button>))}
         </div>
 
+        {activeTab === 'Places' ? (
+          <PlacesToVisit trip={trip} />
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            {/* Draggable List */}
            <div className="md:col-span-1 space-y-3">
@@ -138,6 +142,7 @@ export default function PlanningPage() {
               <button onClick={handleSave} className="w-full bg-jp-charcoal text-white py-2 text-xs uppercase tracking-widest hover:bg-black rounded transition-colors">{editingItemId ? "更新" : "新增"}</button>
            </div>
         </div>
+        )}
       </main>
 
       <ConfirmDialog

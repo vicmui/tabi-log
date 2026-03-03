@@ -10,9 +10,10 @@ export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightsee
 export interface Expense { id: string; amount: number; category: ExpenseCategory; itemName: string; note: string; date: string; payerId: string; splitWithIds: string[]; customSplit?: Record<string, number>; receiptUrl?: string; }
 export type Priority = 'High' | 'Medium' | 'Low';
 export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string; }
+export interface PlaceToVisit { id: string; name: string; category?: string; note?: string; isVisited: boolean; order: number; suggestedBy?: 'ai' | 'user'; }
 export interface Activity { id: string; time: string; type: string; location: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; customLocation?: string; }
-export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
+export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; placesToVisit: PlaceToVisit[]; }
 
 interface TripState {
   trips: Trip[]; activeTripId: string | null; isSyncing: boolean;
@@ -37,6 +38,11 @@ interface TripState {
   togglePlanItem: (tripId: string, itemId: string) => void;
   deletePlanItem: (tripId: string, itemId: string) => void;
   updatePlanOrder: (tripId: string, newPlans: PlanItem[]) => void; // 🔥 新增
+  addPlaceToVisit: (tripId: string, place: Omit<PlaceToVisit, 'id' | 'order'>) => void;
+  updatePlaceToVisit: (tripId: string, placeId: string, data: Partial<PlaceToVisit>) => void;
+  togglePlaceVisited: (tripId: string, placeId: string) => void;
+  deletePlaceToVisit: (tripId: string, placeId: string) => void;
+  reorderPlacesToVisit: (tripId: string, newPlaces: PlaceToVisit[]) => void;
   addActivity: (tripId: string, dayIndex: number, activity: Omit<Activity, 'id'|'cost'>) => void;
   updateActivity: (tripId: string, dayIndex: number, activityId: string, data: Partial<Activity>) => void;
   updateActivityOrder: (tripId: string, dayIndex: number, newActivities: Activity[]) => void;
@@ -48,7 +54,7 @@ interface TripState {
 }
 
 const DEFAULT_PACKING_LIST = ["✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包", "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡", "🌂 雨具", "🔌 轉接頭"];
-const INITIAL_TRIP: Trip = { id: "trip-osaka-mum", title: "Osaka Trip (March) 🇯🇵", startDate: "2026-03-20", endDate: "2026-03-24", status: "planning", coverImage: "/osaka-cover.jpg", budgetTotal: 300000, exchangeRate: 0.052, members: [{ id: "m1", name: "VM", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" }, { id: "m2", name: "媽咪", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" }], bookings: [], expenses: [], plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false })), dailyItinerary: [{ day: 1, date: "2026-03-20", weather: "Cloud", activities: [] }, { day: 2, date: "2026-03-21", weather: "Sun", activities: [] }, { day: 3, date: "2026-03-22", weather: "Sun", activities: [] }, { day: 4, date: "2026-03-23", weather: "Rain", activities: [] }, { day: 5, date: "2026-03-24", weather: "Cloud", activities: [] }] };
+const INITIAL_TRIP: Trip = { id: "trip-osaka-mum", title: "Osaka Trip (March) 🇯🇵", startDate: "2026-03-20", endDate: "2026-03-24", status: "planning", coverImage: "/osaka-cover.jpg", budgetTotal: 300000, exchangeRate: 0.052, placesToVisit: [], members: [{ id: "m1", name: "VM", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" }, { id: "m2", name: "媽咪", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" }], bookings: [], expenses: [], plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false })), dailyItinerary: [{ day: 1, date: "2026-03-20", weather: "Cloud", activities: [] }, { day: 2, date: "2026-03-21", weather: "Sun", activities: [] }, { day: 3, date: "2026-03-22", weather: "Sun", activities: [] }, { day: 4, date: "2026-03-23", weather: "Rain", activities: [] }, { day: 5, date: "2026-03-24", weather: "Cloud", activities: [] }] };
 
 const updateStateAndSave = (set: any, get: any, updateFn: (state: TripState) => Partial<TripState>, tripId: string) => { set(updateFn); const updatedTrip = get().trips.find((t: Trip) => t.id === tripId); if (updatedTrip) get().saveTripToCloud(updatedTrip); };
 
@@ -104,6 +110,11 @@ export const useTripStore = create<TripState>()(
       deletePlanItem: (tripId, itemId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: t.plans.filter(p => p.id !== itemId) } : t) }), tripId),
       // 🔥 新增：儲存清單順序
       updatePlanOrder: (tripId, newPlans) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, plans: newPlans } : t) }), tripId),
+      addPlaceToVisit: (tripId, place) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id !== tripId ? t : { ...t, placesToVisit: [...(t.placesToVisit || []), { ...place, id: uuidv4(), order: (t.placesToVisit || []).length }] }) }), tripId),
+      updatePlaceToVisit: (tripId, placeId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id !== tripId ? t : { ...t, placesToVisit: (t.placesToVisit || []).map(p => p.id === placeId ? { ...p, ...data } : p) }) }), tripId),
+      togglePlaceVisited: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id !== tripId ? t : { ...t, placesToVisit: (t.placesToVisit || []).map(p => p.id === placeId ? { ...p, isVisited: !p.isVisited } : p) }) }), tripId),
+      deletePlaceToVisit: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id !== tripId ? t : { ...t, placesToVisit: (t.placesToVisit || []).filter(p => p.id !== placeId) }) }), tripId),
+      reorderPlacesToVisit: (tripId, newPlaces) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id !== tripId ? t : { ...t, placesToVisit: newPlaces }) }), tripId),
       addActivity: (tripId, dayIndex, activity) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (!newItinerary[dayIndex]) return trip; newItinerary[dayIndex].activities.push({ ...activity, id: uuidv4(), isVisited: false }); newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time)); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       updateActivity: (tripId, dayIndex, activityId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.map(a => a.id === activityId ? { ...a, ...data } : a); if(data.time) newItinerary[dayIndex].activities.sort((a, b) => a.time.localeCompare(b.time)); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       updateActivityOrder: (tripId, dayIndex, newActivities) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; newItinerary[dayIndex].activities = newActivities; return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
