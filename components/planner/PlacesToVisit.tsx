@@ -230,10 +230,10 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((place.lat && place.lng) ? place.lat + "," + place.lng : (place.address || place.name))}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1.5 text-gray-300 hover:text-blue-500 transition-colors"
-                            title="導航"
+                            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
                           >
-                            <MapPin size={14} />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            導航
                           </a>
                           <button onClick={() => deletePlaceToVisit(trip.id, place.id)} className="p-1.5 text-gray-200 hover:text-red-400 transition-colors">
                             <Trash2 size={14} />
