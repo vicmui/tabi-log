@@ -113,7 +113,7 @@ export default function PlanningPage() {
       <Sidebar />
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 pb-24">
         <header className="mb-10"><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">行前準備</h1><div className="flex items-center gap-4"><TripSwitcher /></div></header>
-        <div className="flex gap-8 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
+        <div className="flex gap-4 md:gap-8 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
            {['Packing','Todo','Shopping','Places'].map(t => (<button key={t} onClick={()=>{setActiveTab(t); handleCancelEdit();}} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-300'}`}>{tabNames[t]}</button>))}
         </div>
 
