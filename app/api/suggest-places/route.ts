@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 [{"name":"景點名稱","category":"類別","note":"一句話中文介紹"}]
 category 只能係以下之一：美食、景點、購物、自然、文化、夜生活`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: "POST",
