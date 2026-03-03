@@ -17,6 +17,8 @@ import { ConfirmDialog, AlertDialog, PromptDialog } from "@/components/ui/Dialog
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import { format, parseISO, differenceInDays } from 'date-fns';
+const DEFAULT_DAY_COVERS=['https://images.unsplash.com/photo-1503917988258-f87a78e3c995?w=1200&q=80','https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80','https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1200&q=80','https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80','https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80','https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=1200&q=80'];
+
 
 export default function PlannerPage() {
   const params = useParams();
@@ -206,7 +208,7 @@ export default function PlannerPage() {
                  </button>
                </div>
             </div>
-            <label className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
+            <label className="absolute top-4 right-4 bg-white/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 cursor-pointer text-black hover:bg-white" title="建議尺寸：1200×480px，JPG/PNG，最大 5MB"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload}/></label>
           </div>
 
           <div className="px-4 md:px-12 py-6 max-w-5xl mx-auto min-h-[500px]">

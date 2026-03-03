@@ -95,7 +95,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         <div className="h-40 bg-gray-100 relative group shrink-0">
            <img src={photos.length > 0 ? photos[0] : "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?q=80&w=2000"} className="w-full h-full object-cover opacity-90" />
            <div className="absolute top-4 right-4 flex gap-2">
-               {!isEditing && <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/></label>}
+               {!isEditing && <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer" title="建議尺寸：1200×800px，JPG/PNG，最大 5MB"><Camera size={16}/><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/></label>}
                <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16}/></button>
                <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20}/></button>
            </div>
@@ -147,7 +147,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                             <button onClick={(e)=>{e.stopPropagation(); handleDeletePhoto(url)}} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"><X size={10}/></button>
                          </div>
                       ))}
-                      {photos.length < 3 && <label className={clsx("w-20 h-20 border border-dashed rounded-none flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>
+                      {photos.length < 3 && <label title="建議尺寸：800×800px，JPG/PNG，最大 5MB（最多3張）" className={clsx("w-20 h-20 border border-dashed rounded-none flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors", isUploading && "animate-pulse")}>
                          {isUploading ? <Loader2 className="animate-spin"/> : <Camera size={20}/>}
                          <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/>
                       </label>}

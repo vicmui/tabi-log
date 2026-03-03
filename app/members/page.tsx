@@ -132,7 +132,7 @@ export default function MembersPage() {
                  <span className="text-xs font-bold tracking-widest uppercase text-gray-400">{editingMemberId ? "編輯資料" : "新增成員"}</span>
                  {editingMemberId && <button onClick={resetForm} className="text-gray-400 hover:text-black"><X size={16}/></button>}
              </div>
-             <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all">
+             <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all" title="400x400 JPG/PNG max 2MB">
                 {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"/> : <div className="flex flex-col items-center gap-1"><Camera size={20} /><span className="text-[9px]">上傳</span></div>}
                 {isSubmitting && !nameInput && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><Loader2 className="w-5 h-5 text-white animate-spin"/></div>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={isSubmitting} />
