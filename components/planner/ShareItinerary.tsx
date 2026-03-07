@@ -43,4 +43,3 @@ export default function ShareItinerary({ elementId, tripTitle, day }: { elementI
       {loading ? "生成中..." : "分享 (IG)"}
     </button>
   );
-}

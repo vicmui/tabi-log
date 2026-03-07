@@ -151,4 +151,3 @@ function SharePlanItem({ item, members }: { item: PlanItem, members: Member[] })
             {assigned && <img src={assigned.avatar} title={assigned.name} className="w-6 h-6 rounded-full border border-white"/>}
         </div>
     );
-}

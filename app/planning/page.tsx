@@ -155,4 +155,3 @@ export default function PlanningPage() {
       />
     </div>
   );
-}

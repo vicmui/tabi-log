@@ -36,7 +36,7 @@ export default function EditTripModal({ trip, onClose }: any) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white p-8 w-full max-w-md shadow-2xl relative rounded-xl">
+      <div className="bg-white p-8 w-full max-w-md shadow-2xl relative ">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X size={20}/></button>
         <h2 className="font-light text-xl mb-6 tracking-widest uppercase">編輯旅程</h2>
         <div className="space-y-4">
@@ -45,7 +45,7 @@ export default function EditTripModal({ trip, onClose }: any) {
           
           <div>
               <label className="text-xs text-gray-400 block mb-2">封面圖片</label>
-              <div className="h-32 w-full bg-gray-100 rounded-lg overflow-hidden relative group">
+              <div className="h-32 w-full bg-gray-100  overflow-hidden relative group">
                   {coverImage ? <img src={coverImage} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />}
                   <label className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-white">
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -62,4 +62,3 @@ export default function EditTripModal({ trip, onClose }: any) {
       <AlertDialog isOpen={!!alertMsg} message={alertMsg || ""} onClose={() => setAlertMsg(null)} />
     </div>
   );
-}

@@ -374,7 +374,7 @@ export default function OfflinePage() {
           </div>
 
           {/* Explainer */}
-          <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
+          <div className="bg-gray-50  p-6 mb-8 border border-gray-100">
             <h2 className="text-sm font-bold mb-3 uppercase tracking-widest">包含內容</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -399,7 +399,7 @@ export default function OfflinePage() {
               <select
                 value={selectedTripId}
                 onChange={e => { setSelectedTripId(e.target.value); setStatus('idle'); }}
-                className="w-full appearance-none border border-gray-200 rounded-xl px-4 py-3 pr-10 text-sm font-medium focus:outline-none focus:border-black bg-white"
+                className="w-full appearance-none border border-gray-200  px-4 py-3 pr-10 text-sm font-medium focus:outline-none focus:border-black bg-white"
               >
                 {trips.map(t => (
                   <option key={t.id} value={t.id}>{t.title} ({t.startDate} – {t.endDate})</option>
@@ -411,10 +411,10 @@ export default function OfflinePage() {
 
           {/* Trip summary */}
           {trip && (
-            <div className="border border-gray-100 rounded-2xl p-5 mb-6 bg-white">
+            <div className="border border-gray-100  p-5 mb-6 bg-white">
               <div className="flex items-start gap-4">
                 {trip.coverImage && (
-                  <img src={trip.coverImage} className="w-20 h-20 object-cover rounded-xl shrink-0" alt={trip.title} />
+                  <img src={trip.coverImage} className="w-20 h-20 object-cover  shrink-0" alt={trip.title} />
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base truncate">{trip.title}</h3>
@@ -427,7 +427,7 @@ export default function OfflinePage() {
                       `${trip.members.length} 成員`,
                       `${collectImageUrls(trip).length} 張圖片`,
                     ].map(t => (
-                      <span key={t} className="text-[11px] bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg text-gray-500">{t}</span>
+                      <span key={t} className="text-[11px] bg-gray-50 border border-gray-100 px-2 py-1  text-gray-500">{t}</span>
                     ))}
                   </div>
                 </div>
@@ -440,7 +440,7 @@ export default function OfflinePage() {
             onClick={handleDownload}
             disabled={!trip || status === 'loading'}
             className={clsx(
-              "w-full py-4 rounded-2xl text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
+              "w-full py-4  text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
               status === 'loading'
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                 : "bg-black text-white hover:bg-gray-900 active:scale-[.98]"
@@ -461,7 +461,7 @@ export default function OfflinePage() {
 
           {/* Progress / result */}
           {status === 'loading' && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+            <div className="mt-4 p-4 bg-blue-50 ">
               <div className="text-xs text-blue-600 font-medium">{progress}</div>
               {imageCount > 0 && (
                 <div className="mt-2 text-[11px] text-blue-400">
@@ -471,7 +471,7 @@ export default function OfflinePage() {
             </div>
           )}
           {status === 'done' && (
-            <div className="mt-4 p-4 bg-green-50 rounded-xl flex items-center gap-2">
+            <div className="mt-4 p-4 bg-green-50  flex items-center gap-2">
               <CheckCircle size={16} className="text-green-600 shrink-0" />
               <div>
                 <div className="text-xs font-bold text-green-700">下載完成！</div>
@@ -482,14 +482,14 @@ export default function OfflinePage() {
             </div>
           )}
           {status === 'error' && (
-            <div className="mt-4 p-4 bg-red-50 rounded-xl flex items-center gap-2">
+            <div className="mt-4 p-4 bg-red-50  flex items-center gap-2">
               <AlertCircle size={16} className="text-red-500 shrink-0" />
               <div className="text-xs text-red-600">{progress}</div>
             </div>
           )}
 
           {/* Usage tip */}
-          <div className="mt-8 p-4 border border-dashed border-gray-200 rounded-xl">
+          <div className="mt-8 p-4 border border-dashed border-gray-200 ">
             <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-400">使用方法</h3>
             <ol className="space-y-1">
               {[
