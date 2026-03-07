@@ -2,18 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  button {
+    border-radius: 0px;
+  }
+}
+
 :root {
   --foreground-rgb: 51, 51, 51;
   --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 255, 255, 255;
 }
 
-body { color: #333333; background: white; }
+body {
+  color: #333333;
+  background: white;
+}
 
-::placeholder { color: #9CA3AF !important; opacity: 1; }
-input, select, textarea { color: #111111; }
-label { color: #6B7280; }
+::placeholder {
+  color: #9CA3AF !important;
+  opacity: 1;
+}
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+input, select, textarea {
+  color: #111111;
+}
+
+label {
+  color: #6B7280;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

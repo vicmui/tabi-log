@@ -1,17 +1,27 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Info, X } from "lucide-react";
+'use client'
+import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { AlertTriangle, Info, X, Upload } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { v4 as uuidv4 } from 'uuid'
 
-// ─── Backdrop + Panel wrapper ───────────────────────────────────────────────
-function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNode; onBackdropClick?: () => void }) {
+// ─── Backdrop / Panel wrapper ───────────────────────────────────────────────
+function DialogWrapper({
+  children,
+  onBackdropClick,
+}: {
+  children: React.ReactNode
+  onBackdropClick?: () => void
+}) {
   return (
     <AnimatePresence>
       <motion.div
         key="backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="fixed inset-0 z-[200] flex items-center justify-center px-4"
-        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+        style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
         onClick={onBackdropClick}
       >
         <motion.div
@@ -19,7 +29,7 @@ function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNod
           initial={{ opacity: 0, y: 10, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.98 }}
-          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           onClick={e => e.stopPropagation()}
           className="w-full max-w-sm bg-white rounded-none overflow-hidden border border-gray-200"
         >
@@ -27,41 +37,41 @@ function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNod
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  );
+  )
 }
 
 // ─── CONFIRM DIALOG ──────────────────────────────────────────────────────────
 interface ConfirmProps {
-  isOpen: boolean;
-  title?: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
+  isOpen: boolean
+  title?: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  danger?: boolean
+  onConfirm: () => void
+  onCancel: () => void
 }
 
 export function ConfirmDialog({
-  isOpen, title, message, confirmLabel = "確認", cancelLabel = "取消",
-  danger = false, onConfirm, onCancel,
+  isOpen,
+  title,
+  message,
+  confirmLabel = '確認',
+  cancelLabel = '取消',
+  danger = false,
+  onConfirm,
+  onCancel,
 }: ConfirmProps) {
-  if (!isOpen) return null;
+  if (!isOpen) return null
   return (
     <DialogWrapper onBackdropClick={onCancel}>
       <div className="p-7">
-        {/* Icon */}
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${danger ? "bg-red-50" : "bg-neutral-100"}`}>
-          <AlertTriangle size={18} className={danger ? "text-red-500" : "text-neutral-600"} />
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${danger ? 'bg-red-50' : 'bg-neutral-100'}`}>
+          <AlertTriangle size={18} className={danger ? 'text-red-500' : 'text-neutral-600'} />
         </div>
-
-        {title && (
-          <h3 className="font-serif font-bold text-base text-neutral-900 mb-1 tracking-tight">{title}</h3>
-        )}
+        {title && <h3 className="font-serif font-bold text-base text-neutral-900 mb-1 tracking-tight">{title}</h3>}
         <p className="text-sm text-neutral-500 leading-relaxed">{message}</p>
       </div>
-
-      {/* Actions */}
       <div className="flex border-t border-gray-100">
         <button
           onClick={onCancel}
@@ -72,28 +82,26 @@ export function ConfirmDialog({
         <button
           onClick={onConfirm}
           className={`flex-1 py-4 text-xs font-bold tracking-widest uppercase transition-colors ${
-            danger
-              ? "text-red-500 hover:bg-red-50"
-              : "text-neutral-900 hover:bg-neutral-50"
+            danger ? 'text-red-500 hover:bg-red-50' : 'text-neutral-900 hover:bg-neutral-50'
           }`}
         >
           {confirmLabel}
         </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 
 // ─── ALERT DIALOG ────────────────────────────────────────────────────────────
 interface AlertProps {
-  isOpen: boolean;
-  title?: string;
-  message: string;
-  onClose: () => void;
+  isOpen: boolean
+  title?: string
+  message: string
+  onClose: () => void
 }
 
 export function AlertDialog({ isOpen, title, message, onClose }: AlertProps) {
-  if (!isOpen) return null;
+  if (!isOpen) return null
   return (
     <DialogWrapper onBackdropClick={onClose}>
       <div className="p-7">
@@ -108,58 +116,91 @@ export function AlertDialog({ isOpen, title, message, onClose }: AlertProps) {
           onClick={onClose}
           className="w-full py-4 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors"
         >
-          了解
+          OK
         </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 
-// ─── NEW TRIP MODAL (replaces prompt()) ─────────────────────────────────────
+// ─── NEW TRIP MODAL (with cover photo upload) ─────────────────────────────────
 interface NewTripProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (data: { title: string; startDate: string; endDate: string }) => void;
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: (data: {
+    title: string
+    startDate: string
+    endDate: string
+    coverImage?: string
+  }) => void
 }
 
 export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [title, setTitle] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [coverImage, setCoverImage] = useState<string>('')
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(""); setStartDate(""); setEndDate("");
-      setTimeout(() => inputRef.current?.focus(), 80);
+      setTitle('')
+      setStartDate('')
+      setEndDate('')
+      setCoverImage('')
+      setTimeout(() => inputRef.current?.focus(), 80)
     }
-  }, [isOpen]);
+  }, [isOpen])
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const filePath = `public/new-trip/${uuidv4()}-${file.name}`
+      const { error } = await supabase.storage.from('tripfiles').upload(filePath, file)
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('tripfiles').getPublicUrl(filePath)
+        setCoverImage(publicUrl)
+      }
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSubmit = () => {
-    if (!title.trim()) return;
-    const today = new Date().toISOString().split("T")[0];
-    onConfirm({ title: title.trim(), startDate: startDate || today, endDate: endDate || today });
-    onClose();
-  };
+    if (!title.trim()) return
+    const today = new Date().toISOString().split('T')[0]
+    onConfirm({
+      title: title.trim(),
+      startDate: startDate || today,
+      endDate: endDate || today,
+      coverImage: coverImage || undefined,
+    })
+    onClose()
+  }
 
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSubmit();
-    if (e.key === "Escape") onClose();
-  };
+    if (e.key === 'Enter') handleSubmit()
+    if (e.key === 'Escape') onClose()
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
+
   return (
     <DialogWrapper onBackdropClick={onClose}>
-      {/* Top strip */}
       <div className="h-[3px] bg-neutral-900" />
-
       <div className="p-7">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">新增旅程</p>
+            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">New Voyage</p>
             <h2 className="font-serif font-bold text-xl text-neutral-900 tracking-tight">Where to next?</h2>
           </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
             <X size={14} className="text-gray-400" />
           </button>
         </div>
@@ -167,14 +208,16 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
         <div className="space-y-5">
           {/* Trip name */}
           <div>
-            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">旅程名稱</label>
+            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+              Trip Name
+            </label>
             <input
               ref={inputRef}
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="例：2026 大阪行 🇯🇵"
+              placeholder="2026 Osaka..."
               className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors"
             />
           </div>
@@ -182,7 +225,9 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">出發日期</label>
+              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+                Start Date
+              </label>
               <input
                 type="date"
                 value={startDate}
@@ -191,7 +236,9 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               />
             </div>
             <div>
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">回程日期</label>
+              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+                End Date
+              </label>
               <input
                 type="date"
                 value={endDate}
@@ -200,49 +247,97 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               />
             </div>
           </div>
+
+          {/* Cover Photo */}
+          <div>
+            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+              Cover Photo <span className="normal-case text-gray-300">(optional)</span>
+            </label>
+            <div className="h-28 w-full bg-gray-100 overflow-hidden relative group">
+              {coverImage ? (
+                <img src={coverImage} className="w-full h-full object-cover" alt="cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />
+              )}
+              <label className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-white">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                />
+                <div className="flex flex-col items-center gap-1">
+                  <Upload size={18} />
+                  <span className="text-xs">
+                    {uploading ? 'Uploading...' : coverImage ? 'Change' : 'Upload'}
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={!title.trim()}
-          className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${!title.trim() ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "text-white"}`} style={title.trim() ? { backgroundColor: 'var(--accent)' } : {}}
+          className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${
+            !title.trim()
+              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              : 'bg-black text-white hover:opacity-90'
+          }`}
         >
-          建立旅程
+          Create Trip
         </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 
-// ─── PROMPT DIALOG (for editing location name etc.) ──────────────────────────
+// ─── PROMPT DIALOG ───────────────────────────────────────────────────────────
 interface PromptProps {
-  isOpen: boolean;
-  title?: string;
-  message: string;
-  defaultValue?: string;
-  placeholder?: string;
-  onConfirm: (value: string) => void;
-  onCancel: () => void;
+  isOpen: boolean
+  title?: string
+  message: string
+  defaultValue?: string
+  placeholder?: string
+  onConfirm: (value: string) => void
+  onCancel: () => void
 }
 
-export function PromptDialog({ isOpen, title, message, defaultValue = "", placeholder = "", onConfirm, onCancel }: PromptProps) {
-  const [value, setValue] = useState(defaultValue);
-  const inputRef = useRef<HTMLInputElement>(null);
+export function PromptDialog({
+  isOpen,
+  title,
+  message,
+  defaultValue = '',
+  placeholder = '',
+  onConfirm,
+  onCancel,
+}: PromptProps) {
+  const [value, setValue] = useState(defaultValue)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
-      setValue(defaultValue);
-      setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select(); }, 80);
+      setValue(defaultValue)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }, 80)
     }
-  }, [isOpen, defaultValue]);
+  }, [isOpen, defaultValue])
 
-  const handleConfirm = () => { if (value.trim()) onConfirm(value.trim()); };
+  const handleConfirm = () => {
+    if (value.trim()) onConfirm(value.trim())
+  }
+
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleConfirm();
-    if (e.key === "Escape") onCancel();
-  };
+    if (e.key === 'Enter') handleConfirm()
+    if (e.key === 'Escape') onCancel()
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
+
   return (
     <DialogWrapper onBackdropClick={onCancel}>
       <div className="p-7">
@@ -259,9 +354,19 @@ export function PromptDialog({ isOpen, title, message, defaultValue = "", placeh
         />
       </div>
       <div className="flex border-t border-gray-100">
-        <button onClick={onCancel} className="flex-1 py-4 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100">取消</button>
-        <button onClick={handleConfirm} className="flex-1 py-4 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors">確認</button>
+        <button
+          onClick={onCancel}
+          className="flex-1 py-4 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleConfirm}
+          className="flex-1 py-4 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors"
+        >
+          OK
+        </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
