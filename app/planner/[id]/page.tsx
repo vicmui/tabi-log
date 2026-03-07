@@ -88,9 +88,9 @@ export default function PlannerPage() {
   const handleShare = async () => {
     const url = `${window.location.origin}/share/${trip.id}`;
     if (navigator.share) {
-      try { await navigator.share({ title: trip.title, text: \`查看我的行程：\${trip.title}\`, url }); return; } catch (_) {}
+      try { await navigator.share({ title: trip.title, text: `查看我的行程：${trip.title}`, url }); return; } catch (_) {}
     }
-    window.open(\`https://wa.me/?text=\${encodeURIComponent(trip.title + '\\n' + url)}\`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(trip.title + '\n' + url)}`, '_blank');
   };
   const handleOpenDayRoute = () => { if (!currentDailyItinerary || currentDailyItinerary.activities.length < 2) { alert("請至少安排兩個地點"); return; } const acts = currentDailyItinerary.activities.filter(a => a && (a.address || a.location)); const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location); const destination = acts[acts.length - 1].lat ? `${acts[acts.length - 1].lat},${acts[acts.length - 1].lng}` : encodeURIComponent(acts[acts.length - 1].address || acts[acts.length - 1].location); const waypoints = acts.slice(1, -1).map(a => a.lat ? `${a.lat},${a.lng}` : encodeURIComponent(a.address || a.location)).join('|'); window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=transit`, '_blank'); };
   
