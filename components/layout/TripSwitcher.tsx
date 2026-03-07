@@ -25,7 +25,7 @@ export default function TripSwitcher() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-100 shadow-xl rounded-lg py-2 z-50">
+          <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-100 shadow-xl  py-2 z-50">
              <p className="px-4 py-2 text-[10px] text-gray-400 tracking-widest uppercase border-b border-gray-50 mb-1">Switch Trip</p>
              {trips.map(trip => (
                <button

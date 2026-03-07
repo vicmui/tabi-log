@@ -59,7 +59,13 @@ export default function PlanningPage() {
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : (trips.length > 0 ? trips[0] : null);
   
-  const [activeTab, setActiveTab] = useState("Packing");
+  const [activeTab, setActiveTab] = useState(() =>
+    typeof window !== 'undefined' ? (sessionStorage.getItem('planning-tab') || 'Packing') : 'Packing'
+  );
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') sessionStorage.setItem('planning-tab', tab);
+  };
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [priority, setPriority] = useState<Priority>("Medium");
@@ -114,7 +120,7 @@ export default function PlanningPage() {
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 pb-24">
         <header className="mb-10"><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">行前準備</h1><div className="flex items-center gap-4"><TripSwitcher /></div></header>
         <div className="flex gap-4 md:gap-8 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
-           {['Packing','Todo','Shopping','Places'].map(t => (<button key={t} onClick={()=>{setActiveTab(t); handleCancelEdit();}} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-300'}`}>{tabNames[t]}</button>))}
+           {['Packing','Todo','Shopping','Places'].map(t => (<button key={t} onClick={()=>{handleTabChange(t); handleCancelEdit();}} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-300'}`}>{tabNames[t]}</button>))}
         </div>
 
         {activeTab === 'Places' ? (

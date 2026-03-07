@@ -194,8 +194,8 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
       <div className="p-7">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">New Voyage</p>
-            <h2 className="font-serif font-bold text-xl text-neutral-900 tracking-tight">Where to next?</h2>
+            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">新增旅程</p>
+            <h2 className="font-serif font-bold text-xl text-neutral-900 tracking-tight">去邊度好呢？</h2>
           </div>
           <button
             onClick={onClose}
@@ -209,7 +209,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
           {/* Trip name */}
           <div>
             <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
-              Trip Name
+              旅程名稱
             </label>
             <input
               ref={inputRef}
@@ -217,7 +217,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="2026 Osaka..."
+              placeholder="例：2026 大阪行 🇯🇵"
               className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors"
             />
           </div>
@@ -226,7 +226,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
-                Start Date
+                出發日期
               </label>
               <input
                 type="date"
@@ -237,7 +237,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
             </div>
             <div>
               <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
-                End Date
+                回程日期
               </label>
               <input
                 type="date"
@@ -248,10 +248,10 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
             </div>
           </div>
 
-          {/* Cover Photo */}
+          {/* 封面照片 */}
           <div>
             <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
-              Cover Photo <span className="normal-case text-gray-300">(optional)</span>
+              封面照片 <span className="normal-case text-gray-300">（選填）</span>
             </label>
             <div className="h-28 w-full bg-gray-100 overflow-hidden relative group">
               {coverImage ? (
@@ -259,7 +259,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />
               )}
-              <label className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-white">
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 md:opacity-0 md:group-hover:opacity-100 cursor-pointer transition-opacity text-white">
                 <input
                   type="file"
                   accept="image/*"
@@ -270,7 +270,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                 <div className="flex flex-col items-center gap-1">
                   <Upload size={18} />
                   <span className="text-xs">
-                    {uploading ? 'Uploading...' : coverImage ? 'Change' : 'Upload'}
+                    {uploading ? '上傳中...' : coverImage ? '更換' : '上傳封面'}
                   </span>
                 </div>
               </label>
@@ -287,7 +287,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               : 'bg-black text-white hover:opacity-90'
           }`}
         >
-          Create Trip
+          建立旅程
         </button>
       </div>
     </DialogWrapper>

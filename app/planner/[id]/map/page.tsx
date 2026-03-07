@@ -71,9 +71,11 @@ export default function MapViewPage() {
   const trips = useTripStore(s => s.trips)
   const trip = trips.find(t => t.id === tripId)
 
+  // Must match layout.tsx loader config exactly (same id + libraries) to avoid double-load error
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!,
+    libraries: ['places', 'marker', 'geometry', 'routes'] as any,
   })
 
   const markers = useMemo(() => {
