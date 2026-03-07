@@ -56,9 +56,9 @@ const SortablePlanItem = ({ item, trip, onEdit, onDeleteRequest }: { item: PlanI
 };
 
 export default function PlanningPage() {
-  const { trips, activeTripId, addPlanItem, updatePlanItem, deletePlanItem, updatePlanOrder } = useTripStore();
+  const { addPlanItem, updatePlanItem, deletePlanItem, updatePlanOrder } = useTripStore();
+  const { trip, isLoading } = useActiveTrip();
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : (trips.length > 0 ? trips[0] : null);
   
   const [activeTab, setActiveTab] = useState('Packing');
   useEffect(() => {
