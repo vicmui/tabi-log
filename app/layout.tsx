@@ -6,37 +6,42 @@ import { useTripStore } from "@/store/useTripStore";
 import { supabase } from "@/lib/supabase";
 import "./globals.css";
 import { WifiOff } from "lucide-react";
+import { useJsApiLoader, Libraries } from "@react-google-maps/api";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], weight: ["300", "400", "500", "700"], variable: "--font-noto-sans" });
 
+const LIBRARIES: Libraries = ["places", "marker", "geometry", "routes"];
+
 function OfflineBanner() {
   const [isOnline, setIsOnline] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
-
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); setTimeout(() => setShowBanner(false), 2000); };
     const handleOffline = () => { setIsOnline(false); setShowBanner(true); };
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     if (!navigator.onLine) handleOffline();
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
+    return () => { window.removeEventListener("online", handleOnline); window.removeEventListener("offline", handleOffline); };
   }, []);
-
   if (!showBanner) return null;
-
   return (
     <div className={`fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2 py-2 text-xs font-medium tracking-wider transition-colors duration-500 ${isOnline ? "bg-green-600 text-white" : "bg-neutral-900 text-white"}`}>
-      {isOnline ? "✓ 已恢復連線" : <><WifiOff size={12} /> 離線模式 — 顯示上次緩存資料</>}
+      {isOnline ? "✓ 已恢復連線" : <><WifiOff size={12} /> 離線模式</>}
     </div>
   );
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { loadTripsFromCloud, isSyncing } = useTripStore();
+
+  // Load Google Maps globally so all components (TripMap, TravelStats, PlacesToVisit etc.) can use window.google.maps
+  // Non-blocking: UI always renders, Maps loads in background
+  useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
+    libraries: LIBRARIES,
+  });
 
   useEffect(() => {
     loadTripsFromCloud();
@@ -58,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans bg-white text-[#333333] antialiased font-light`}>
         {isSyncing && <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />}
         <OfflineBanner />
+        {/* Always render children — no blocking gate */}
         <div className="pb-24 md:pb-0">
           {children}
         </div>
