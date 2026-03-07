@@ -9,7 +9,7 @@ import { useTripStore } from "@/store/useTripStore";
 const POPULAR_CURRENCIES = ["JPY", "HKD", "USD", "TWD", "KRW", "SGD", "GBP", "EUR", "THB", "MYR", "AUD"];
 
 export default function ToolboxPage() {
-  const { importData, updateTripRate } = useTripStore();
+  const { trips, importData, updateTripRate } = useTripStore();
   const { trip, isLoading } = useActiveTrip();
 
   const [amount, setAmount] = useState<string>("");
