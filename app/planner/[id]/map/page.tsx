@@ -1,4 +1,5 @@
 'use client'
+import ClientOnly from '@/components/ui/ClientOnly'
 import { useState, useEffect, useMemo } from 'react'
 import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api'
 import { useTripStore } from '@/store/useTripStore'
@@ -86,6 +87,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
   }
 
   return (
+    <ClientOnly>
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 shrink-0">
@@ -115,16 +117,14 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                 position={{ lat: m.lat, lng: m.lng }}
                 title={`Day ${m.label}: ${m.title}`}
                 label={{ text: m.label, color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
-                icon={{
-                  path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+                icon={typeof window !== 'undefined' && window.google ? {
+                  path: window.google.maps.SymbolPath.CIRCLE,
                   fillColor: m.color,
                   fillOpacity: 1,
                   strokeColor: '#fff',
-                  strokeWeight: 1.5,
-                  scale: 1.5,
-                  anchor: { x: 12, y: 22 } as any,
-                  labelOrigin: { x: 12, y: 9 } as any,
-                }}
+                  strokeWeight: 2,
+                  scale: 14,
+                } : undefined}
               />
             ))}
           </GoogleMap>

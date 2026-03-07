@@ -1,4 +1,5 @@
 "use client";
+import ClientOnly from "@/components/ui/ClientOnly";
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import ItineraryList from "@/components/planner/ItineraryList";
@@ -111,6 +112,7 @@ export default function PlannerPage() {
   };
 
   return (
+    <ClientOnly>
     <div className="flex flex-col md:flex-row h-screen bg-white font-sans text-[#333333] overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative overflow-hidden">
@@ -228,5 +230,6 @@ export default function PlannerPage() {
         </div>
       </main>
     </div>
+    </ClientOnly>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import ClientOnly from "@/components/ui/ClientOnly";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTripStore } from "@/store/useTripStore";
@@ -18,8 +19,10 @@ export default function PlannerRedirect() {
   }, [_hasHydrated, trips, activeTripId, router]);
 
   return (
+    <ClientOnly>
     <div className="flex min-h-screen items-center justify-center bg-white text-gray-400 text-xs tracking-widest uppercase animate-pulse">
       載入中...
     </div>
+    </ClientOnly>
   );
 }

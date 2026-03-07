@@ -93,8 +93,14 @@ export const useTripStore = create<TripState>()(
             const loadedTrips = data.map(row => {
               const trip = row.content as Trip;
               if (!trip.placesToVisit) trip.placesToVisit = [];
+              if (!trip.members) trip.members = [];
+              if (!trip.bookings) trip.bookings = [];
+              if (!trip.expenses) trip.expenses = [];
+              if (!trip.plans) trip.plans = [];
+              if (!trip.dailyItinerary) trip.dailyItinerary = [];
               trip.dailyItinerary.forEach(day => {
-                if (day.activities) { day.activities = day.activities.filter(a => !!a && !!a.id); }
+                if (!day.activities) day.activities = [];
+                day.activities = day.activities.filter(a => !!a && !!a.id);
               });
               return trip;
             });

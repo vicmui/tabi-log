@@ -1,4 +1,5 @@
 "use client";
+import ClientOnly from "@/components/ui/ClientOnly";
 import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
@@ -119,6 +120,7 @@ export default function PlanningPage() {
   };
 
   return (
+    <ClientOnly>
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 pb-24">
@@ -164,5 +166,6 @@ export default function PlanningPage() {
         onCancel={() => setDeletingPlanId(null)}
       />
     </div>
+    </ClientOnly>
   );
 }
