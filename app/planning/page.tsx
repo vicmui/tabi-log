@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
 import { useTripStore, Priority, PlanItem } from "@/store/useTripStore";
@@ -59,12 +59,14 @@ export default function PlanningPage() {
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const trip = activeTripId ? trips.find(t => t.id === activeTripId) : (trips.length > 0 ? trips[0] : null);
   
-  const [activeTab, setActiveTab] = useState(() =>
-    typeof window !== 'undefined' ? (sessionStorage.getItem('planning-tab') || 'Packing') : 'Packing'
-  );
+  const [activeTab, setActiveTab] = useState('Packing');
+  useEffect(() => {
+    const saved = sessionStorage.getItem('planning-tab');
+    if (saved) setActiveTab(saved);
+  }, []);
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    if (typeof window !== 'undefined') sessionStorage.setItem('planning-tab', tab);
+    sessionStorage.setItem('planning-tab', tab);
   };
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [text, setText] = useState("");

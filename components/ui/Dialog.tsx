@@ -259,7 +259,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />
               )}
-              <label className="absolute inset-0 flex items-center justify-center bg-black/40 md:opacity-0 md:group-hover:opacity-100 cursor-pointer transition-opacity text-white">
+              <label className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer transition-opacity text-white">
                 <input
                   type="file"
                   accept="image/*"

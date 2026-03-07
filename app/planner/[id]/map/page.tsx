@@ -1,131 +1,139 @@
 'use client'
-import { useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api'
 import { useTripStore } from '@/store/useTripStore'
-import { useParams } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { Libraries } from '@react-google-maps/api'
 
-const DEST_CENTERS: Record<string, { lat: number; lng: number }> = {
-  osaka:     { lat: 34.6937, lng: 135.5023 },
-  tokyo:     { lat: 35.6762, lng: 139.6503 },
-  kyoto:     { lat: 35.0116, lng: 135.7681 },
-  hokkaido:  { lat: 43.0642, lng: 141.3469 },
-  taipei:    { lat: 25.0330, lng: 121.5654 },
-  taichung:  { lat: 24.1477, lng: 120.6736 },
-  tainan:    { lat: 22.9999, lng: 120.2269 },
-  hongkong:  { lat: 22.3193, lng: 114.1694 },
-  singapore: { lat: 1.3521,  lng: 103.8198 },
-  bangkok:   { lat: 13.7563, lng: 100.5018 },
-  seoul:     { lat: 37.5665, lng: 126.9780 },
-  paris:     { lat: 48.8566, lng: 2.3522   },
-  london:    { lat: 51.5074, lng: -0.1278  },
-  newyork:   { lat: 40.7128, lng: -74.0060 },
+const LIBRARIES: Libraries = ['places', 'marker', 'geometry', 'routes']
+
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  osaka: { lat: 34.6937, lng: 135.5023 },
+  tokyo: { lat: 35.6762, lng: 139.6503 },
+  kyoto: { lat: 35.0116, lng: 135.7681 },
+  taipei: { lat: 25.0330, lng: 121.5654 },
+  taichung: { lat: 24.1477, lng: 120.6736 },
+  tainan: { lat: 22.9999, lng: 120.2269 },
+  hongkong: { lat: 22.3193, lng: 114.1694 },
+  singapore: { lat: 1.3521, lng: 103.8198 },
+  bangkok: { lat: 13.7563, lng: 100.5018 },
+  seoul: { lat: 37.5665, lng: 126.9780 },
+  paris: { lat: 48.8566, lng: 2.3522 },
+  london: { lat: 51.5074, lng: -0.1278 },
 }
 
-function getTripCenter(title: string) {
-  const s = title.toLowerCase()
-  if (/osaka|大阪/.test(s))              return DEST_CENTERS.osaka
-  if (/tokyo|東京/.test(s))              return DEST_CENTERS.tokyo
-  if (/kyoto|京都/.test(s))              return DEST_CENTERS.kyoto
-  if (/hokkaido|北海道|sapporo|札幌/.test(s)) return DEST_CENTERS.hokkaido
-  if (/taichung|台中/.test(s))           return DEST_CENTERS.taichung
-  if (/tainan|台南/.test(s))             return DEST_CENTERS.tainan
-  if (/taipei|台北|taiwan|台灣/.test(s)) return DEST_CENTERS.taipei
-  if (/hong.?kong|香港/.test(s))         return DEST_CENTERS.hongkong
-  if (/singapore|新加坡/.test(s))        return DEST_CENTERS.singapore
-  if (/bangkok|泰國|thailand/.test(s))   return DEST_CENTERS.bangkok
-  if (/seoul|首爾|korea|韓國/.test(s))   return DEST_CENTERS.seoul
-  if (/paris|巴黎/.test(s))              return DEST_CENTERS.paris
-  if (/london|倫敦/.test(s))             return DEST_CENTERS.london
-  return DEST_CENTERS.taipei // default fallback
+function getTripCenter(title: string, destLat?: number, destLng?: number) {
+  if (destLat && destLng) return { lat: destLat, lng: destLng }
+  const lower = title.toLowerCase()
+  for (const [key, coords] of Object.entries(CITY_COORDS)) {
+    if (lower.includes(key) || lower.includes(key === 'osaka' ? '大阪' : key === 'tokyo' ? '東京' : key === 'taichung' ? '台中' : key === 'taipei' ? '台北' : '')) {
+      return coords
+    }
+  }
+  if (lower.includes('台中') || lower.includes('taichung')) return CITY_COORDS.taichung
+  if (lower.includes('台北') || lower.includes('taipei')) return CITY_COORDS.taipei
+  if (lower.includes('大阪') || lower.includes('osaka')) return CITY_COORDS.osaka
+  if (lower.includes('東京') || lower.includes('tokyo')) return CITY_COORDS.tokyo
+  if (lower.includes('京都') || lower.includes('kyoto')) return CITY_COORDS.kyoto
+  return CITY_COORDS.taipei
 }
 
-const containerStyle = { width: '100%', height: '100vh' }
+const DAY_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63']
 
-const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: true,
-  zoomControl: true,
-  mapTypeControl: false,
-  streetViewControl: false,
-  styles: [
-    { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-    { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
-    { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#eeeeee' }] },
-    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#e5e5e5' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#dadada' }] },
-    { featureType: 'transit.station', elementType: 'geometry', stylers: [{ color: '#eeeeee' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9c9c9' }] },
-  ],
-}
+export default function FullMapPage({ params }: { params: { id: string } }) {
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => setIsMounted(true), [])
 
-export default function MapViewPage() {
-  const params = useParams()
-  const tripId = params.id as string
-  const trips = useTripStore(s => s.trips)
-  const trip = trips.find(t => t.id === tripId)
-
-  // Must match layout.tsx loader config exactly (same id + libraries) to avoid double-load error
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!,
-    libraries: ['places', 'marker', 'geometry', 'routes'] as any,
+    libraries: LIBRARIES,
   })
+
+  const trips = useTripStore(s => s.trips)
+  const trip = trips.find(t => t.id === params.id)
 
   const markers = useMemo(() => {
     if (!trip) return []
-    return trip.dailyItinerary.flatMap(day =>
+    return trip.dailyItinerary.flatMap((day, dayIdx) =>
       day.activities
         .filter(act => act.lat && act.lng)
-        .map(act => ({
+        .map((act, actIdx) => ({
           lat: act.lat!,
           lng: act.lng!,
-          label: day.day.toString(),
+          label: String(day.day),
           title: act.location,
+          color: DAY_COLORS[dayIdx % DAY_COLORS.length],
+          dayIdx,
+          actIdx,
         }))
     )
   }, [trip])
 
-  // ── FIX: markers first → title detection → fallback (removed destLat/destLng priority) ──
   const center = useMemo(() => {
+    if (!trip) return CITY_COORDS.taipei
     if (markers.length > 0) return { lat: markers[0].lat, lng: markers[0].lng }
-    if (trip) return getTripCenter(trip.title)
-    return DEST_CENTERS.taipei
-  }, [markers, trip])
+    return getTripCenter(trip.title, trip.destLat, trip.destLng)
+  }, [trip, markers])
 
-  if (!isLoaded) return (
-    <div className="p-10 text-center animate-pulse text-gray-400">Loading map...</div>
-  )
+  if (!isMounted || !trip) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <p className="text-xs tracking-widest text-gray-400 uppercase animate-pulse">載入中...</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="relative h-screen w-screen">
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={center}
-        zoom={12}
-        options={mapOptions}
-      >
-        {markers.map((marker, index) => (
-          <MarkerF
-            key={index}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            label={{ text: marker.label, color: 'white', fontWeight: 'bold' }}
-            title={marker.title}
-          />
-        ))}
-      </GoogleMap>
-      <Link
-        href={`/planner/${tripId}`}
-        className="absolute top-4 left-4 bg-white p-3 rounded-full shadow-lg text-black hover:bg-gray-100"
-      >
-        <ArrowLeft size={20} />
-      </Link>
+    <div className="flex flex-col h-screen bg-white">
+      {/* Header */}
+      <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 shrink-0">
+        <Link href={`/planner/${trip.id}`} className="flex items-center gap-2 text-xs tracking-widest uppercase text-gray-500 hover:text-black transition-colors">
+          <ArrowLeft size={14} /> 返回行程
+        </Link>
+        <div className="h-4 w-px bg-gray-200" />
+        <span className="text-xs font-bold tracking-widest uppercase">{trip.title} — 全程地圖</span>
+      </div>
+
+      {/* Map */}
+      <div className="flex-1 relative">
+        {!isLoaded ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+            <p className="text-xs tracking-widest text-gray-400 uppercase animate-pulse">地圖載入中...</p>
+          </div>
+        ) : (
+          <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '100%' }}
+            center={center}
+            zoom={markers.length > 0 ? 13 : 12}
+            options={{ disableDefaultUI: false, zoomControl: true, streetViewControl: false, mapTypeControl: false }}
+          >
+            {markers.map((m, i) => (
+              <MarkerF
+                key={i}
+                position={{ lat: m.lat, lng: m.lng }}
+                title={`Day ${m.label}: ${m.title}`}
+                label={{ text: m.label, color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+              />
+            ))}
+          </GoogleMap>
+        )}
+      </div>
+
+      {/* Day Legend */}
+      {trip.dailyItinerary.length > 0 && (
+        <div className="shrink-0 border-t border-gray-100 px-6 py-3 overflow-x-auto">
+          <div className="flex gap-4 items-center">
+            {trip.dailyItinerary.map((day, i) => (
+              <div key={i} className="flex items-center gap-1.5 shrink-0">
+                <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: DAY_COLORS[i % DAY_COLORS.length] }} />
+                <span className="text-[10px] tracking-widest uppercase text-gray-500">Day {day.day} ({day.date})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
