@@ -76,7 +76,7 @@ export default function ToolboxPage() {
  </Link>
  </div>
  </div>
- {/* Backup Section */
+ {/* Backup Section */}
  <div className="space-y-6"><div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2"><Save size={16} className="text-jp-charcoal"/><h2 className="text-xs font-bold tracking-[0.2em] uppercase">資料備份</h2></div><div className="bg-white p-8 border border-gray-100 shadow-sm"><p className="text-sm text-gray-500 mb-6">將行程資料匯出備份，或匯入以恢復資料。</p><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><button onClick={handleExport} className="flex items-center justify-center gap-2 border border-black bg-black text-white py-4 text-xs font-bold tracking-widest uppercase hover:opacity-80"><Download size={16} /> 匯出資料</button><label className="flex items-center justify-center gap-2 border border-gray-300 text-jp-charcoal py-4 text-xs font-bold tracking-widest uppercase hover:bg-gray-50 cursor-pointer"><Upload size={16} /> 匯入資料<input type="file" accept=".json" onChange={handleImport} className="hidden" /></label></div>{importStatus && <div className="mt-4 p-3 bg-gray-50 text-xs text-center font-bold text-blue-600 flex items-center justify-center gap-2"><AlertTriangle size={14}/> {importStatus}</div>}</div></div>
  </div>
  </main>

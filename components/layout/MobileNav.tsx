@@ -150,6 +150,9 @@ export default function Sidebar() {
         <p className="text-[10px] text-gray-500 tracking-[0.25em] uppercase font-medium">旅行手帳</p>
       </div>
 
+      <div className="h-[2px] w-10 bg-black my-5" />
+      <p className="text-[10px] text-gray-500 tracking-[0.25em] uppercase font-medium" />
+
       {/* Nav Links */}
       <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar py-2">
         {MENU_ITEMS.map(item => {
@@ -186,6 +189,7 @@ export default function Sidebar() {
       <div className="mt-auto pt-8 border-t border-gray-50">
         <div className="text-[9px] text-gray-400 tracking-widest uppercase leading-loose">
           <p>© 2026 VM&apos;s Build</p>
+          
         </div>
       </div>
     </aside>
