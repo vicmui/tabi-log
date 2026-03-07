@@ -9,7 +9,7 @@ import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
-import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog"；
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 export default function BookingsPage() {
   const { addBooking, updateBooking, deleteBooking } = useTripStore();
