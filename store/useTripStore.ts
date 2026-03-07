@@ -12,7 +12,7 @@ export type Priority = 'High' | 'Medium' | 'Low';
 export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string; }
 export interface Activity { id: string; time?: string; type: string; location: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; customLocation?: string; }
-export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; destLat?: number; destLng?: number; destLabel?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
+export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
 
 interface TripState {
   trips: Trip[]; activeTripId: string | null; isSyncing: boolean;
