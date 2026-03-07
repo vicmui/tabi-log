@@ -202,3 +202,4 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       />
     </div>
   );
+}

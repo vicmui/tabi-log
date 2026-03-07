@@ -98,3 +98,4 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
       )}
     </AnimatePresence>
   );
+}

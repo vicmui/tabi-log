@@ -159,3 +159,4 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
         </div>
      </div>
   )
+}

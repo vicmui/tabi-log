@@ -25,3 +25,4 @@ export default function PlannerRedirect() {
       Loading Planner...
     </div>
   );
+}

@@ -62,3 +62,4 @@ export default function EditTripModal({ trip, onClose }: any) {
       <AlertDialog isOpen={!!alertMsg} message={alertMsg || ""} onClose={() => setAlertMsg(null)} />
     </div>
   );
+}

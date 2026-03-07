@@ -178,3 +178,4 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
         )}
     </div>
   );
+}

@@ -143,3 +143,4 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
       </GoogleMap>
     </div>
   );
+}
