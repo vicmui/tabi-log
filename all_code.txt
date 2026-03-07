@@ -160,50 +160,57 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
      </div>
   )
 }=== ./app/planner/[id]/map/page.tsx ===
-"use client";
-import { useMemo } from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
-import { useTripStore } from '@/store/useTripStore';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+'use client'
+import { useMemo } from 'react'
+import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api'
+import { useTripStore } from '@/store/useTripStore'
+import { useParams } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
-const DEST_CENTERS: Record<string, {lat:number;lng:number}> = {
-  osaka:{lat:34.6937,lng:135.5023}, tokyo:{lat:35.6762,lng:139.6503},
-  kyoto:{lat:35.0116,lng:135.7681}, hokkaido:{lat:43.0642,lng:141.3469},
-  taipei:{lat:25.0330,lng:121.5654}, taichung:{lat:24.1477,lng:120.6736},
-  tainan:{lat:22.9999,lng:120.2269}, hongkong:{lat:22.3193,lng:114.1694},
-  singapore:{lat:1.3521,lng:103.8198}, bangkok:{lat:13.7563,lng:100.5018},
-  seoul:{lat:37.5665,lng:126.9780}, paris:{lat:48.8566,lng:2.3522},
-  london:{lat:51.5074,lng:-0.1278}, newyork:{lat:40.7128,lng:-74.0060},
-};
-function getTripCenter(title: string) {
-  const s = title.toLowerCase();
-  if (/osaka|\u5927\u962a/.test(s)) return DEST_CENTERS.osaka;
-  if (/tokyo|\u6771\u4eac/.test(s)) return DEST_CENTERS.tokyo;
-  if (/kyoto|\u4eac\u90fd/.test(s)) return DEST_CENTERS.kyoto;
-  if (/hokkaido|\u5317\u6d77\u9053/.test(s)) return DEST_CENTERS.hokkaido;
-  if (/taichung|\u53f0\u4e2d/.test(s)) return DEST_CENTERS.taichung;
-  if (/tainan|\u53f0\u5357/.test(s)) return DEST_CENTERS.tainan;
-  if (/taipei|\u53f0\u5317|taiwan|\u53f0\u7063/.test(s)) return DEST_CENTERS.taipei;
-  if (/hongkong|hong.kong|\u9999\u6e2f/.test(s)) return DEST_CENTERS.hongkong;
-  if (/singapore|\u65b0\u52a0\u5761/.test(s)) return DEST_CENTERS.singapore;
-  if (/bangkok|\u66fc\u8c37|thailand|\u6cf0\u570b/.test(s)) return DEST_CENTERS.bangkok;
-  if (/seoul|\u9996\u723e|korea|\u97d3\u570b/.test(s)) return DEST_CENTERS.seoul;
-  if (/paris|\u5df4\u9ece/.test(s)) return DEST_CENTERS.paris;
-  if (/london|\u502b\u6566/.test(s)) return DEST_CENTERS.london;
-  return DEST_CENTERS.taipei; // default to Taipei instead of Osaka
+const DEST_CENTERS: Record<string, { lat: number; lng: number }> = {
+  osaka:     { lat: 34.6937, lng: 135.5023 },
+  tokyo:     { lat: 35.6762, lng: 139.6503 },
+  kyoto:     { lat: 35.0116, lng: 135.7681 },
+  hokkaido:  { lat: 43.0642, lng: 141.3469 },
+  taipei:    { lat: 25.0330, lng: 121.5654 },
+  taichung:  { lat: 24.1477, lng: 120.6736 },
+  tainan:    { lat: 22.9999, lng: 120.2269 },
+  hongkong:  { lat: 22.3193, lng: 114.1694 },
+  singapore: { lat: 1.3521,  lng: 103.8198 },
+  bangkok:   { lat: 13.7563, lng: 100.5018 },
+  seoul:     { lat: 37.5665, lng: 126.9780 },
+  paris:     { lat: 48.8566, lng: 2.3522   },
+  london:    { lat: 51.5074, lng: -0.1278  },
+  newyork:   { lat: 40.7128, lng: -74.0060 },
 }
 
-const containerStyle = { width: '100%', height: '100vh' };
+function getTripCenter(title: string) {
+  const s = title.toLowerCase()
+  if (/osaka|大阪/.test(s))              return DEST_CENTERS.osaka
+  if (/tokyo|東京/.test(s))              return DEST_CENTERS.tokyo
+  if (/kyoto|京都/.test(s))              return DEST_CENTERS.kyoto
+  if (/hokkaido|北海道|sapporo|札幌/.test(s)) return DEST_CENTERS.hokkaido
+  if (/taichung|台中/.test(s))           return DEST_CENTERS.taichung
+  if (/tainan|台南/.test(s))             return DEST_CENTERS.tainan
+  if (/taipei|台北|taiwan|台灣/.test(s)) return DEST_CENTERS.taipei
+  if (/hong.?kong|香港/.test(s))         return DEST_CENTERS.hongkong
+  if (/singapore|新加坡/.test(s))        return DEST_CENTERS.singapore
+  if (/bangkok|泰國|thailand/.test(s))   return DEST_CENTERS.bangkok
+  if (/seoul|首爾|korea|韓國/.test(s))   return DEST_CENTERS.seoul
+  if (/paris|巴黎/.test(s))              return DEST_CENTERS.paris
+  if (/london|倫敦/.test(s))             return DEST_CENTERS.london
+  return DEST_CENTERS.taipei // default fallback
+}
 
+const containerStyle = { width: '100%', height: '100vh' }
 
-const mapOptions = {
+const mapOptions: google.maps.MapOptions = {
   disableDefaultUI: true,
   zoomControl: true,
   mapTypeControl: false,
   streetViewControl: false,
-  styles: [ // 極簡地圖風格
+  styles: [
     { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
     { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
     { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
@@ -218,47 +225,43 @@ const mapOptions = {
     { featureType: 'transit.station', elementType: 'geometry', stylers: [{ color: '#eeeeee' }] },
     { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9c9c9' }] },
   ],
-};
+}
 
 export default function MapViewPage() {
-  const params = useParams();
-  const router = useRouter();
-  const tripId = params.id as string;
-  const { trips } = useTripStore();
-  const trip = trips.find(t => t.id === tripId);
+  const params = useParams()
+  const tripId = params.id as string
+  const trips = useTripStore(s => s.trips)
+  const trip = trips.find(t => t.id === tripId)
 
-  // 1. 載入 Google Maps API
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!
-  });
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!,
+  })
 
-  // 2. 準備所有 Marker
   const markers = useMemo(() => {
-    if (!trip) return [];
+    if (!trip) return []
     return trip.dailyItinerary.flatMap(day =>
       day.activities
-        .filter(act => act.lat && act.lng) // 只攞有經緯度嘅
+        .filter(act => act.lat && act.lng)
         .map(act => ({
           lat: act.lat!,
           lng: act.lng!,
-          label: day.day.toString(), // 顯示 Day Number
+          label: day.day.toString(),
           title: act.location,
         }))
-    );
-  }, [trip]);
+    )
+  }, [trip])
 
-  // 3. 計算地圖中心點
+  // ── FIX: markers first → title detection → fallback (removed destLat/destLng priority) ──
   const center = useMemo(() => {
-    if (markers.length > 0) {
-      return { lat: markers[0].lat, lng: markers[0].lng };
-    }
-    // Use pinned destination if available, otherwise detect from title
-    if (trip?.destLat && trip?.destLng) return { lat: trip.destLat, lng: trip.destLng };
-    return trip ? getTripCenter(trip.title) : DEST_CENTERS.taipei;
-  }, [markers, trip]);
+    if (markers.length > 0) return { lat: markers[0].lat, lng: markers[0].lng }
+    if (trip) return getTripCenter(trip.title)
+    return DEST_CENTERS.taipei
+  }, [markers, trip])
 
-  if (!isLoaded) return <div className="p-10 text-center animate-pulse">地圖載入中...</div>;
+  if (!isLoaded) return (
+    <div className="p-10 text-center animate-pulse text-gray-400">Loading map...</div>
+  )
 
   return (
     <div className="relative h-screen w-screen">
@@ -268,7 +271,6 @@ export default function MapViewPage() {
         zoom={12}
         options={mapOptions}
       >
-        {/* 在地圖上畫 Pin */}
         {markers.map((marker, index) => (
           <MarkerF
             key={index}
@@ -278,14 +280,16 @@ export default function MapViewPage() {
           />
         ))}
       </GoogleMap>
-
-      {/* 返回按鈕 */}
-      <Link href={`/planner/${tripId}`} className="absolute top-4 left-4 bg-white p-3 rounded-full shadow-lg text-black hover:bg-gray-100">
+      <Link
+        href={`/planner/${tripId}`}
+        className="absolute top-4 left-4 bg-white p-3 rounded-full shadow-lg text-black hover:bg-gray-100"
+      >
         <ArrowLeft size={20} />
       </Link>
     </div>
-  );
-}=== ./app/planner/[id]/page.tsx ===
+  )
+}
+=== ./app/planner/[id]/page.tsx ===
 "use client";
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
@@ -295,7 +299,7 @@ import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import ShareItinerary from "@/components/planner/ShareItinerary";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation, Share, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, Clock, Map as MapIcon, List as ListIcon, Trash2, CalendarX, Settings, Camera, Thermometer, Navigation, Share, Globe, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -483,8 +487,16 @@ export default function PlannerPage() {
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
                       <button onClick={handleCopyShareLink} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /> <span className="hidden sm:inline">分享</span></button>
                       <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /> <span className="hidden sm:inline">路線</span></button>
-                      <button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={14} /> <span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /> <span className="hidden sm:inline">列表</span></>}</button>
+                      {/* Full Map View - 全程地圖 */}
+                      <Link
+                      href={`/planner/${trip.id}/map`}
+                       className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"
+                        >
+                      <Globe size={14} />
+                       <span className="hidden sm:inline">Full Map</span>
+                      </Link><button onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 rounded-xl bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">{viewMode === 'list' ? <><MapIcon size={14} /> <span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /> <span className="hidden sm:inline">列表</span></>}</button>
                       <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors shadow-lg uppercase rounded-xl font-bold"><Plus size={12} /> 新增活動</button>
+                      
                   </div>
                </div>
             </div>
@@ -1485,117 +1497,166 @@ export default function MembersPage() {
     </div>
   );
 }=== ./app/page.tsx ===
-"use client";
-import Sidebar from "@/components/layout/Sidebar";
-import EditTripModal from "@/components/dashboard/EditTripModal";
-import { NewTripModal, ConfirmDialog } from "@/components/ui/Dialog";
-import { useTripStore } from "@/store/useTripStore";
-import { Plus, Settings, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { differenceInDays, parseISO } from "date-fns";
-import Link from "next/link";
+'use client'
+import Sidebar from '@/components/layout/Sidebar'
+import EditTripModal from '@/components/dashboard/EditTripModal'
+import { NewTripModal, ConfirmDialog } from '@/components/ui/Dialog'
+import { useTripStore } from '@/store/useTripStore'
+import { Plus, Settings, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { differenceInDays, parseISO } from 'date-fns'
+import Link from 'next/link'
+
+const DEFAULT_COVER =
+  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2000&auto=format&fit=crop'
 
 export default function Home() {
-  const { trips, addTrip, deleteTrip, setActiveTrip } = useTripStore();
-  const [isMounted, setIsMounted] = useState(false);
-  const [editingTrip, setEditingTrip] = useState<any>(null);
-  const [isNewTripOpen, setIsNewTripOpen] = useState(false);
-  const [deletingTripId, setDeletingTripId] = useState<string | null>(null);
+  const { trips, addTrip, deleteTrip, setActiveTrip } = useTripStore()
+  const [isMounted, setIsMounted] = useState(false)
+  const [editingTrip, setEditingTrip] = useState<any>(null)
+  const [isNewTripOpen, setIsNewTripOpen] = useState(false)
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
 
-  useEffect(() => setIsMounted(true), []);
-  if (!isMounted) return <div className="p-10 animate-pulse text-center text-gray-400">Loading...</div>;
+  useEffect(() => { setIsMounted(true) }, [])
+  if (!isMounted) return <div className="p-10 animate-pulse text-center text-gray-400">Loading...</div>
 
-  const handleAddTrip = (data: { title: string; startDate: string; endDate: string }) => {
+  // ── Updated: accept optional coverImage ──
+  const handleAddTrip = (data: {
+    title: string
+    startDate: string
+    endDate: string
+    coverImage?: string
+  }) => {
     addTrip({
       title: data.title,
       startDate: data.startDate,
       endDate: data.endDate,
-      status: "planning",
-      coverImage: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2000&auto=format&fit=crop"
-    });
-  };
+      status: 'planning',
+      coverImage: data.coverImage || DEFAULT_COVER,
+    })
+  }
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setDeletingTripId(id);
-  };
+    e.stopPropagation()
+    e.preventDefault()
+    setDeletingTripId(id)
+  }
 
   return (
     <div className="flex min-h-screen bg-white">
       <Sidebar />
       <main className="flex-1 p-8 ml-0 md:ml-64 pb-24">
         <div className="flex justify-between items-center mb-12 mt-4">
-           <div>
-             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">我的旅程</h1>
-             <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
-           </div>
-           <button onClick={() => setIsNewTripOpen(true)} className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors active:scale-95 text-xs tracking-widest uppercase rounded">
-             <Plus size={16} /> 新增旅程
-           </button>
+          <div>
+            <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">
+              My Voyages
+            </h1>
+            <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
+          </div>
+          <button
+            onClick={() => setIsNewTripOpen(true)}
+            className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors active:scale-95 text-xs tracking-widest uppercase rounded"
+          >
+            <Plus size={16} />
+            New Trip
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {trips.map((trip) => {
-                const daysLeft = differenceInDays(parseISO(trip.startDate), new Date());
-                const totalActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a)?.length || 0), 0);
-                const visitedActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a && a.isVisited)?.length || 0), 0);
-                const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0;
+          {trips.map(trip => {
+            const daysLeft = differenceInDays(parseISO(trip.startDate), new Date())
+            const totalActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a)?.length ?? 0), 0)
+            const visitedActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a?.isVisited)?.length ?? 0), 0)
+            const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0
 
-                return (
-                  <div key={trip.id} onClick={() => setActiveTrip(trip.id)} className="relative group cursor-pointer bg-white border border-gray-100 hover:border border-gray-200 transition-all duration-300 overflow-hidden h-[360px] flex flex-col rounded-none">
-                      <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
-                      <div className="h-1/2 w-full relative overflow-hidden">
-                          <img src={trip.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"/>
-                          <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full z-20">
-                              {daysLeft > 0 ? `還有 ${daysLeft} 天` : "進行中/已結束"}
-                          </div>
-                          <div className="absolute top-4 right-4 flex gap-2 z-30">
-                              <button onClick={(e)=>{e.stopPropagation(); e.preventDefault(); setEditingTrip(trip)}} className="bg-white/80 p-2 rounded-full hover:bg-white text-gray-600 hover:text-black transition-colors"><Settings size={14}/></button>
-                              <button onClick={(e)=>handleDelete(e, trip.id)} className="bg-white/80 p-2 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition-colors"><Trash2 size={14}/></button>
-                          </div>
-                      </div>
-                      <div className="p-6 flex flex-col justify-between flex-1">
-                          <div>
-                              <h3 className="text-xl font-medium mb-1 tracking-wide truncate">{trip.title}</h3>
-                              <p className="text-xs text-gray-400 font-light tracking-widest">{trip.startDate} — {trip.endDate}</p>
-                          </div>
-                          <div>
-                              <div className="flex justify-between text-[10px] text-gray-400 mb-1 uppercase tracking-widest"><span>Progress</span><span>{progress}%</span></div>
-                              <div className="h-1 bg-gray-100 w-full"><div className="h-full bg-black" style={{width: `${progress}%`}}/></div>
-                          </div>
-                      </div>
+            return (
+              <div
+                key={trip.id}
+                onClick={() => setActiveTrip(trip.id)}
+                className="relative group cursor-pointer bg-white border border-gray-100 hover:border hover:border-gray-200 transition-all duration-300 overflow-hidden h-[360px] flex flex-col rounded-none"
+              >
+                <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
+                <div className="h-48 w-full relative overflow-hidden">
+                  <img
+                    src={trip.coverImage}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    alt={trip.title}
+                  />
+                  <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full z-20">
+                    {daysLeft > 0 ? `${daysLeft}d` : ''}
                   </div>
-                );
-            })}
+                  <div className="absolute top-4 right-4 flex gap-2 z-30">
+                    <button
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); setEditingTrip(trip) }}
+                      className="bg-white/80 p-2 rounded-full hover:bg-white text-gray-600 hover:text-black transition-colors"
+                    >
+                      <Settings size={14} />
+                    </button>
+                    <button
+                      onClick={e => handleDelete(e, trip.id)}
+                      className="bg-white/80 p-2 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-6 flex flex-col justify-between flex-1">
+                  <div>
+                    <h3 className="text-xl font-medium mb-1 tracking-wide truncate">{trip.title}</h3>
+                    <p className="text-xs text-gray-400 font-light tracking-widest">
+                      {trip.startDate} → {trip.endDate}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1 uppercase tracking-widest">
+                      <span>Progress</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="h-1 bg-gray-100 w-full">
+                      <div className="h-full bg-black" style={{ width: `${progress}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-
-        {editingTrip && <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} />}
-
-        <NewTripModal
-          isOpen={isNewTripOpen}
-          onClose={() => setIsNewTripOpen(false)}
-          onConfirm={handleAddTrip}
-        />
-
-        <ConfirmDialog
-          isOpen={!!deletingTripId}
-          title="刪除旅程"
-          message="確定要永久刪除此旅程嗎？所有行程、預訂及支出記錄將一併移除，無法復原。"
-          confirmLabel="刪除"
-          cancelLabel="取消"
-          danger
-          onConfirm={() => { if (deletingTripId) deleteTrip(deletingTripId); setDeletingTripId(null); }}
-          onCancel={() => setDeletingTripId(null)}
-        />
       </main>
+
+      {editingTrip && (
+        <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} />
+      )}
+      <NewTripModal
+        isOpen={isNewTripOpen}
+        onClose={() => setIsNewTripOpen(false)}
+        onConfirm={handleAddTrip}
+      />
+      <ConfirmDialog
+        isOpen={!!deletingTripId}
+        title="Delete Trip"
+        message="Are you sure? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        danger
+        onConfirm={() => {
+          if (deletingTripId) deleteTrip(deletingTripId)
+          setDeletingTripId(null)
+        }}
+        onCancel={() => setDeletingTripId(null)}
+      />
     </div>
-  );
+  )
 }
 === ./app/globals.css ===
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  button {
+    border-radius: 0px;
+  }
+}
 
 :root {
   --foreground-rgb: 51, 51, 51;
@@ -1603,15 +1664,36 @@ export default function Home() {
   --background-end-rgb: 255, 255, 255;
 }
 
-body { color: #333333; background: white; }
+body {
+  color: #333333;
+  background: white;
+}
 
-::placeholder { color: #9CA3AF !important; opacity: 1; }
-input, select, textarea { color: #111111; }
-label { color: #6B7280; }
+::placeholder {
+  color: #9CA3AF !important;
+  opacity: 1;
+}
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+input, select, textarea {
+  color: #111111;
+}
+
+label {
+  color: #6B7280;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 === ./app/offline/page.tsx ===
 "use client";
 import { useState } from "react";
@@ -2665,20 +2747,30 @@ const config: Config = {
   plugins: [],
 };
 export default config;=== ./components/ui/Dialog.tsx ===
-"use client";
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Info, X } from "lucide-react";
+'use client'
+import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { AlertTriangle, Info, X, Upload } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { v4 as uuidv4 } from 'uuid'
 
-// ─── Backdrop + Panel wrapper ───────────────────────────────────────────────
-function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNode; onBackdropClick?: () => void }) {
+// ─── Backdrop / Panel wrapper ───────────────────────────────────────────────
+function DialogWrapper({
+  children,
+  onBackdropClick,
+}: {
+  children: React.ReactNode
+  onBackdropClick?: () => void
+}) {
   return (
     <AnimatePresence>
       <motion.div
         key="backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="fixed inset-0 z-[200] flex items-center justify-center px-4"
-        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+        style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
         onClick={onBackdropClick}
       >
         <motion.div
@@ -2686,7 +2778,7 @@ function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNod
           initial={{ opacity: 0, y: 10, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.98 }}
-          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           onClick={e => e.stopPropagation()}
           className="w-full max-w-sm bg-white rounded-none overflow-hidden border border-gray-200"
         >
@@ -2694,41 +2786,41 @@ function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNod
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  );
+  )
 }
 
 // ─── CONFIRM DIALOG ──────────────────────────────────────────────────────────
 interface ConfirmProps {
-  isOpen: boolean;
-  title?: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
+  isOpen: boolean
+  title?: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  danger?: boolean
+  onConfirm: () => void
+  onCancel: () => void
 }
 
 export function ConfirmDialog({
-  isOpen, title, message, confirmLabel = "確認", cancelLabel = "取消",
-  danger = false, onConfirm, onCancel,
+  isOpen,
+  title,
+  message,
+  confirmLabel = '確認',
+  cancelLabel = '取消',
+  danger = false,
+  onConfirm,
+  onCancel,
 }: ConfirmProps) {
-  if (!isOpen) return null;
+  if (!isOpen) return null
   return (
     <DialogWrapper onBackdropClick={onCancel}>
       <div className="p-7">
-        {/* Icon */}
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${danger ? "bg-red-50" : "bg-neutral-100"}`}>
-          <AlertTriangle size={18} className={danger ? "text-red-500" : "text-neutral-600"} />
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${danger ? 'bg-red-50' : 'bg-neutral-100'}`}>
+          <AlertTriangle size={18} className={danger ? 'text-red-500' : 'text-neutral-600'} />
         </div>
-
-        {title && (
-          <h3 className="font-serif font-bold text-base text-neutral-900 mb-1 tracking-tight">{title}</h3>
-        )}
+        {title && <h3 className="font-serif font-bold text-base text-neutral-900 mb-1 tracking-tight">{title}</h3>}
         <p className="text-sm text-neutral-500 leading-relaxed">{message}</p>
       </div>
-
-      {/* Actions */}
       <div className="flex border-t border-gray-100">
         <button
           onClick={onCancel}
@@ -2739,28 +2831,26 @@ export function ConfirmDialog({
         <button
           onClick={onConfirm}
           className={`flex-1 py-4 text-xs font-bold tracking-widest uppercase transition-colors ${
-            danger
-              ? "text-red-500 hover:bg-red-50"
-              : "text-neutral-900 hover:bg-neutral-50"
+            danger ? 'text-red-500 hover:bg-red-50' : 'text-neutral-900 hover:bg-neutral-50'
           }`}
         >
           {confirmLabel}
         </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 
 // ─── ALERT DIALOG ────────────────────────────────────────────────────────────
 interface AlertProps {
-  isOpen: boolean;
-  title?: string;
-  message: string;
-  onClose: () => void;
+  isOpen: boolean
+  title?: string
+  message: string
+  onClose: () => void
 }
 
 export function AlertDialog({ isOpen, title, message, onClose }: AlertProps) {
-  if (!isOpen) return null;
+  if (!isOpen) return null
   return (
     <DialogWrapper onBackdropClick={onClose}>
       <div className="p-7">
@@ -2775,58 +2865,91 @@ export function AlertDialog({ isOpen, title, message, onClose }: AlertProps) {
           onClick={onClose}
           className="w-full py-4 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors"
         >
-          了解
+          OK
         </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 
-// ─── NEW TRIP MODAL (replaces prompt()) ─────────────────────────────────────
+// ─── NEW TRIP MODAL (with cover photo upload) ─────────────────────────────────
 interface NewTripProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (data: { title: string; startDate: string; endDate: string }) => void;
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: (data: {
+    title: string
+    startDate: string
+    endDate: string
+    coverImage?: string
+  }) => void
 }
 
 export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [title, setTitle] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [coverImage, setCoverImage] = useState<string>('')
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(""); setStartDate(""); setEndDate("");
-      setTimeout(() => inputRef.current?.focus(), 80);
+      setTitle('')
+      setStartDate('')
+      setEndDate('')
+      setCoverImage('')
+      setTimeout(() => inputRef.current?.focus(), 80)
     }
-  }, [isOpen]);
+  }, [isOpen])
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const filePath = `public/new-trip/${uuidv4()}-${file.name}`
+      const { error } = await supabase.storage.from('tripfiles').upload(filePath, file)
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('tripfiles').getPublicUrl(filePath)
+        setCoverImage(publicUrl)
+      }
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSubmit = () => {
-    if (!title.trim()) return;
-    const today = new Date().toISOString().split("T")[0];
-    onConfirm({ title: title.trim(), startDate: startDate || today, endDate: endDate || today });
-    onClose();
-  };
+    if (!title.trim()) return
+    const today = new Date().toISOString().split('T')[0]
+    onConfirm({
+      title: title.trim(),
+      startDate: startDate || today,
+      endDate: endDate || today,
+      coverImage: coverImage || undefined,
+    })
+    onClose()
+  }
 
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSubmit();
-    if (e.key === "Escape") onClose();
-  };
+    if (e.key === 'Enter') handleSubmit()
+    if (e.key === 'Escape') onClose()
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
+
   return (
     <DialogWrapper onBackdropClick={onClose}>
-      {/* Top strip */}
       <div className="h-[3px] bg-neutral-900" />
-
       <div className="p-7">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">新增旅程</p>
+            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">New Voyage</p>
             <h2 className="font-serif font-bold text-xl text-neutral-900 tracking-tight">Where to next?</h2>
           </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
             <X size={14} className="text-gray-400" />
           </button>
         </div>
@@ -2834,14 +2957,16 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
         <div className="space-y-5">
           {/* Trip name */}
           <div>
-            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">旅程名稱</label>
+            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+              Trip Name
+            </label>
             <input
               ref={inputRef}
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="例：2026 大阪行 🇯🇵"
+              placeholder="2026 Osaka..."
               className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors"
             />
           </div>
@@ -2849,7 +2974,9 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">出發日期</label>
+              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+                Start Date
+              </label>
               <input
                 type="date"
                 value={startDate}
@@ -2858,7 +2985,9 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               />
             </div>
             <div>
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">回程日期</label>
+              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+                End Date
+              </label>
               <input
                 type="date"
                 value={endDate}
@@ -2867,49 +2996,97 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               />
             </div>
           </div>
+
+          {/* Cover Photo */}
+          <div>
+            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">
+              Cover Photo <span className="normal-case text-gray-300">(optional)</span>
+            </label>
+            <div className="h-28 w-full bg-gray-100 overflow-hidden relative group">
+              {coverImage ? (
+                <img src={coverImage} className="w-full h-full object-cover" alt="cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />
+              )}
+              <label className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-white">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                />
+                <div className="flex flex-col items-center gap-1">
+                  <Upload size={18} />
+                  <span className="text-xs">
+                    {uploading ? 'Uploading...' : coverImage ? 'Change' : 'Upload'}
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={!title.trim()}
-          className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${!title.trim() ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "text-white"}`} style={title.trim() ? { backgroundColor: 'var(--accent)' } : {}}
+          className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${
+            !title.trim()
+              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              : 'bg-black text-white hover:opacity-90'
+          }`}
         >
-          建立旅程
+          Create Trip
         </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 
-// ─── PROMPT DIALOG (for editing location name etc.) ──────────────────────────
+// ─── PROMPT DIALOG ───────────────────────────────────────────────────────────
 interface PromptProps {
-  isOpen: boolean;
-  title?: string;
-  message: string;
-  defaultValue?: string;
-  placeholder?: string;
-  onConfirm: (value: string) => void;
-  onCancel: () => void;
+  isOpen: boolean
+  title?: string
+  message: string
+  defaultValue?: string
+  placeholder?: string
+  onConfirm: (value: string) => void
+  onCancel: () => void
 }
 
-export function PromptDialog({ isOpen, title, message, defaultValue = "", placeholder = "", onConfirm, onCancel }: PromptProps) {
-  const [value, setValue] = useState(defaultValue);
-  const inputRef = useRef<HTMLInputElement>(null);
+export function PromptDialog({
+  isOpen,
+  title,
+  message,
+  defaultValue = '',
+  placeholder = '',
+  onConfirm,
+  onCancel,
+}: PromptProps) {
+  const [value, setValue] = useState(defaultValue)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
-      setValue(defaultValue);
-      setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select(); }, 80);
+      setValue(defaultValue)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }, 80)
     }
-  }, [isOpen, defaultValue]);
+  }, [isOpen, defaultValue])
 
-  const handleConfirm = () => { if (value.trim()) onConfirm(value.trim()); };
+  const handleConfirm = () => {
+    if (value.trim()) onConfirm(value.trim())
+  }
+
   const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleConfirm();
-    if (e.key === "Escape") onCancel();
-  };
+    if (e.key === 'Enter') handleConfirm()
+    if (e.key === 'Escape') onCancel()
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
+
   return (
     <DialogWrapper onBackdropClick={onCancel}>
       <div className="p-7">
@@ -2926,11 +3103,21 @@ export function PromptDialog({ isOpen, title, message, defaultValue = "", placeh
         />
       </div>
       <div className="flex border-t border-gray-100">
-        <button onClick={onCancel} className="flex-1 py-4 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100">取消</button>
-        <button onClick={handleConfirm} className="flex-1 py-4 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors">確認</button>
+        <button
+          onClick={onCancel}
+          className="flex-1 py-4 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleConfirm}
+          className="flex-1 py-4 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors"
+        >
+          OK
+        </button>
       </div>
     </DialogWrapper>
-  );
+  )
 }
 === ./components/planner/AddActivityModal.tsx ===
 "use client";
@@ -4000,11 +4187,19 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
   );
 }
 === ./components/layout/MobileNav.tsx ===
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, Ticket, CalendarRange, Wallet, ClipboardList, Briefcase, Users } from "lucide-react";
-import clsx from "clsx";
+'use client'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import {
+  Home,
+  Ticket,
+  CalendarRange,
+  Wallet,
+  ClipboardList,
+  Briefcase,
+  Users,
+} from 'lucide-react'
+import { clsx } from 'clsx'
 
 const MENU_ITEMS = [
   { label: "首頁",  href: "/",        icon: Home },
@@ -4017,44 +4212,52 @@ const MENU_ITEMS = [
 ];
 
 export default function MobileNav() {
-  const pathname = usePathname();
-  // Hide entirely on share pages - read-only view for others
-  if (pathname.startsWith('/share')) return null;
+  const pathname = usePathname()
+
+  // Share 頁隱藏 nav（唯讀 view）
+  if (pathname.startsWith('/share')) return null
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
       <div className="flex justify-between items-center px-1 py-2 overflow-x-auto no-scrollbar">
-        {MENU_ITEMS.map((item) => {
-          const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        {MENU_ITEMS.map(item => {
+          const isActive =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname.startsWith(item.href)
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center min-w-[14%] py-1 gap-0.5 transition-colors duration-200 relative"
+              className="flex flex-col items-center justify-center min-w-[56px] py-1 gap-0.5 transition-colors duration-200 relative"
             >
               {/* Active top bar */}
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-black" />
               )}
+
               <item.icon
                 size={20}
                 strokeWidth={isActive ? 2.5 : 1.5}
                 className={isActive ? 'text-black' : 'text-gray-400'}
               />
-              <span className={clsx(
-                "text-[9px] font-medium tracking-wide",
-                isActive ? "font-bold text-black" : "text-gray-400"
-              )}
+
+              <span
+                className={clsx(
+                  'text-[9px] font-medium tracking-wide',
+                  isActive ? 'font-bold text-black' : 'text-gray-400'
+                )}
               >
                 {item.label}
               </span>
             </Link>
-          );
+          )
         })}
       </div>
     </div>
-  );
-}
-=== ./components/layout/TripSwitcher.tsx ===
+  )
+}=== ./components/layout/TripSwitcher.tsx ===
 "use client";
 import { useTripStore } from "@/store/useTripStore";
 import { ChevronDown, MapPin } from "lucide-react";
@@ -4102,69 +4305,84 @@ export default function TripSwitcher() {
     </div>
   );
 }=== ./components/layout/Sidebar.tsx ===
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import clsx from "clsx";
-import { Home, Ticket, CalendarRange, Wallet, ClipboardList, Briefcase, Users } from "lucide-react";
+'use client'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { clsx } from 'clsx'
 
+// ── OFFLINE 已移除，其餘順序不變 ──
 const MENU_ITEMS = [
-  { label: "HOME", subLabel: "首頁", href: "/" },
-  { label: "BOOKINGS", subLabel: "預訂憑證", href: "/bookings" },
-  { label: "PLANNER", subLabel: "行程規劃", href: "/planner" },
-  { label: "BUDGET", subLabel: "預算分帳", href: "/budget" },
-  { label: "PLANNING", subLabel: "行前準備", href: "/planning" },
-  { label: "TOOLBOX", subLabel: "旅行工具", href: "/toolbox" },
-  { label: "MEMBERS", subLabel: "成員管理", href: "/members" },
-  { label: "OFFLINE", subLabel: "離線版下載", href: "/offline" },
-];
+  { label: 'HOME',     subLabel: '首頁',  href: '/'        }, // ← 保留你原本日文 subLabel
+  { label: 'BOOKINGS', subLabel: '預訂頁面',  href: '/bookings' }, // ← 保留你原本日文 subLabel
+  { label: 'PLANNER',  subLabel: '行程規劃',  href: '/planner'  }, // ← 保留你原本日文 subLabel
+  { label: 'BUDGET',   subLabel: '預算分帳',  href: '/budget'   }, // ← 保留你原本日文 subLabel
+  { label: 'PLANNING', subLabel: '行前準備',  href: '/planning' }, // ← 保留你原本日文 subLabel
+  { label: 'TOOLBOX',  subLabel: '旅行工具',  href: '/toolbox'  }, // ← 保留你原本日文 subLabel
+  { label: 'MEMBERS',  subLabel: '成員管理',  href: '/members'  }, // ← 保留你原本日文 subLabel
+  // OFFLINE 已刪除 ✕
+]
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname()
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col py-12 px-8 z-50 hidden md:flex">
-      
+      {/* Logo */}
       <div className="mb-10">
-        <h1 className="text-4xl font-black tracking-tighter text-[#1a1a1a] uppercase leading-none" style={{ fontFamily: 'var(--font-inter)' }}>
-          VM&apos;s<br/>Build
+        <h1
+          className="text-4xl font-black tracking-tighter text-[#1a1a1a] uppercase leading-none"
+          style={{ fontFamily: 'var(--font-inter)' }}
+        >
+          VMap&apos;s<br />Build
         </h1>
-        <div className="h-[2px] w-10 bg-black my-5"></div>
-        <p className="text-[10px] text-gray-500 tracking-[0.25em] uppercase font-medium">旅行手帳</p>
       </div>
 
+      <div className="h-[2px] w-10 bg-black my-5" />
+      <p className="text-[10px] text-gray-500 tracking-[0.25em] uppercase font-medium" />
+
+      {/* Nav Links */}
       <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar py-2">
-        {MENU_ITEMS.map((item) => {
-          const isActive = pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href;
+        {MENU_ITEMS.map(item => {
+          const isActive =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname.startsWith(item.href)
+
           return (
             <Link href={item.href} key={item.href} className="group block">
               <div className="flex items-center gap-3">
                 <div className="flex flex-col">
-                  <span className={clsx(
-                    "text-xs tracking-[0.15em] transition-all duration-300 uppercase",
-                    isActive ? "text-black font-bold" : "text-gray-400 group-hover:text-gray-600 font-medium"
-                  )}>
+                  <span
+                    className={clsx(
+                      'text-xs tracking-[0.15em] transition-all duration-300 uppercase',
+                      isActive
+                        ? 'text-black font-bold'
+                        : 'text-gray-400 group-hover:text-gray-600 font-medium'
+                    )}
+                  >
                     {item.label}
                   </span>
-                  {/* 🔥 加深中文顏色 */}
                   <span className="text-[9px] text-gray-500 group-hover:text-gray-600 transition-colors tracking-widest font-light scale-90 origin-left">
                     {item.subLabel}
                   </span>
                 </div>
               </div>
             </Link>
-          );
+          )
         })}
       </nav>
 
+      {/* Footer */}
       <div className="mt-auto pt-8 border-t border-gray-50">
         <div className="text-[9px] text-gray-400 tracking-widest uppercase leading-loose">
-          <p>© 2026 VM&apos;s Build</p>
+          <p>© 2026 VMap&apos;s Build</p>
           <p className="text-gray-500 font-medium">Osaka Edition</p>
         </div>
       </div>
     </aside>
-  );
-}=== ./components/dashboard/EditTripModal.tsx ===
+  )
+}
+=== ./components/dashboard/EditTripModal.tsx ===
 "use client";
 import { useState } from "react";
 import { useTripStore } from "@/store/useTripStore";
