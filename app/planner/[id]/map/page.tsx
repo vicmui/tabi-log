@@ -87,7 +87,6 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <ClientOnly>
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 shrink-0">

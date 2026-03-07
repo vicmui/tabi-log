@@ -9,7 +9,7 @@ import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
-import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog"；
 
 export default function BookingsPage() {
   const { addBooking, updateBooking, deleteBooking } = useTripStore();
@@ -25,7 +25,6 @@ export default function BookingsPage() {
   const handleDelete = (id: string) => { setDeletingBookingId(id); };
 
   return (
-    <ClientOnly>
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
       <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 bg-gray-50 min-h-screen pb-24">
@@ -81,7 +80,6 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking, onEdit: 
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100"><div className="text-[10px] text-gray-400 tracking-widest uppercase">{details.price ? `已付: ¥${details.price.toLocaleString()}` : "PREPAID"}</div><button onClick={handleViewFile} disabled={!details.fileUrl} className={`flex items-center gap-2 text-xs border border-gray-200 px-4 py-2 rounded transition-colors uppercase tracking-wider ${details.fileUrl ? 'hover:bg-black hover:text-white cursor-pointer' : 'opacity-50 cursor-not-allowed bg-gray-50'}`}>{details.fileUrl ? <><Download size={14} /> 查看憑證</> : <><X size={14}/> 無憑證</>}</button></div>
       </div>
     </div>
-    </ClientOnly>
   );
 }
 
