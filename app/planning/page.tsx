@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
+import { useActiveTrip } from "@/lib/useActiveTrip";
 import { useTripStore, Priority, PlanItem } from "@/store/useTripStore";
 import { CheckCircle2, Circle, Image as ImageIcon, Trash2, Upload, X, Edit, GripVertical } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
@@ -97,7 +98,8 @@ export default function PlanningPage() {
     }
   };
 
-  if (!trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
+  if (isLoading) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
+  if (!trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest">暫無旅程，請先新增旅程</div>;
   const tabNames: Record<string, string> = { Packing: "行李清單", Todo: "待辦事項", Shopping: "購物清單", Places: "景點清單" };
 
   const handleEdit = (item: PlanItem) => { setEditingItemId(item.id); setText(item.text); setPriority(item.priority); setLocation(item.location || ""); setEstimatedCost(item.estimatedCost ? item.estimatedCost.toString() : ""); setAssignee(item.assigneeId || ""); setImageUrl(item.imageUrl || ""); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };

@@ -50,16 +50,16 @@ export default function Home() {
         <div className="flex justify-between items-center mb-12 mt-4">
           <div>
             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">
-              My Voyages
+              我的旅程
             </h1>
             <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
           </div>
           <button
             onClick={() => setIsNewTripOpen(true)}
-            className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors active:scale-95 text-xs tracking-widest uppercase rounded"
+            className="bg-jp-charcoal text-white px-6 py-3 flex items-center gap-2 hover:bg-gray-800 transition-colors active:scale-95 text-xs tracking-widest uppercase"
           >
             <Plus size={16} />
-            New Trip
+            新增旅程
           </button>
         </div>
 

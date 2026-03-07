@@ -3,6 +3,7 @@ import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
 import { useTripStore, Booking, BookingType } from "@/store/useTripStore";
+import { useActiveTrip } from "@/lib/useActiveTrip";
 import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, CheckCircle2, Upload, ArrowRightLeft, Navigation } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
@@ -10,13 +11,14 @@ import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 export default function BookingsPage() {
-  const { trips, activeTripId, addBooking, updateBooking, deleteBooking } = useTripStore();
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+  const { addBooking, updateBooking, deleteBooking } = useTripStore();
+  const { trip, isLoading } = useActiveTrip();
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
 
-  if (!trip) return <div className="p-12 text-center text-gray-400 animate-pulse">載入中...</div>;
+  if (isLoading) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
+  if (!trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest">暫無旅程，請先新增旅程</div>;
 
   const handleEdit = (booking: Booking) => { setEditingBooking(booking); setIsModalOpen(true); };
   const handleDelete = (id: string) => { setDeletingBookingId(id); };

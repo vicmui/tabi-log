@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
 import { RefreshCw, ArrowRightLeft, Download, Upload, Save, AlertTriangle, Loader2, CheckCircle2, Wifi, WifiOff, HardDrive, Signal } from "lucide-react";
+import { useActiveTrip } from "@/lib/useActiveTrip";
 import { useTripStore } from "@/store/useTripStore";
 
 const POPULAR_CURRENCIES = ["JPY", "HKD", "USD", "TWD", "KRW", "SGD", "GBP", "EUR", "THB", "MYR", "AUD"];
 
 export default function ToolboxPage() {
-  const { trips, activeTripId, importData, updateTripRate } = useTripStore();
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+  const { importData, updateTripRate } = useTripStore();
+  const { trip, isLoading } = useActiveTrip();
 
   const [amount, setAmount] = useState<string>("");
   const [rate, setRate] = useState(0.052);

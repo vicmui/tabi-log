@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
 import { useTripStore, ExpenseCategory, Expense } from "@/store/useTripStore";
+import { useActiveTrip } from "@/lib/useActiveTrip";
 import { supabase } from "@/lib/supabase";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Utensils, Camera, Train, Bed, ShoppingBag, MapPin, ArrowRight, Settings2, Edit, Trash2, Upload, Paperclip, ArrowRightLeft } from "lucide-react";
@@ -16,8 +17,8 @@ const CAT_CONFIG: Record<ExpenseCategory, { label: string; color: string; icon: 
 };
 
 export default function BudgetPage() {
-  const { trips, activeTripId, addExpense, updateExpense, deleteExpense, updateBudgetTotal } = useTripStore();
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+  const { addExpense, updateExpense, deleteExpense, updateBudgetTotal } = useTripStore();
+  const { trip, isLoading } = useActiveTrip();
 
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [itemName, setItemName] = useState("");
@@ -37,7 +38,8 @@ export default function BudgetPage() {
   const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  if (!trip) return <div className="p-10 text-center animate-pulse">Loading...</div>;
+  if (isLoading) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
+  if (!trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest">暫無旅程，請先新增旅程</div>;
 
   const rate = trip.exchangeRate || 0.052;
   const totalSpent = trip.expenses.reduce((acc, cur) => acc + cur.amount, 0);

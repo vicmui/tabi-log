@@ -16,7 +16,11 @@ export interface DailyItinerary { day: number; date: string; weather?: string; a
 export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; placesToVisit?: PlaceToVisit[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
 
 interface TripState {
-  trips: Trip[]; activeTripId: string | null; isSyncing: boolean;
+  trips: Trip[];
+  activeTripId: string | null;
+  isSyncing: boolean;
+  _hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
   setActiveTrip: (id: string) => void;
   loadTripsFromCloud: () => Promise<void>;
   saveTripToCloud: (trip: Trip) => Promise<void>;
@@ -74,29 +78,44 @@ const sortByTime = (activities: Activity[]) =>
 export const useTripStore = create<TripState>()(
   persist(
     (set, get) => ({
-      trips: [INITIAL_TRIP], activeTripId: null, isSyncing: false,
+      trips: [INITIAL_TRIP],
+      activeTripId: null,
+      isSyncing: false,
+      _hasHydrated: false,
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
       setActiveTrip: (id) => set({ activeTripId: id }),
+
       loadTripsFromCloud: async () => {
         set({ isSyncing: true });
-        const { data, error } = await supabase.from('trips').select('*');
-        if (!error && data) {
-          const loadedTrips = data.map(row => {
-            const trip = row.content as Trip;
-            if (!trip.placesToVisit) trip.placesToVisit = [];
-            trip.dailyItinerary.forEach(day => {
-              if (day.activities) { day.activities = day.activities.filter(a => !!a && !!a.id); }
+        try {
+          const { data, error } = await supabase.from('trips').select('*');
+          if (!error && data && data.length > 0) {
+            const loadedTrips = data.map(row => {
+              const trip = row.content as Trip;
+              if (!trip.placesToVisit) trip.placesToVisit = [];
+              trip.dailyItinerary.forEach(day => {
+                if (day.activities) { day.activities = day.activities.filter(a => !!a && !!a.id); }
+              });
+              return trip;
             });
-            return trip;
-          });
-          set({ trips: loadedTrips });
-          if (loadedTrips.length > 0 && !get().activeTripId) set({ activeTripId: loadedTrips[0].id });
+            set({ trips: loadedTrips });
+            // Always validate activeTripId against the loaded trips
+            const currentId = get().activeTripId;
+            const isValid = loadedTrips.some(t => t.id === currentId);
+            if (!isValid) {
+              set({ activeTripId: loadedTrips[0].id });
+            }
+          }
+        } catch (e) {
+          // silently fail - keep local data
         }
         set({ isSyncing: false });
       },
-      saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); set({ isSyncing: false }); },
+
+      saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); try { await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); } catch(e){} set({ isSyncing: false }); },
       importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if (newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
       addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], placesToVisit: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
-      deleteTrip: async (tripId) => { set({ isSyncing: true }); await supabase.from('trips').delete().eq('id', tripId); set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
+      deleteTrip: async (tripId) => { set({ isSyncing: true }); try { await supabase.from('trips').delete().eq('id', tripId); } catch(e){} set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
       updateTrip: (tripId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) }), tripId),
       updateTripSettings: (tripId, title, newStartDate, coverImage) => updateStateAndSave(set, get, (state) => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T')[0] }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T')[0] }; }) }), tripId),
       updateBudgetTotal: (tripId, total) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, budgetTotal: total } : t) }), tripId),
@@ -125,6 +144,13 @@ export const useTripStore = create<TripState>()(
       deletePlaceToVisit: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; return { ...trip, placesToVisit: (trip.placesToVisit || []).filter(p => p.id !== placeId) }; }) }), tripId),
       reorderPlacesToVisit: (tripId, newPlaces) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => trip.id !== tripId ? trip : { ...trip, placesToVisit: newPlaces }) }), tripId),
     }),
-    { name: 'vm-build-v18-dnd-planning', storage: createJSONStorage(() => localStorage) }
+    {
+      name: 'vm-build-v18-dnd-planning',
+      storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        // Mark hydration complete after localStorage is read
+        state?.setHasHydrated(true);
+      },
+    }
   )
 );

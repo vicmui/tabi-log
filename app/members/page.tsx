@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
+import { useActiveTrip } from "@/lib/useActiveTrip";
 import { useTripStore, Member } from "@/store/useTripStore";
 import { User, Plus, Trash2, Camera, Edit2, X, Check, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
@@ -10,8 +11,8 @@ import clsx from "clsx";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 export default function MembersPage() {
-  const { trips, activeTripId, updateTrip, isSyncing } = useTripStore();
-  const trip = activeTripId ? trips.find(t => t.id === activeTripId) : trips[0];
+  const { updateTrip, isSyncing } = useTripStore();
+  const { trip, isLoading } = useActiveTrip();
   
   const [isMounted, setIsMounted] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);

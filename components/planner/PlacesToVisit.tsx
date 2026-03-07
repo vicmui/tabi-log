@@ -163,23 +163,25 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
 
       {/* Add form — Google Places search */}
       <div className="border border-dashed border-gray-200 bg-gray-50 overflow-hidden">
-        <div className="p-4 flex gap-2 items-center">
-          <div className="relative flex-1">
+        <div className="p-4 flex flex-col gap-3">
+          <div className="relative w-full">
             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
             <input
               ref={inputRef}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               placeholder="搜尋景點、餐廳、商場..."
-              className="w-full border-b border-gray-300 py-1.5 pl-6 text-sm bg-transparent focus:outline-none focus:border-black"
+              className="w-full border-b border-gray-300 py-2 pl-6 text-sm bg-transparent focus:outline-none focus:border-black"
             />
           </div>
-          <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="border-b border-gray-300 py-1.5 text-xs bg-transparent focus:outline-none focus:border-black pr-2 flex-shrink-0">
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <button onClick={handleAdd} disabled={!newName.trim() && !inputRef.current?.value?.trim()} className="flex items-center gap-1 bg-black text-white px-4 py-2 text-[10px] font-bold tracking-widest uppercase hover:opacity-80 disabled:opacity-30 transition-opacity flex-shrink-0">
-            <Plus size={12} /> 新增
-          </button>
+          <div className="flex gap-2 items-center">
+            <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="border border-gray-200 py-2 px-2 text-xs bg-white focus:outline-none focus:border-black flex-1">
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button onClick={handleAdd} disabled={!newName.trim() && !inputRef.current?.value?.trim()} className="flex items-center gap-1 bg-black text-white px-5 py-2 text-[10px] font-bold tracking-widest uppercase hover:opacity-80 disabled:opacity-30 transition-opacity flex-shrink-0">
+              <Plus size={12} /> 新增
+            </button>
+          </div>
         </div>
         {newAddress && (
           <div className="px-4 pb-3 pt-0 flex items-center gap-1.5 border-t border-dashed border-gray-200 pt-2">
@@ -203,7 +205,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                 {filtered.map((place, index) => (
                   <Draggable key={place.id} draggableId={place.id} index={index}>
                     {(provided, snapshot) => (
-                      <div ref={provided.innerRef} {...provided.draggableProps} className={clsx("flex items-center gap-3 p-4 bg-white border transition-all", snapshot.isDragging ? "border-black shadow-lg" : "border-gray-100 hover:border-gray-200", place.isVisited && "opacity-50")}>
+                      <div ref={provided.innerRef} {...provided.draggableProps} className={clsx("flex items-center gap-2 p-3 bg-white border transition-all", snapshot.isDragging ? "border-black shadow-lg" : "border-gray-100 hover:border-gray-200", place.isVisited && "opacity-50")}>
                         <div {...provided.dragHandleProps} className="text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0">
                           <GripVertical size={16} />
                         </div>
