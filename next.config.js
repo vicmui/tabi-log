@@ -21,7 +21,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /^https:\/\/[^/]+\/(bookings|planner|budget|planning|toolbox|members|share)(\/.*)?$/,
         handler: "StaleWhileRevalidate",
         options: {
-          cacheName: "app-pages",
+          cacheName: "app-pages-v2",
           expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -31,7 +31,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /\/_next\/static\/.*/i,
         handler: "CacheFirst",
         options: {
-          cacheName: "next-static",
+          cacheName: "next-static-v2",
           expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 365 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -41,7 +41,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /\/_next\/image\?.*/i,
         handler: "StaleWhileRevalidate",
         options: {
-          cacheName: "next-images",
+          cacheName: "next-images-v2",
           expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -51,7 +51,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
         handler: "CacheFirst",
         options: {
-          cacheName: "supabase-storage",
+          cacheName: "supabase-storage-v2",
           expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -61,7 +61,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /^https:\/\/maps\.(googleapis|gstatic)\.com\/.*/i,
         handler: "CacheFirst",
         options: {
-          cacheName: "google-maps",
+          cacheName: "google-maps-v2",
           expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -71,7 +71,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /^https:\/\/api\.dicebear\.com\/.*/i,
         handler: "CacheFirst",
         options: {
-          cacheName: "avatars",
+          cacheName: "avatars-v2",
           expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -81,7 +81,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
         handler: "StaleWhileRevalidate",
         options: {
-          cacheName: "images",
+          cacheName: "images-v2",
           expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
           cacheableResponse: { statuses: [0, 200] },
         },
@@ -91,7 +91,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
         handler: "CacheFirst",
         options: {
-          cacheName: "fonts",
+          cacheName: "fonts-v2",
           expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
           cacheableResponse: { statuses: [0, 200] },
         },
