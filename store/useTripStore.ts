@@ -46,6 +46,10 @@ interface TripState {
   deleteDayFromTrip: (tripId: string, dayIndex: number) => void;
   updateDayCoverImage: (tripId: string, dayIndex: number, imageUrl: string) => void;
   updateDayLocation: (tripId: string, dayIndex: number, location: string) => void;
+  addPlaceToVisit: (tripId: string, place: Omit<PlaceToVisit, 'id'>) => void;
+  togglePlaceVisited: (tripId: string, placeId: string) => void;
+  deletePlaceToVisit: (tripId: string, placeId: string) => void;
+  reorderPlacesToVisit: (tripId: string, newPlaces: PlaceToVisit[]) => void;
 }
 
 const DEFAULT_PACKING_LIST = ["✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包", "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡", "🌂 雨具", "🔌 轉接頭"];
@@ -87,6 +91,10 @@ export const useTripStore = create<TripState>()(
       deleteDayFromTrip: (tripId, dayIndex) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = trip.dailyItinerary.filter((_, idx) => idx !== dayIndex).map((item, idx) => ({ ...item, day: idx + 1 })); return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       updateDayCoverImage: (tripId, dayIndex, imageUrl) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].coverImage = imageUrl; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
       updateDayLocation: (tripId, dayIndex, location) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const newItinerary = [...trip.dailyItinerary]; if (newItinerary[dayIndex]) { newItinerary[dayIndex].customLocation = location; } return { ...trip, dailyItinerary: newItinerary }; }) }), tripId),
+    addPlaceToVisit: (tripId, place) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const places = [...(trip.placesToVisit || []), { ...place, id: uuidv4() }]; return { ...trip, placesToVisit: places }; }) }), tripId),
+    togglePlaceVisited: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; const places = (trip.placesToVisit || []).map(p => p.id === placeId ? { ...p, isVisited: !p.isVisited } : p); return { ...trip, placesToVisit: places }; }) }), tripId),
+    deletePlaceToVisit: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; return { ...trip, placesToVisit: (trip.placesToVisit || []).filter(p => p.id !== placeId) }; }) }), tripId),
+    reorderPlacesToVisit: (tripId, newPlaces) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => trip.id !== tripId ? trip : { ...trip, placesToVisit: newPlaces }) }), tripId),
     }),
     { name: 'vm-build-v18-dnd-planning', storage: createJSONStorage(() => localStorage) }
   )
