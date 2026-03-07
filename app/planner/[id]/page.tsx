@@ -19,10 +19,9 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 
 export default function PlannerPage() {
   const params = useParams();
-  const { trips, addActivity, addDayToTrip, deleteDayFromTrip, updateTripSettings, updateDayCoverImage, updateDayLocation } = useTripStore();
+  const { trips, _hasHydrated, addActivity, addDayToTrip, deleteDayFromTrip, updateTripSettings, updateDayCoverImage, updateDayLocation } = useTripStore();
   
   const [activeDay, setActiveDay] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -31,7 +30,6 @@ export default function PlannerPage() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [weatherMap, setWeatherMap] = useState<Record<string, { temp: string; code: number }>>({});
 
-  useEffect(() => { setIsMounted(true); }, []);
   const trip = trips.find((t) => t.id === params.id);
   
   useEffect(() => { if (trip) { setEditTitle(trip.title); setEditStartDate(trip.startDate); } }, [trip]);
@@ -72,7 +70,8 @@ export default function PlannerPage() {
     fetchWeather();
   }, [trip]);
 
-  if (!isMounted || !trip) return <div className="p-10 text-center animate-pulse text-gray-400">載入中...</div>;
+  if (!_hasHydrated) return <div className="p-10 text-center animate-pulse text-gray-400 text-xs tracking-widest">載入中...</div>;
+  if (!trip) return <div className="p-10 text-center text-gray-400 text-xs tracking-widest">找不到旅程</div>;
 
   const currentDailyItinerary = trip.dailyItinerary[activeDay];
   const displayLocation = currentDailyItinerary?.customLocation || (currentDailyItinerary?.activities && currentDailyItinerary.activities.length > 0 ? currentDailyItinerary.activities[0].location.split(' ')[0] : "自由探索");

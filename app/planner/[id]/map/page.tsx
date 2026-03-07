@@ -114,7 +114,17 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                 key={i}
                 position={{ lat: m.lat, lng: m.lng }}
                 title={`Day ${m.label}: ${m.title}`}
-                label={{ text: m.label, color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                label={{ text: m.label, color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
+                icon={{
+                  path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+                  fillColor: m.color,
+                  fillOpacity: 1,
+                  strokeColor: '#fff',
+                  strokeWeight: 1.5,
+                  scale: 1.5,
+                  anchor: { x: 12, y: 22 } as any,
+                  labelOrigin: { x: 12, y: 9 } as any,
+                }}
               />
             ))}
           </GoogleMap>
