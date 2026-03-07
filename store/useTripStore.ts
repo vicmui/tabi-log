@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
-export interface Member { id: string; name: string; avatar: string; }
+export interface Member { id: string; name: string; avatar: string; role?: string; }
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking { id: string; type: BookingType; title: string; date: string; details: { price?: number; address?: string; fileUrl?: string; note?: string; airline?: string; flightNum?: string; seat?: string; gate?: string; origin?: string; destination?: string; departTime?: string; arriveTime?: string; checkIn?: string; checkOut?: string; pickupLocation?: string; dropoffLocation?: string; }; }
 export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightseeing' | 'Shopping' | 'Other';
