@@ -6,10 +6,11 @@ import {
   useJsApiLoader,
   MarkerF,
   PolylineF,
+  InfoWindowF,
 } from '@react-google-maps/api'
 import { useTripStore } from '@/store/useTripStore'
 import Link from 'next/link'
-import { ArrowLeft, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowLeft, SlidersHorizontal, X, MapPin, Clock } from 'lucide-react'
 import { Libraries } from '@react-google-maps/api'
 
 const LIBRARIES: Libraries = ['places', 'marker', 'geometry', 'routes']
@@ -52,13 +53,6 @@ const DAY_COLORS = [
   '#9b59b6', '#1abc9c', '#e67e22', '#e91e63',
 ]
 
-// ── 箭頭 icon：沿 Polyline 方向的箭咀 ─────────────────────────────────────
-const ARROW_SYMBOL = {
-  path: 'M 0,-1 0,1',  // google.maps.SymbolPath.FORWARD_OPEN_ARROW fallback string
-  strokeOpacity: 1,
-  scale: 3,
-}
-
 const mapOptions: google.maps.MapOptions = {
   disableDefaultUI: false,
   zoomControl: true,
@@ -78,6 +72,19 @@ const mapOptions: google.maps.MapOptions = {
   ],
 }
 
+// ── Types ────────────────────────────────────────────────────────────────────
+interface SelectedMarker {
+  lat: number
+  lng: number
+  title: string
+  seq: number
+  day: number
+  date: string
+  color: string
+  time?: string
+  note?: string
+}
+
 export default function FullMapPage({ params }: { params: { id: string } }) {
   const [isMounted, setIsMounted] = useState(false)
   useEffect(() => setIsMounted(true), [])
@@ -91,11 +98,14 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
   const trips = useTripStore(s => s.trips)
   const trip  = trips.find(t => t.id === params.id)
 
-  // ── Filter state：selectedDays = Set of dayIdx，空 = 顯示全部 ──────────────
+  // ── Filter state ──────────────────────────────────────────────────────────
   const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set())
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
-  // ── 建立 markersByDay ──────────────────────────────────────────────────────
+  // ── Selected pin for InfoWindow ───────────────────────────────────────────
+  const [selectedMarker, setSelectedMarker] = useState<SelectedMarker | null>(null)
+
+  // ── markersByDay ──────────────────────────────────────────────────────────
   const markersByDay = useMemo(() => {
     if (!trip) return []
     return trip.dailyItinerary.map((day, dayIdx) => ({
@@ -108,14 +118,15 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
         .map((act, actIdx) => ({
           lat: act.lat!,
           lng: act.lng!,
-          seq: actIdx + 1,         // 1-based 次序（每日 reset）
+          seq: actIdx + 1,
           title: act.location,
+          time: act.time,
+          note: act.note,
           actIdx,
         })),
     }))
   }, [trip])
 
-  // ── 根據 filter 決定哪些 day 要顯示 ─────────────────────────────────────
   const visibleDays = useMemo(
     () => selectedDays.size === 0
       ? markersByDay
@@ -123,16 +134,12 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
     [markersByDay, selectedDays]
   )
 
-  const allMarkers = useMemo(
-    () => visibleDays.flatMap(d => d.points.map(p => ({ ...p, color: d.color }))),
-    [visibleDays]
-  )
-
   const center = useMemo(() => {
     if (!trip) return CITY_COORDS.taipei
-    if (allMarkers.length > 0) return { lat: allMarkers[0].lat, lng: allMarkers[0].lng }
+    const allVisible = visibleDays.flatMap(d => d.points)
+    if (allVisible.length > 0) return { lat: allVisible[0].lat, lng: allVisible[0].lng }
     return getTripCenter(trip.title, trip.destLat, trip.destLng)
-  }, [trip, allMarkers])
+  }, [trip, visibleDays])
 
   const toggleDay = (dayIdx: number) => {
     setSelectedDays(prev => {
@@ -170,7 +177,6 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
           {trip.title} — 全程地圖
         </h1>
 
-        {/* Filter Button */}
         <button
           onClick={() => setIsFilterOpen(v => !v)}
           className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 border rounded-full transition-all ${
@@ -187,7 +193,6 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
       {/* ── Filter Panel ── */}
       {isFilterOpen && (
         <div className="bg-white border-b border-gray-100 px-6 py-4 flex flex-wrap gap-2 items-center shrink-0 z-10">
-          {/* All */}
           <button
             onClick={selectAll}
             className={`px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-full border transition-all ${
@@ -199,7 +204,6 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
             全部
           </button>
 
-          {/* Per-day toggle */}
           {daysWithPins.map(d => (
             <button
               key={d.dayIdx}
@@ -233,10 +237,11 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={center}
-            zoom={allMarkers.length > 0 ? 13 : 12}
+            zoom={visibleDays.flatMap(d => d.points).length > 0 ? 13 : 12}
             options={mapOptions}
+            onClick={() => setSelectedMarker(null)}
           >
-            {/* ── Markers：每個顯示該日次序號 ── */}
+            {/* ── Markers ── */}
             {visibleDays.map(dayGroup =>
               dayGroup.points.map((m, i) => (
                 <MarkerF
@@ -244,7 +249,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                   position={{ lat: m.lat, lng: m.lng }}
                   title={`Day ${dayGroup.day} #${m.seq} — ${m.title}`}
                   label={{
-                    text: String(m.seq),   // ← 顯示每日次序 1,2,3...
+                    text: String(m.seq),
                     color: 'white',
                     fontWeight: 'bold',
                     fontSize: '12px',
@@ -257,11 +262,73 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                     strokeWeight: 2.5,
                     scale: 15,
                   }}
+                  onClick={() => setSelectedMarker({
+                    lat: m.lat,
+                    lng: m.lng,
+                    title: m.title,
+                    seq: m.seq,
+                    day: dayGroup.day,
+                    date: dayGroup.date,
+                    color: dayGroup.color,
+                    time: m.time,
+                    note: m.note,
+                  })}
                 />
               ))
             )}
 
-            {/* ── Polylines with arrows：連住每日各點，箭咀指示方向 ── */}
+            {/* ── InfoWindow on pin click ── */}
+            {selectedMarker && (
+              <InfoWindowF
+                position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+                onCloseClick={() => setSelectedMarker(null)}
+                options={{ pixelOffset: new google.maps.Size(0, -30) }}
+              >
+                <div style={{ minWidth: 160, maxWidth: 220, fontFamily: 'sans-serif' }}>
+                  {/* Coloured day badge */}
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    backgroundColor: selectedMarker.color,
+                    color: '#fff', borderRadius: 99,
+                    padding: '2px 10px', fontSize: 10, fontWeight: 700,
+                    letterSpacing: '0.1em', marginBottom: 6,
+                  }}>
+                    DAY {selectedMarker.day} · {selectedMarker.date}
+                  </div>
+
+                  {/* Stop number + name */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
+                    <span style={{
+                      flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
+                      backgroundColor: selectedMarker.color, color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700,
+                    }}>
+                      {selectedMarker.seq}
+                    </span>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 13, lineHeight: 1.3, color: '#111' }}>
+                      {selectedMarker.title}
+                    </p>
+                  </div>
+
+                  {/* Time (if available) */}
+                  {selectedMarker.time && (
+                    <p style={{ margin: '4px 0 0 26px', fontSize: 11, color: '#888' }}>
+                      🕐 {selectedMarker.time}
+                    </p>
+                  )}
+
+                  {/* Note (if available) */}
+                  {selectedMarker.note && (
+                    <p style={{ margin: '4px 0 0 26px', fontSize: 11, color: '#666', fontStyle: 'italic' }}>
+                      {selectedMarker.note}
+                    </p>
+                  )}
+                </div>
+              </InfoWindowF>
+            )}
+
+            {/* ── Polylines：solid line + subtle small arrow every 120px ── */}
             {visibleDays.map(dayGroup =>
               dayGroup.points.length >= 2 ? (
                 <PolylineF
@@ -269,33 +336,21 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                   path={dayGroup.points.map(p => ({ lat: p.lat, lng: p.lng }))}
                   options={{
                     strokeColor: dayGroup.color,
-                    strokeOpacity: 0,           // 主線透明，靠 icons 顯示
-                    strokeWeight: 3,
+                    strokeOpacity: 0.55,
+                    strokeWeight: 2,
                     geodesic: true,
                     icons: [
                       {
-                        // 實線部分
+                        // Small open arrowhead pointing forward, low opacity
                         icon: {
-                          path: 'M 0,0 1,0',
-                          strokeOpacity: 0.8,
-                          strokeWeight: 3,
-                          scale: 8,
-                        },
-                        offset: '0',
-                        repeat: '12px',
-                      },
-                      {
-                        // 箭咀
-                        icon: {
-                          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                          fillColor: dayGroup.color,
-                          fillOpacity: 1,
-                          strokeColor: '#fff',
-                          strokeWeight: 1,
-                          scale: 3.5,
+                          path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
+                          strokeColor: dayGroup.color,
+                          strokeOpacity: 0.7,
+                          strokeWeight: 1.5,
+                          scale: 2.5,
                         },
                         offset: '100%',
-                        repeat: '80px',
+                        repeat: '120px',
                       },
                     ],
                   }}
@@ -306,7 +361,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
         )}
       </div>
 
-      {/* ── Legend (底部) ── */}
+      {/* ── Legend ── */}
       {daysWithPins.length > 0 && (
         <div className="flex gap-4 px-6 py-3 border-t border-gray-100 overflow-x-auto no-scrollbar bg-white shrink-0">
           {daysWithPins.map(d => (

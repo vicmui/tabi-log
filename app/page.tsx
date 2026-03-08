@@ -1,4 +1,5 @@
 'use client'
+
 import Sidebar from '@/components/layout/Sidebar'
 import EditTripModal from '@/components/dashboard/EditTripModal'
 import { NewTripModal, ConfirmDialog } from '@/components/ui/Dialog'
@@ -21,7 +22,6 @@ export default function Home() {
   useEffect(() => { setIsMounted(true) }, [])
   if (!isMounted) return <div className="p-10 animate-pulse text-center text-gray-400">Loading...</div>
 
-  // ── Updated: accept optional coverImage ──
   const handleAddTrip = (data: {
     title: string
     startDate: string
@@ -70,6 +70,12 @@ export default function Home() {
             const visitedActs = trip.dailyItinerary.reduce((acc, day) => acc + (day.activities?.filter(a => a?.isVisited)?.length ?? 0), 0)
             const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0
 
+            // ── Badge label ──────────────────────────────────────────────────
+            const badgeLabel =
+              daysLeft > 0 ? `尚餘 ${daysLeft} 天` :
+              daysLeft === 0 ? '今天出發！' :
+              '' // trip already started / ended, hide badge
+
             return (
               <div
                 key={trip.id}
@@ -83,9 +89,12 @@ export default function Home() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     alt={trip.title}
                   />
-                  <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full z-20">
-                    {daysLeft > 0 ? `${daysLeft}d` : ''}
-                  </div>
+                  {/* Only render badge when there's something to show */}
+                  {badgeLabel && (
+                    <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full z-20 whitespace-nowrap">
+                      {badgeLabel}
+                    </div>
+                  )}
                   <div className="absolute top-4 right-4 flex gap-2 z-30">
                     <button
                       onClick={e => { e.stopPropagation(); e.preventDefault(); setEditingTrip(trip) }}
