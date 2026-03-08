@@ -1,6 +1,6 @@
 {
   "name": "VM's Build | 旅行手帳",
-  "short_name": "VM手帳",
+  "short_name": "Tabi Log by VM",
   "description": "專業級極簡旅行規劃 App",
   "start_url": "/",
   "display": "standalone",
