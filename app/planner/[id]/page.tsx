@@ -278,6 +278,7 @@ export default function PlannerPage() {
                   <TripMap
                     key={`${trip.id}-${activeDay}`}
                     activities={currentDailyItinerary?.activities || []}
+                    fallbackCenter={getTripCoords(trip.title, trip.destLat, trip.destLng)}
                   />
                 </div>
               )}

@@ -2,12 +2,10 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleMap, MarkerF, PolylineF, InfoWindowF } from '@react-google-maps/api';
 import { Activity } from '@/store/useTripStore';
-import { Navigation, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 const containerStyle = { width: '100%', height: '100%' };
-const DEFAULT_CENTER = { lat: 34.6937, lng: 135.5023 };
 
-// ── Category label map ────────────────────────────────────────────────────────
 const TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   Food:          { label: '餐飲',   emoji: '🍽️' },
   Transport:     { label: '交通',   emoji: '🚃' },
@@ -17,11 +15,18 @@ const TYPE_LABELS: Record<string, { label: string; emoji: string }> = {
   Other:         { label: '其他',   emoji: '📍' },
 }
 
-export default function TripMap({ activities }: { activities: Activity[] }) {
+interface TripMapProps {
+  activities: Activity[]
+  fallbackCenter?: { lat: number; lng: number }
+}
+
+export default function TripMap({
+  activities,
+  fallbackCenter = { lat: 34.6937, lng: 135.5023 },
+}: TripMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
 
-  // ── Data cleaning ─────────────────────────────────────────────────────────
   const markers = useMemo(() => {
     if (!activities) return [];
     return activities
@@ -32,8 +37,8 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
         lng:     parseFloat(String(act.lng)),
         seq:     index + 1,
         title:   act.location,
-        time:    (act as any).time   ?? '',
-        note:    (act as any).note   ?? '',
+        time:    (act as any).time    ?? '',
+        note:    (act as any).note    ?? '',
         address: (act as any).address ?? '',
         type:    act.type ?? 'Other',
       }));
@@ -41,12 +46,11 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
 
   const path = useMemo(() => markers.map(m => ({ lat: m.lat, lng: m.lng })), [markers]);
 
-  // ── Auto-fit bounds ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     if (markers.length === 0) {
-      mapRef.current.setCenter(DEFAULT_CENTER);
-      mapRef.current.setZoom(12);
+      mapRef.current.setCenter(fallbackCenter);
+      mapRef.current.setZoom(13);
       return;
     }
     if (markers.length === 1) {
@@ -61,14 +65,12 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
       if (mapRef.current && mapRef.current.getZoom()! > 16) mapRef.current.setZoom(16);
       google.maps.event.removeListener(listener);
     });
-  }, [markers]);
+  }, [markers, fallbackCenter]);
 
   const onLoad = useCallback((map: google.maps.Map) => { mapRef.current = map; }, []);
 
   return (
     <div className="w-full h-full overflow-hidden shadow-sm border border-gray-200 bg-gray-50 relative">
-
-      {/* Located badge */}
       <div className="absolute top-3 left-3 z-10 bg-white/80 backdrop-blur-sm text-neutral-700 px-3 py-1.5 rounded-full shadow-sm text-[10px] font-semibold flex items-center gap-1.5 tracking-widest uppercase border border-white/60">
         <MapPin size={10} className={markers.length > 0 ? 'text-black' : 'text-gray-400'} />
         {markers.length > 0 ? `LOCATED: ${markers.length} PLACES` : 'NO COORDINATES'}
@@ -76,18 +78,12 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
 
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={DEFAULT_CENTER}
-        zoom={12}
-        options={{
-          disableDefaultUI: true,
-          zoomControl: true,
-          clickableIcons: true,
-          maxZoom: 18,
-        }}
+        center={fallbackCenter}
+        zoom={13}
+        options={{ disableDefaultUI: true, zoomControl: true, clickableIcons: true, maxZoom: 18 }}
         onLoad={onLoad}
         onClick={() => setSelectedMarker(null)}
       >
-        {/* Connecting polyline */}
         {markers.length > 1 && (
           <PolylineF
             path={path}
@@ -110,17 +106,11 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
           />
         )}
 
-        {/* Markers */}
         {markers.map(marker => (
           <MarkerF
             key={marker.id}
             position={{ lat: marker.lat, lng: marker.lng }}
-            label={{
-              text: String(marker.seq),
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '11px',
-            }}
+            label={{ text: String(marker.seq), color: 'white', fontWeight: 'bold', fontSize: '11px' }}
             icon={{
               path: google.maps.SymbolPath.CIRCLE,
               fillColor: '#111111',
@@ -133,7 +123,6 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
           />
         ))}
 
-        {/* ── Rich InfoWindow ── */}
         {selectedMarker && (
           <InfoWindowF
             position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
@@ -141,8 +130,6 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
             options={{ pixelOffset: new google.maps.Size(0, -28) }}
           >
             <div style={{ minWidth: 180, maxWidth: 240, fontFamily: 'sans-serif', padding: '2px 2px 4px' }}>
-
-              {/* Seq badge + type */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                 <span style={{
                   width: 22, height: 22, borderRadius: '50%',
@@ -166,33 +153,22 @@ export default function TripMap({ activities }: { activities: Activity[] }) {
                 })()}
               </div>
 
-              {/* Place name */}
-              <p style={{ margin: '0 0 4px 0', fontWeight: 700, fontSize: 13, color: '#111', lineHeight: 1.3 }}>
+              <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 13, color: '#111', lineHeight: 1.3 }}>
                 {selectedMarker.title}
               </p>
 
-              {/* Time */}
               {selectedMarker.time && (
-                <p style={{ margin: '4px 0', fontSize: 11, color: '#888' }}>
-                  🕐 {selectedMarker.time}
-                </p>
+                <p style={{ margin: '4px 0', fontSize: 11, color: '#888' }}>🕐 {selectedMarker.time}</p>
               )}
-
-              {/* Address */}
               {selectedMarker.address && (
-                <p style={{ margin: '4px 0', fontSize: 10, color: '#aaa', lineHeight: 1.4 }}>
-                  📍 {selectedMarker.address}
-                </p>
+                <p style={{ margin: '4px 0', fontSize: 10, color: '#aaa', lineHeight: 1.4 }}>📍 {selectedMarker.address}</p>
               )}
-
-              {/* Note */}
               {selectedMarker.note && (
                 <p style={{ margin: '4px 0 6px', fontSize: 11, color: '#666', fontStyle: 'italic', lineHeight: 1.4 }}>
                   {selectedMarker.note}
                 </p>
               )}
 
-              {/* Navigation button */}
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}&travelmode=transit`}
                 target="_blank"

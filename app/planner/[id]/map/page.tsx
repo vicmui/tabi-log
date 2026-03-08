@@ -10,7 +10,7 @@ import {
 } from '@react-google-maps/api'
 import { useTripStore } from '@/store/useTripStore'
 import Link from 'next/link'
-import { ArrowLeft, SlidersHorizontal, X, MapPin, Clock } from 'lucide-react'
+import { ArrowLeft, SlidersHorizontal, X } from 'lucide-react'
 import { Libraries } from '@react-google-maps/api'
 
 const LIBRARIES: Libraries = ['places', 'marker', 'geometry', 'routes']
@@ -72,7 +72,6 @@ const mapOptions: google.maps.MapOptions = {
   ],
 }
 
-// ── Types ────────────────────────────────────────────────────────────────────
 interface SelectedMarker {
   lat: number
   lng: number
@@ -98,14 +97,10 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
   const trips = useTripStore(s => s.trips)
   const trip  = trips.find(t => t.id === params.id)
 
-  // ── Filter state ──────────────────────────────────────────────────────────
   const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set())
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-
-  // ── Selected pin for InfoWindow ───────────────────────────────────────────
   const [selectedMarker, setSelectedMarker] = useState<SelectedMarker | null>(null)
 
-  // ── markersByDay ──────────────────────────────────────────────────────────
   const markersByDay = useMemo(() => {
     if (!trip) return []
     return trip.dailyItinerary.map((day, dayIdx) => ({
@@ -120,8 +115,8 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
           lng: act.lng!,
           seq: actIdx + 1,
           title: act.location,
-          time: act.time,
-          note: act.note,
+          time: (act as any).time,
+          note: (act as any).note,
           actIdx,
         })),
     }))
@@ -150,7 +145,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
     })
   }
 
-  const selectAll  = () => setSelectedDays(new Set())
+  const selectAll = () => setSelectedDays(new Set())
   const daysWithPins = markersByDay.filter(d => d.points.length > 0)
 
   if (!isMounted || !trip) {
@@ -164,7 +159,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
   return (
     <div className="flex flex-col h-screen bg-white">
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 shrink-0 bg-white z-10">
         <Link
           href={`/planner/${params.id}`}
@@ -176,7 +171,6 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
         <h1 className="text-sm font-bold tracking-widest uppercase text-black flex-1 truncate">
           {trip.title} — 全程地圖
         </h1>
-
         <button
           onClick={() => setIsFilterOpen(v => !v)}
           className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 border rounded-full transition-all ${
@@ -190,7 +184,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
         </button>
       </div>
 
-      {/* ── Filter Panel ── */}
+      {/* Filter Panel */}
       {isFilterOpen && (
         <div className="bg-white border-b border-gray-100 px-6 py-4 flex flex-wrap gap-2 items-center shrink-0 z-10">
           <button
@@ -203,7 +197,6 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
           >
             全部
           </button>
-
           {daysWithPins.map(d => (
             <button
               key={d.dayIdx}
@@ -220,14 +213,13 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
               <span className="opacity-60">({d.date})</span>
             </button>
           ))}
-
           <button onClick={() => setIsFilterOpen(false)} className="ml-auto text-gray-300 hover:text-black">
             <X size={16} />
           </button>
         </div>
       )}
 
-      {/* ── Map ── */}
+      {/* Map */}
       <div className="flex-1 relative">
         {!isLoaded ? (
           <div className="flex items-center justify-center h-full text-gray-400 text-xs animate-pulse">
@@ -241,7 +233,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
             options={mapOptions}
             onClick={() => setSelectedMarker(null)}
           >
-            {/* ── Markers ── */}
+            {/* Markers */}
             {visibleDays.map(dayGroup =>
               dayGroup.points.map((m, i) => (
                 <MarkerF
@@ -277,15 +269,15 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
               ))
             )}
 
-            {/* ── InfoWindow on pin click ── */}
+            {/* InfoWindow */}
             {selectedMarker && (
               <InfoWindowF
                 position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
                 onCloseClick={() => setSelectedMarker(null)}
                 options={{ pixelOffset: new google.maps.Size(0, -30) }}
               >
-                <div style={{ minWidth: 160, maxWidth: 220, fontFamily: 'sans-serif' }}>
-                  {/* Coloured day badge */}
+                <div style={{ minWidth: 160, maxWidth: 230, fontFamily: 'sans-serif' }}>
+                  {/* Day badge */}
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     backgroundColor: selectedMarker.color,
@@ -296,7 +288,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                     DAY {selectedMarker.day} · {selectedMarker.date}
                   </div>
 
-                  {/* Stop number + name */}
+                  {/* Seq + name */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
                     <span style={{
                       flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
@@ -311,24 +303,41 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                     </p>
                   </div>
 
-                  {/* Time (if available) */}
+                  {/* Time */}
                   {selectedMarker.time && (
                     <p style={{ margin: '4px 0 0 26px', fontSize: 11, color: '#888' }}>
                       🕐 {selectedMarker.time}
                     </p>
                   )}
 
-                  {/* Note (if available) */}
+                  {/* Note */}
                   {selectedMarker.note && (
                     <p style={{ margin: '4px 0 0 26px', fontSize: 11, color: '#666', fontStyle: 'italic' }}>
                       {selectedMarker.note}
                     </p>
                   )}
+
+                  {/* ✅ Navigation button */}
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedMarker.lat},${selectedMarker.lng}&travelmode=transit`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      marginTop: 10, padding: '8px 12px',
+                      backgroundColor: '#111', color: '#fff',
+                      borderRadius: 8, fontSize: 11, fontWeight: 700,
+                      textDecoration: 'none', letterSpacing: '0.06em',
+                      width: '100%', boxSizing: 'border-box',
+                    }}
+                  >
+                    ↗ 導航前往
+                  </a>
                 </div>
               </InfoWindowF>
             )}
 
-            {/* ── Polylines：solid line + subtle small arrow every 120px ── */}
+            {/* Polylines */}
             {visibleDays.map(dayGroup =>
               dayGroup.points.length >= 2 ? (
                 <PolylineF
@@ -339,20 +348,17 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
                     strokeOpacity: 0.55,
                     strokeWeight: 2,
                     geodesic: true,
-                    icons: [
-                      {
-                        // Small open arrowhead pointing forward, low opacity
-                        icon: {
-                          path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
-                          strokeColor: dayGroup.color,
-                          strokeOpacity: 0.7,
-                          strokeWeight: 1.5,
-                          scale: 2.5,
-                        },
-                        offset: '100%',
-                        repeat: '120px',
+                    icons: [{
+                      icon: {
+                        path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
+                        strokeColor: dayGroup.color,
+                        strokeOpacity: 0.7,
+                        strokeWeight: 1.5,
+                        scale: 2.5,
                       },
-                    ],
+                      offset: '100%',
+                      repeat: '120px',
+                    }],
                   }}
                 />
               ) : null
@@ -361,7 +367,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
         )}
       </div>
 
-      {/* ── Legend ── */}
+      {/* Legend */}
       {daysWithPins.length > 0 && (
         <div className="flex gap-4 px-6 py-3 border-t border-gray-100 overflow-x-auto no-scrollbar bg-white shrink-0">
           {daysWithPins.map(d => (
