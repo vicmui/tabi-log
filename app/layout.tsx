@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-TW">
       <head>
-        <title>VM&apos;s Build</title>
+        <title>Tabi Log by VM</title>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon-192.png" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
