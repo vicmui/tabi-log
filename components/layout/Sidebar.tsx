@@ -2,11 +2,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { clsx } from 'clsx'
+import { useTripStore } from '@/store/useTripStore'
 
-const MENU_ITEMS = [
+const STATIC_MENU_ITEMS = [
   { label: 'HOME',     subLabel: '首頁',   href: '/'        },
   { label: 'BOOKINGS', subLabel: '預訂憑證', href: '/bookings' },
-  { label: 'PLANNER',  subLabel: '行程規劃', href: '/planner'  },
+  // PLANNER is handled dynamically below
   { label: 'BUDGET',   subLabel: '預算分帳', href: '/budget'   },
   { label: 'PLANNING', subLabel: '行前準備', href: '/planning' },
   { label: 'TOOLBOX',  subLabel: '旅行工具', href: '/toolbox'  },
@@ -15,6 +16,39 @@ const MENU_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { trips, activeTripId } = useTripStore()
+
+  // Resolve the best planner href:
+  // 1. Currently active trip (set when user clicks a trip card)
+  // 2. Most upcoming future trip
+  // 3. First trip in list
+  const plannerHref = (() => {
+    if (trips.length === 0) return '/'   // no trips → go home
+
+    // Try active trip first
+    const active = activeTripId ? trips.find(t => t.id === activeTripId) : null
+    if (active) return `/planner/${active.id}`
+
+    // Pick the trip whose start date is soonest in the future (or least past)
+    const today = new Date().toISOString().split('T')[0]
+    const upcoming = trips
+      .filter(t => t.startDate >= today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    if (upcoming.length > 0) return `/planner/${upcoming[0].id}`
+
+    // Fallback: last trip chronologically
+    const sorted = [...trips].sort((a, b) => b.startDate.localeCompare(a.startDate))
+    return `/planner/${sorted[0].id}`
+  })()
+
+  const isPlannerActive = pathname.startsWith('/planner')
+
+  const allItems = [
+    STATIC_MENU_ITEMS[0], // HOME
+    STATIC_MENU_ITEMS[1], // BOOKINGS
+    { label: 'PLANNER', subLabel: '行程規劃', href: plannerHref },
+    ...STATIC_MENU_ITEMS.slice(2), // BUDGET onward
+  ]
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col py-12 px-8 z-40 hidden md:flex">
@@ -33,14 +67,16 @@ export default function Sidebar() {
 
       {/* Nav Links */}
       <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar py-2">
-        {MENU_ITEMS.map(item => {
+        {allItems.map(item => {
           const isActive =
-            item.href === '/'
-              ? pathname === '/'
-              : pathname.startsWith(item.href)
+            item.label === 'PLANNER'
+              ? isPlannerActive
+              : item.href === '/'
+                ? pathname === '/'
+                : pathname.startsWith(item.href)
 
           return (
-            <Link href={item.href} key={item.href} className="group block">
+            <Link href={item.href} key={item.label} className="group block">
               <div className="flex items-center gap-3">
                 <div className="flex flex-col">
                   <span

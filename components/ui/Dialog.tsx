@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, Info, X, Upload, Move, Check, ImagePlus } from 'lucide-react'
+import { AlertTriangle, Info, X, Upload, ImagePlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
+import { RepositionPanel } from '@/components/ui/RepositionPanel'
 
 // ─── Backdrop / Panel wrapper ─────────────────────────────────────────────────
 function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNode; onBackdropClick?: () => void }) {
@@ -77,76 +78,6 @@ export function AlertDialog({ isOpen, title, message, onClose }: AlertProps) {
   )
 }
 
-// ─── Inline Reposition Panel (used inside NewTripModal) ───────────────────────
-function RepositionPanel({ src, initialY, onConfirm, onCancel }: {
-  src: string; initialY: number;
-  onConfirm: (y: number) => void; onCancel: () => void;
-}) {
-  const [posY, setPosY] = useState(initialY)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const dragging = useRef(false)
-  const startClientY = useRef(0)
-  const startPosY = useRef(initialY)
-  const clamp = (v: number) => Math.min(100, Math.max(0, v))
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    dragging.current = true
-    startClientY.current = e.clientY
-    startPosY.current = posY
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragging.current || !containerRef.current) return
-    const h = containerRef.current.clientHeight
-    const delta = e.clientY - startClientY.current
-    setPosY(clamp(startPosY.current - (delta / h) * 100))
-  }
-  const onPointerUp = () => { dragging.current = false }
-
-  return (
-    <div className="flex flex-col">
-      {/* Instruction */}
-      <div className="bg-neutral-900 text-white text-center py-2 px-3">
-        <p className="text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-1.5">
-          <Move size={11} /> 上下拖動調整焦點位置
-        </p>
-      </div>
-
-      {/* Drag area */}
-      <div
-        ref={containerRef}
-        className="h-40 overflow-hidden relative cursor-grab active:cursor-grabbing select-none"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src} alt="reposition" draggable={false}
-          className="w-full h-full object-cover pointer-events-none"
-          style={{ objectPosition: `center ${posY}%` }}
-        />
-        {/* Centre guide */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center gap-1">
-          <div className="w-full h-px bg-white/40" />
-          <span className="bg-black/50 text-white text-[9px] px-2 py-0.5 rounded-full tracking-widest">焦點區域</span>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex border-t border-gray-100">
-        <button onClick={onCancel} className="flex-1 py-3 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100 flex items-center justify-center gap-1">
-          <X size={11} /> 取消
-        </button>
-        <button onClick={() => onConfirm(posY)} className="flex-1 py-3 text-[10px] font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors flex items-center justify-center gap-1">
-          <Check size={11} /> 完成
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ─── NEW TRIP MODAL ───────────────────────────────────────────────────────────
 interface NewTripProps {
   isOpen: boolean; onClose: () => void
@@ -158,7 +89,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
   const [startDate, setStartDate]   = useState('')
   const [endDate, setEndDate]       = useState('')
   const [coverImage, setCoverImage] = useState<string>('')
-  const [coverPosY, setCoverPosY]   = useState(50)   // 0-100
+  const [coverPosY, setCoverPosY]   = useState(50)
   const [uploading, setUploading]   = useState(false)
   const [repositioning, setRepositioning] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -176,13 +107,12 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
     setUploading(true)
     try {
       const filePath = `public/new-trip/${uuidv4()}-${file.name}`
-      // ✅ Correct bucket name
       const { error } = await supabase.storage.from('trip_files').upload(filePath, file)
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath)
         setCoverImage(publicUrl)
         setCoverPosY(50)
-        setRepositioning(true)   // auto-open reposition after upload
+        setRepositioning(true)
       }
     } finally {
       setUploading(false)
@@ -193,19 +123,8 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
   const handleSubmit = () => {
     if (!title.trim()) return
     const today = new Date().toISOString().split('T')[0]
-    onConfirm({
-      title: title.trim(),
-      startDate: startDate || today,
-      endDate: endDate || today,
-      coverImage: coverImage || undefined,
-      coverPosY,
-    })
+    onConfirm({ title: title.trim(), startDate: startDate || today, endDate: endDate || today, coverImage: coverImage || undefined, coverPosY })
     onClose()
-  }
-
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !repositioning) handleSubmit()
-    if (e.key === 'Escape') { if (repositioning) setRepositioning(false); else onClose() }
   }
 
   if (!isOpen) return null
@@ -213,7 +132,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
   return (
     <DialogWrapper onBackdropClick={repositioning ? undefined : onClose}>
       <div className="h-[3px] bg-neutral-900" />
-      <div className="p-7" onKeyDown={handleKey}>
+      <div className="p-7">
         <div className="flex justify-between items-start mb-6">
           <div>
             <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">新增旅程</p>
@@ -231,6 +150,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
             <input
               ref={inputRef} type="text" value={title}
               onChange={e => setTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !repositioning) handleSubmit(); if (e.key === 'Escape') onClose() }}
               placeholder="例：2026 大阪行 🇯🇵"
               className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors"
             />
@@ -256,18 +176,16 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
               <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase">
                 封面照片 <span className="normal-case text-gray-300">（選填）</span>
               </label>
-              {/* ✅ Prominent size reminder */}
-              <span className="text-[9px] text-gray-400 tracking-wide">
-                建議 <span className="font-bold text-gray-500">2400×800px</span> · 橫向
-              </span>
+              <span className="text-[9px] text-gray-400">建議 <span className="font-bold text-gray-500">2400×800px</span> · 橫向</span>
             </div>
 
-            {/* Reposition panel OR upload placeholder */}
+            {/* Reposition slider (compact / inline) */}
             {repositioning && coverImage ? (
               <RepositionPanel
+                compact
                 src={coverImage}
                 initialY={coverPosY}
-                onConfirm={(y) => { setCoverPosY(y); setRepositioning(false) }}
+                onConfirm={y => { setCoverPosY(y); setRepositioning(false) }}
                 onCancel={() => setRepositioning(false)}
               />
             ) : (
@@ -275,18 +193,13 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                 {coverImage ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={coverImage} alt="cover"
-                      className="w-full h-full object-cover"
-                      style={{ objectPosition: `center ${coverPosY}%` }}
-                    />
-                    {/* Hover controls */}
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button
-                        onClick={() => setRepositioning(true)}
-                        className="flex items-center gap-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1.5"
-                      >
-                        <Move size={11} /> 調整位置
+                    <img src={coverImage} alt="cover" className="w-full h-full object-cover"
+                      style={{ objectPosition: `center ${coverPosY}%` }} />
+                    {/* Hover / always-visible on mobile controls */}
+                    <div className="absolute inset-0 bg-black/30 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <button onClick={() => setRepositioning(true)}
+                        className="flex items-center gap-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1.5">
+                        調整位置
                       </button>
                       <label className="flex items-center gap-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 cursor-pointer">
                         <Upload size={11} /> 更換
@@ -295,7 +208,6 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                     </div>
                   </>
                 ) : (
-                  /* ✅ Empty state with clear reminder */
                   <label className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer hover:from-gray-100 hover:to-gray-200 transition-colors">
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
                     {uploading ? (
@@ -307,9 +219,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                         </div>
                         <div className="text-center">
                           <p className="text-[11px] font-bold text-gray-500 tracking-widest uppercase">上傳封面</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">
-                            <span className="font-bold text-gray-500">2400 × 800px</span> · JPG / PNG
-                          </p>
+                          <p className="text-[10px] text-gray-400 mt-0.5"><span className="font-bold text-gray-500">2400 × 800px</span> · JPG / PNG</p>
                           <p className="text-[9px] text-gray-300 mt-0.5">上傳後可調整焦點位置</p>
                         </div>
                       </>
@@ -322,13 +232,10 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
         </div>
 
         {!repositioning && (
-          <button
-            onClick={handleSubmit}
-            disabled={!title.trim()}
+          <button onClick={handleSubmit} disabled={!title.trim()}
             className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${
               !title.trim() ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-black text-white hover:opacity-90'
-            }`}
-          >
+            }`}>
             建立旅程
           </button>
         )}
@@ -355,10 +262,6 @@ export function PromptDialog({ isOpen, title, message, defaultValue = '', placeh
   }, [isOpen, defaultValue])
 
   const handleConfirm = () => { if (value.trim()) onConfirm(value.trim()) }
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleConfirm()
-    if (e.key === 'Escape') onCancel()
-  }
 
   if (!isOpen) return null
   return (
@@ -366,12 +269,10 @@ export function PromptDialog({ isOpen, title, message, defaultValue = '', placeh
       <div className="p-7">
         {title && <h3 className="font-serif font-bold text-base text-neutral-900 mb-1">{title}</h3>}
         <p className="text-sm text-neutral-500 mb-5">{message}</p>
-        <input
-          ref={inputRef} type="text" value={value}
-          onChange={e => setValue(e.target.value)} onKeyDown={handleKey}
+        <input ref={inputRef} type="text" value={value} onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleConfirm(); if (e.key === 'Escape') onCancel() }}
           placeholder={placeholder}
-          className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors"
-        />
+          className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors" />
       </div>
       <div className="flex border-t border-gray-100">
         <button onClick={onCancel} className="flex-1 py-4 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100">Cancel</button>
