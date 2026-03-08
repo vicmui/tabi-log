@@ -5,7 +5,7 @@ import { clsx } from 'clsx'
 
 const MENU_ITEMS = [
   { label: 'HOME',     subLabel: '首頁',   href: '/'        },
-  { label: 'BOOKINGS', subLabel: '預訂頁面', href: '/bookings' },
+  { label: 'BOOKINGS', subLabel: '預訂憑證', href: '/bookings' },
   { label: 'PLANNER',  subLabel: '行程規劃', href: '/planner'  },
   { label: 'BUDGET',   subLabel: '預算分帳', href: '/budget'   },
   { label: 'PLANNING', subLabel: '行前準備', href: '/planning' },

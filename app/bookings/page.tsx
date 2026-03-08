@@ -31,7 +31,7 @@ export default function BookingsPage() {
         <header className="mb-10 flex justify-between items-end">
           <div><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1><div className="flex items-center gap-4"><p className="text-xs text-gray-400 tracking-widest uppercase">Bookings</p><span className="text-gray-300">|</span><TripSwitcher /></div></div>
           {/* 🔥 修復：whitespace-nowrap 防止文字跌落黎 */}
-          <button onClick={()=>{setEditingBooking(null); setIsModalOpen(true)}} className="bg-jp-charcoal text-white px-4 py-2 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black rounded whitespace-nowrap"><Plus size={14}/> 新增預訂</button>
+          <button onClick={()=>{setEditingBooking(null); setIsModalOpen(true)}} className="bg-jp-charcoal text-white px-6 py-3 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black whitespace-nowrap"><Plus size={14}/> 新增預訂</button>
         </header>
 
         <div className="grid grid-cols-1 gap-6 max-w-3xl mx-auto">
