@@ -295,7 +295,7 @@ export default function BudgetPage() {
 
         {/* Header */}
         <header className="mb-10">
-          <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預算</h1>
+          <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">旅程預算</h1>
           <div className="flex items-center gap-4"><TripSwitcher /></div>
         </header>
 
