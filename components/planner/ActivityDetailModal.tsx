@@ -6,7 +6,7 @@ import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
-import GooglePlacesAutocomplete, { geocodeByPlaceId, getLatLng } from 'react-google-places-autocomplete';
+import PlacesSearch from "@/components/ui/PlacesSearch";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 
 const TYPES = [
@@ -25,61 +25,43 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const trip     = trips.find(t => t.id === tripId);
   const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
 
-  const [isEditing, setIsEditing]     = useState(false);
+  const [isEditing, setIsEditing]       = useState(false);
   const [editLocation, setEditLocation] = useState(activity?.location || "");
-  const [editType, setEditType]       = useState(activity?.type || "Food");
-  const [editTime, setEditTime]       = useState(activity?.time || "");
-  const [editNote, setEditNote]       = useState(activity?.note || "");
-  const [editAddress, setEditAddress] = useState(activity?.address || "");
-  const [editLat, setEditLat]         = useState(activity?.lat);
-  const [editLng, setEditLng]         = useState(activity?.lng);
-  const [apiKey, setApiKey]           = useState("");
+  const [editType, setEditType]         = useState(activity?.type || "Food");
+  const [editTime, setEditTime]         = useState(activity?.time || "");
+  const [editNote, setEditNote]         = useState(activity?.note || "");
+  const [editAddress, setEditAddress]   = useState(activity?.address || "");
+  const [editLat, setEditLat]           = useState(activity?.lat);
+  const [editLng, setEditLng]           = useState(activity?.lng);
 
-  const [comment, setComment]         = useState(activity?.comment || "");
-  const [rating, setRating]           = useState(activity?.rating || 0);
-  const [expandedImg, setExpandedImg] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [comment, setComment]           = useState(activity?.comment || "");
+  const [rating, setRating]             = useState(activity?.rating || 0);
+  const [expandedImg, setExpandedImg]   = useState<string | null>(null);
+  const [isUploading, setIsUploading]   = useState(false);
   const [confirmDelete, setConfirmDelete]           = useState(false);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null);
-  const [alertMsg, setAlertMsg]       = useState<string | null>(null);
+  const [alertMsg, setAlertMsg]         = useState<string | null>(null);
 
-  // ✅ Merge refPhoto (from AddActivityModal) into the photos gallery so it shows up
+  // Merge refPhoto into gallery
   const buildAllPhotos = (act: typeof activity) => {
     if (!act) return [];
     const gallery: string[] = act.photos ?? [];
     const ref: string | undefined = (act as any).refPhoto;
-    // Prepend refPhoto only if it's not already in gallery
     if (ref && !gallery.includes(ref)) return [ref, ...gallery];
     return gallery;
   };
-
   const [photos, setPhotos] = useState<string[]>(() => buildAllPhotos(activity));
-
-  // Re-sync if activity changes externally
-  useEffect(() => {
-    setPhotos(buildAllPhotos(activity));
-  }, [activity?.photos, (activity as any)?.refPhoto]);
-
-  useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-    if (key) setApiKey(key);
-  }, []);
+  useEffect(() => { setPhotos(buildAllPhotos(activity)); }, [activity?.photos, (activity as any)?.refPhoto]);
 
   if (!activity) return null;
 
-  // Cover = first photo in merged list, fallback to default
   const coverSrc = photos.length > 0 ? photos[0] : DEFAULT_COVER;
 
   const handleSave = () => {
     if (isEditing) {
       updateActivity(tripId, dayIndex, activityId, {
-        location: editLocation,
-        type:     editType,
-        time:     editTime,
-        note:     editNote,
-        address:  editAddress,
-        lat:      editLat,
-        lng:      editLng,
+        location: editLocation, type: editType, time: editTime,
+        note: editNote, address: editAddress, lat: editLat, lng: editLng,
       });
       setIsEditing(false);
     } else {
@@ -88,14 +70,11 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
     }
   };
 
-  const toggleVisited = () => {
-    updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited });
-  };
+  const toggleVisited = () => updateActivity(tripId, dayIndex, activityId, { isVisited: !activity.isVisited });
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (photos.length >= 3) { setAlertMsg("最多上傳 3 張相片！"); return; }
-    const file = e.target.files?.[0];
-    if (!file || !trip) return;
+    const file = e.target.files?.[0]; if (!file || !trip) return;
     setIsUploading(true);
     try {
       const filePath = `public/${trip.id}/activities/${uuidv4()}-${file.name}`;
@@ -119,77 +98,76 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         className="bg-white w-full max-w-lg relative z-10 border border-gray-200 overflow-hidden rounded-none max-h-[90vh] flex flex-col"
       >
-        {/* Cover image */}
+        {/* Cover */}
         <div className="h-40 bg-gray-100 relative shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={coverSrc} className="w-full h-full object-cover opacity-90" alt="cover" />
           <div className="absolute top-4 right-4 flex gap-2">
             {!isEditing && (
-              <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer" title="上傳封面相片">
-                <Camera size={16}/>
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload}/>
+              <label className="bg-white/50 p-2 rounded-full hover:bg-white cursor-pointer">
+                <Camera size={16} />
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </label>
             )}
-            <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16}/></button>
-            <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20}/></button>
+            <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16} /></button>
+            <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20} /></button>
           </div>
         </div>
 
         <div className="p-8 overflow-y-auto">
           {isEditing ? (
             <div className="space-y-5">
+              {/* Name */}
               <div>
                 <label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label>
                 <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none"
                   value={editLocation} onChange={e => setEditLocation(e.target.value)} />
               </div>
+
+              {/* ✅ New Places Search */}
               <div className="bg-neutral-50 p-3 border border-neutral-200">
-                <label className="text-[10px] text-neutral-500 font-bold mb-1 block uppercase tracking-widest">連結 Google Map</label>
-                {apiKey ? (
-                  <div className="bg-white border p-1">
-                    <GooglePlacesAutocomplete apiKey={apiKey} selectProps={{
-                      placeholder: "輸入地點獲取座標...",
-                      onChange: async (val: any) => {
-                        if (!val) return;
-                        setEditAddress(val.label);
-                        try {
-                          const results = await geocodeByPlaceId(val.value.place_id);
-                          const { lat, lng } = await getLatLng(results[0]);
-                          setEditLat(lat); setEditLng(lng);
-                          if (!editLocation) setEditLocation(val.label.split(',')[0]);
-                        } catch (e) {
-                          setAlertMsg("無法獲取座標，請檢查 API Key。");
-                        }
-                      },
-                      styles: { control: (p: any) => ({ ...p, border: 'none', boxShadow: 'none', minHeight: '30px', fontSize: '13px' }) },
-                    }} />
-                  </div>
-                ) : <p className="text-xs text-red-500">API Key Missing</p>}
+                <label className="text-[10px] text-neutral-500 font-bold mb-2 block uppercase tracking-widest">連結 Google Map</label>
+                <PlacesSearch
+                  placeholder="搜尋地點獲取座標..."
+                  onSelect={result => {
+                    setEditAddress(result.label);
+                    if (result.lat && result.lng) { setEditLat(result.lat); setEditLng(result.lng); }
+                    if (!editLocation) setEditLocation(result.name);
+                  }}
+                />
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-500")} />
+                  <span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-400")} />
                   <span className="text-[10px] text-gray-500">{editLat && editLng ? "座標鎖定" : "未有座標"}</span>
                 </div>
+                {editAddress && <p className="text-[10px] text-gray-400 mt-1 truncate">{editAddress}</p>}
               </div>
+
+              {/* Time + Type */}
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="text-xs text-gray-400 uppercase tracking-widest">時間</label>
-                  <input className="w-full border-b p-1" value={editTime} onChange={e => setEditTime(e.target.value)} />
+                  <input className="w-full border-b p-1 focus:outline-none focus:border-black"
+                    value={editTime} onChange={e => setEditTime(e.target.value)} />
                 </div>
                 <div className="flex-1">
                   <label className="text-xs text-gray-400 uppercase tracking-widest">類別</label>
-                  <select className="w-full border-b p-1 bg-white" value={editType} onChange={e => setEditType(e.target.value)}>
+                  <select className="w-full border-b p-1 bg-white focus:outline-none"
+                    value={editType} onChange={e => setEditType(e.target.value)}>
                     {TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}
                   </select>
                 </div>
               </div>
+
+              {/* Note */}
               <div>
                 <label className="text-xs text-gray-400 uppercase tracking-widest">備註</label>
                 <textarea value={editNote} onChange={e => setEditNote(e.target.value)}
-                  className="w-full h-20 border border-gray-200 p-2 text-sm rounded-none resize-none" />
+                  className="w-full h-20 border border-gray-200 p-2 text-sm rounded-none resize-none focus:outline-none focus:border-black" />
               </div>
             </div>
           ) : (
             <>
-              {/* Title + visited */}
+              {/* View mode */}
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2>
@@ -199,7 +177,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                   </div>
                   {activity.address && (
                     <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                      <MapPin size={10}/> {activity.address}
+                      <MapPin size={10} /> {activity.address}
                     </p>
                   )}
                 </div>
@@ -238,7 +216,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                   className="w-full h-24 border border-gray-200 p-3 text-sm rounded-none focus:outline-none focus:border-black resize-none" />
               </div>
 
-              {/* ✅ Gallery — shows refPhoto + uploaded gallery photos together */}
+              {/* Gallery */}
               <div className="mb-4">
                 <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">
                   相簿 Gallery ({photos.length}/3)
@@ -249,25 +227,21 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                       className="w-20 h-20 overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 relative group/photo"
                       onClick={() => setExpandedImg(url)}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} className="w-full h-full object-cover" alt={`photo-${i}`} />
                       <button
                         onClick={e => { e.stopPropagation(); setConfirmDeletePhoto(url); }}
                         className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/photo:opacity-100 transition-opacity"
-                      >
-                        <X size={10}/>
-                      </button>
+                      ><X size={10} /></button>
                     </div>
                   ))}
                   {photos.length < 3 && (
-                    <label
-                      title="最多3張，JPG/PNG，最大 5MB"
-                      className={clsx(
-                        "w-20 h-20 border border-dashed flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors",
-                        isUploading && "animate-pulse"
-                      )}
-                    >
-                      {isUploading ? <Loader2 className="animate-spin"/> : <Camera size={20}/>}
-                      <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading}/>
+                    <label className={clsx(
+                      "w-20 h-20 border border-dashed flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors",
+                      isUploading && "animate-pulse"
+                    )}>
+                      {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={20} />}
+                      <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading} />
                     </label>
                   )}
                 </div>
@@ -279,7 +253,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         <div className="p-6 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
           <button onClick={() => setConfirmDelete(true)}
             className="text-gray-400 p-3 hover:bg-red-50 hover:text-red-500 transition-colors">
-            <Trash2 size={18}/>
+            <Trash2 size={18} />
           </button>
           <button onClick={handleSave}
             className="flex-1 bg-[#333333] text-white py-3 text-xs font-bold tracking-[0.2em] uppercase hover:bg-black transition-colors">
@@ -288,31 +262,24 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         </div>
       </motion.div>
 
-      {/* Expanded image */}
       <AnimatePresence>
         {expandedImg && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setExpandedImg(null)}
             className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={expandedImg} className="max-w-full max-h-full border border-gray-200" alt="expanded" />
-            <button className="absolute top-4 right-4 text-white/80 hover:text-white"><X size={32}/></button>
+            <button className="absolute top-4 right-4 text-white/80 hover:text-white"><X size={32} /></button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <ConfirmDialog
-        isOpen={confirmDelete}
-        title="刪除景點"
-        message={`確定要刪除「${activity.location}」嗎？`}
+      <ConfirmDialog isOpen={confirmDelete} title="刪除景點" message={`確定要刪除「${activity.location}」嗎？`}
         confirmLabel="刪除" cancelLabel="取消" danger
         onConfirm={() => { deleteActivity(tripId, dayIndex, activity.id); onClose(); }}
-        onCancel={() => setConfirmDelete(false)}
-      />
-      <ConfirmDialog
-        isOpen={!!confirmDeletePhoto}
-        title="刪除相片"
-        message="確定要刪除這張相片嗎？"
+        onCancel={() => setConfirmDelete(false)} />
+      <ConfirmDialog isOpen={!!confirmDeletePhoto} title="刪除相片" message="確定要刪除這張相片嗎？"
         confirmLabel="刪除" cancelLabel="取消" danger
         onConfirm={() => {
           if (confirmDeletePhoto) {
@@ -322,13 +289,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           }
           setConfirmDeletePhoto(null);
         }}
-        onCancel={() => setConfirmDeletePhoto(null)}
-      />
-      <AlertDialog
-        isOpen={!!alertMsg}
-        message={alertMsg || ""}
-        onClose={() => setAlertMsg(null)}
-      />
+        onCancel={() => setConfirmDeletePhoto(null)} />
+      <AlertDialog isOpen={!!alertMsg} message={alertMsg || ""} onClose={() => setAlertMsg(null)} />
     </div>
   );
 }
