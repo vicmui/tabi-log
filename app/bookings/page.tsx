@@ -135,7 +135,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
           {details.gate && <div><p className="text-[9px] text-gray-400 uppercase">登機門</p><p className="font-bold">{details.gate}</p></div>}
           {details.address && (
             <div
-              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(details.address)}`, '_blank')}
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(details.address ?? '')}`, '_blank')}
               className="col-span-3 flex items-center gap-2 text-gray-600 bg-white p-2 border cursor-pointer hover:border-blue-500 hover:text-blue-600 transition-colors"
             >
               <MapPin size={14} /><span className="truncate flex-1">{details.address}</span><Navigation size={12} className="text-blue-500" />
