@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, Star, Edit, Trash2, Camera, MapPin, Loader2 } from "lucide-react";
+import { X, CheckCircle, Star, Edit, Trash2, Camera, MapPin, Loader2, ArrowRightLeft } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import PlacesSearch from "@/components/ui/PlacesSearch";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
+import { format, parseISO } from "date-fns";
 
 const TYPES = [
   { type: "Food",        label: "美食" },
@@ -21,9 +22,9 @@ const TYPES = [
 const DEFAULT_COVER = "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?q=80&w=2000";
 
 export default function ActivityDetailModal({ tripId, dayIndex, activityId, onClose }: any) {
-  const { trips, updateActivity, deleteActivity } = useTripStore();
+  const { trips, updateActivity, deleteActivity, addActivity } = useTripStore();
   const trip     = trips.find(t => t.id === tripId);
-  const activity = trip?.dailyItinerary[dayIndex].activities.find(a => a.id === activityId);
+  const activity = trip?.dailyItinerary[dayIndex]?.activities.find(a => a.id === activityId);
 
   const [isEditing, setIsEditing]       = useState(false);
   const [editLocation, setEditLocation] = useState(activity?.location || "");
@@ -41,6 +42,36 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [confirmDelete, setConfirmDelete]           = useState(false);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg]         = useState<string | null>(null);
+
+  // ── Move to day ──────────────────────────────────────────────────────────
+  const [showMovePanel, setShowMovePanel] = useState(false);
+  const [targetDayIdx, setTargetDayIdx]  = useState<number | null>(null);
+  const [confirmMove, setConfirmMove]    = useState(false);
+
+  const otherDays = trip?.dailyItinerary
+    .map((d, i) => ({ ...d, actualIdx: i }))
+    .filter(d => d.actualIdx !== dayIndex) ?? [];
+
+  const handleMove = () => {
+    if (targetDayIdx === null || !activity || !trip) return;
+    addActivity(tripId, targetDayIdx, {
+      type:      activity.type,
+      time:      activity.time,
+      location:  activity.location,
+      address:   activity.address,
+      note:      activity.note,
+      lat:       activity.lat,
+      lng:       activity.lng,
+      refPhoto:  (activity as any).refPhoto,
+      photos:    activity.photos,
+      comment:   activity.comment,
+      rating:    activity.rating,
+      isVisited: activity.isVisited,
+    });
+    deleteActivity(tripId, dayIndex, activityId);
+    setConfirmMove(false);
+    onClose();
+  };
 
   // Merge refPhoto into gallery
   const buildAllPhotos = (act: typeof activity) => {
@@ -86,10 +117,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       updateActivity(tripId, dayIndex, activityId, { photos: newPhotos });
     } catch (e: any) {
       setAlertMsg("上傳失敗：" + e.message);
-    } finally {
-      setIsUploading(false);
-    }
+    } finally { setIsUploading(false); }
   };
+
+  const targetDay = targetDayIdx !== null ? trip?.dailyItinerary[targetDayIdx] : null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -109,22 +140,24 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </label>
             )}
-            <button onClick={() => setIsEditing(!isEditing)} className="bg-white/50 p-2 rounded-full hover:bg-white"><Edit size={16} /></button>
-            <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white"><X size={20} /></button>
+            <button onClick={() => { setIsEditing(!isEditing); setShowMovePanel(false); }} className="bg-white/50 p-2 rounded-full hover:bg-white">
+              <Edit size={16} />
+            </button>
+            <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white">
+              <X size={20} />
+            </button>
           </div>
         </div>
 
         <div className="p-8 overflow-y-auto">
           {isEditing ? (
             <div className="space-y-5">
-              {/* Name */}
               <div>
                 <label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label>
                 <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none"
                   value={editLocation} onChange={e => setEditLocation(e.target.value)} />
               </div>
 
-              {/* ✅ New Places Search */}
               <div className="bg-neutral-50 p-3 border border-neutral-200">
                 <label className="text-[10px] text-neutral-500 font-bold mb-2 block uppercase tracking-widest">連結 Google Map</label>
                 <PlacesSearch
@@ -142,7 +175,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 {editAddress && <p className="text-[10px] text-gray-400 mt-1 truncate">{editAddress}</p>}
               </div>
 
-              {/* Time + Type */}
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="text-xs text-gray-400 uppercase tracking-widest">時間</label>
@@ -158,16 +190,76 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 </div>
               </div>
 
-              {/* Note */}
               <div>
                 <label className="text-xs text-gray-400 uppercase tracking-widest">備註</label>
                 <textarea value={editNote} onChange={e => setEditNote(e.target.value)}
                   className="w-full h-20 border border-gray-200 p-2 text-sm rounded-none resize-none focus:outline-none focus:border-black" />
               </div>
+
+              {/* ── Move to another day ── */}
+              <div className="border border-dashed border-gray-200 p-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowMovePanel(v => !v); setTargetDayIdx(null); }}
+                  className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors w-full"
+                >
+                  <ArrowRightLeft size={13} />
+                  移至其他日
+                  <span className="ml-auto text-gray-300 text-[10px]">{showMovePanel ? "▲" : "▼"}</span>
+                </button>
+
+                <AnimatePresence>
+                  {showMovePanel && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-3 space-y-2">
+                        <p className="text-[10px] text-gray-400 tracking-widest">選擇目標日期：</p>
+                        <div className="flex flex-wrap gap-2">
+                          {otherDays.map(day => {
+                            const isSelected = targetDayIdx === day.actualIdx;
+                            return (
+                              <button
+                                key={day.day}
+                                type="button"
+                                onClick={() => setTargetDayIdx(day.actualIdx)}
+                                className={clsx(
+                                  "px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border transition-all",
+                                  isSelected
+                                    ? "bg-black text-white border-black scale-105"
+                                    : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
+                                )}
+                              >
+                                Day {day.day}
+                                <span className="ml-1.5 font-normal opacity-60 normal-case">
+                                  {format(parseISO(day.date), "M/d")}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {targetDayIdx !== null && (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmMove(true)}
+                            className="w-full mt-1 bg-black text-white py-2.5 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <ArrowRightLeft size={12} />
+                            移至 Day {targetDay?.day}（{targetDay?.date}）
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           ) : (
             <>
-              {/* View mode */}
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2>
@@ -182,7 +274,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                   )}
                 </div>
                 <button onClick={toggleVisited}
-                  className={clsx("flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase transition-colors",
+                  className={clsx(
+                    "flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase transition-colors",
                     activity.isVisited ? "bg-black text-white" : "text-gray-400"
                   )}>
                   <CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}
@@ -195,7 +288,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 </div>
               )}
 
-              {/* Rating */}
               <div className="mb-6">
                 <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label>
                 <div className="flex gap-2">
@@ -208,7 +300,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 </div>
               </div>
 
-              {/* Comment */}
               <div className="mb-6">
                 <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">旅後回憶</label>
                 <textarea value={comment} onChange={e => setComment(e.target.value)}
@@ -216,7 +307,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                   className="w-full h-24 border border-gray-200 p-3 text-sm rounded-none focus:outline-none focus:border-black resize-none" />
               </div>
 
-              {/* Gallery */}
               <div className="mb-4">
                 <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">
                   相簿 Gallery ({photos.length}/3)
@@ -279,6 +369,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         confirmLabel="刪除" cancelLabel="取消" danger
         onConfirm={() => { deleteActivity(tripId, dayIndex, activity.id); onClose(); }}
         onCancel={() => setConfirmDelete(false)} />
+
       <ConfirmDialog isOpen={!!confirmDeletePhoto} title="刪除相片" message="確定要刪除這張相片嗎？"
         confirmLabel="刪除" cancelLabel="取消" danger
         onConfirm={() => {
@@ -290,6 +381,16 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           setConfirmDeletePhoto(null);
         }}
         onCancel={() => setConfirmDeletePhoto(null)} />
+
+      <ConfirmDialog
+        isOpen={confirmMove}
+        title="移動景點"
+        message={`確定將「${activity.location}」移至 Day ${targetDay?.day}（${targetDay?.date}）嗎？`}
+        confirmLabel="移動" cancelLabel="取消"
+        onConfirm={handleMove}
+        onCancel={() => setConfirmMove(false)}
+      />
+
       <AlertDialog isOpen={!!alertMsg} message={alertMsg || ""} onClose={() => setAlertMsg(null)} />
     </div>
   );
