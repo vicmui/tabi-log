@@ -47,7 +47,7 @@ function AddToDayPanel({
     if (selectedDayIdx === null) return;
     addActivity(trip.id, selectedDayIdx, {
       type:     CAT_TO_TYPE[place.category] || "Other",
-      time:     time || null,
+      time:     time || undefined,
       location: place.name,
       address:  place.address || "",
       note:     place.note || "",
