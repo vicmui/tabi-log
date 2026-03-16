@@ -46,13 +46,14 @@ function AddToDayPanel({
   const handleAdd = () => {
     if (selectedDayIdx === null) return;
     addActivity(trip.id, selectedDayIdx, {
-      type:     CAT_TO_TYPE[place.category] || "Other",
-      time:     time || undefined,
-      location: place.name,
-      address:  place.address || "",
-      note:     place.note || "",
-      lat:      place.lat,
-      lng:      place.lng,
+      type:      CAT_TO_TYPE[place.category] || "Other",
+      time:      time || undefined,
+      location:  place.name,
+      address:   place.address || "",
+      note:      place.note || "",
+      lat:       place.lat,
+      lng:       place.lng,
+      isVisited: false,
     });
     setDone(true);
     setTimeout(() => { onClose(); }, 900);
