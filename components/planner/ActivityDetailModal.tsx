@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, Star, Edit, Trash2, Camera, MapPin, Loader2, ArrowRightLeft } from "lucide-react";
+import { X, CheckCircle, Star, Edit, Trash2, Camera, MapPin, Loader2, ArrowRightLeft, Clock } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
@@ -43,20 +43,23 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg]         = useState<string | null>(null);
 
-  // ── Move to day ──────────────────────────────────────────────────────────
+  // ── Move to another day ──────────────────────────────────────────────────
   const [showMovePanel, setShowMovePanel] = useState(false);
   const [targetDayIdx, setTargetDayIdx]  = useState<number | null>(null);
+  const [moveTime, setMoveTime]          = useState(activity?.time || "");  // optional time override
   const [confirmMove, setConfirmMove]    = useState(false);
 
   const otherDays = trip?.dailyItinerary
     .map((d, i) => ({ ...d, actualIdx: i }))
     .filter(d => d.actualIdx !== dayIndex) ?? [];
 
+  const targetDay = targetDayIdx !== null ? trip?.dailyItinerary[targetDayIdx] : null;
+
   const handleMove = () => {
     if (targetDayIdx === null || !activity || !trip) return;
     addActivity(tripId, targetDayIdx, {
       type:      activity.type,
-      time:      activity.time,
+      time:      moveTime || activity.time,   // use overridden time if set
       location:  activity.location,
       address:   activity.address,
       note:      activity.note,
@@ -120,8 +123,6 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
     } finally { setIsUploading(false); }
   };
 
-  const targetDay = targetDayIdx !== null ? trip?.dailyItinerary[targetDayIdx] : null;
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -140,7 +141,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </label>
             )}
-            <button onClick={() => { setIsEditing(!isEditing); setShowMovePanel(false); }} className="bg-white/50 p-2 rounded-full hover:bg-white">
+            <button
+              onClick={() => { setIsEditing(!isEditing); setShowMovePanel(false); setTargetDayIdx(null); }}
+              className="bg-white/50 p-2 rounded-full hover:bg-white"
+            >
               <Edit size={16} />
             </button>
             <button onClick={onClose} className="bg-white/50 p-2 rounded-full hover:bg-white">
@@ -152,12 +156,14 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         <div className="p-8 overflow-y-auto">
           {isEditing ? (
             <div className="space-y-5">
+              {/* Name */}
               <div>
                 <label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label>
                 <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none"
                   value={editLocation} onChange={e => setEditLocation(e.target.value)} />
               </div>
 
+              {/* Google places */}
               <div className="bg-neutral-50 p-3 border border-neutral-200">
                 <label className="text-[10px] text-neutral-500 font-bold mb-2 block uppercase tracking-widest">連結 Google Map</label>
                 <PlacesSearch
@@ -175,6 +181,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 {editAddress && <p className="text-[10px] text-gray-400 mt-1 truncate">{editAddress}</p>}
               </div>
 
+              {/* Time + Type */}
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="text-xs text-gray-400 uppercase tracking-widest">時間</label>
@@ -190,13 +197,14 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 </div>
               </div>
 
+              {/* Note */}
               <div>
                 <label className="text-xs text-gray-400 uppercase tracking-widest">備註</label>
                 <textarea value={editNote} onChange={e => setEditNote(e.target.value)}
                   className="w-full h-20 border border-gray-200 p-2 text-sm rounded-none resize-none focus:outline-none focus:border-black" />
               </div>
 
-              {/* ── Move to another day ── */}
+              {/* ── Move to another day ───────────────────────────────────── */}
               <div className="border border-dashed border-gray-200 p-3">
                 <button
                   type="button"
@@ -204,7 +212,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                   className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors w-full"
                 >
                   <ArrowRightLeft size={13} />
-                  移至其他日
+                  移至其他日期
                   <span className="ml-auto text-gray-300 text-[10px]">{showMovePanel ? "▲" : "▼"}</span>
                 </button>
 
@@ -214,42 +222,76 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.18 }}
                       className="overflow-hidden"
                     >
-                      <div className="pt-3 space-y-2">
-                        <p className="text-[10px] text-gray-400 tracking-widest">選擇目標日期：</p>
-                        <div className="flex flex-wrap gap-2">
-                          {otherDays.map(day => {
-                            const isSelected = targetDayIdx === day.actualIdx;
-                            return (
-                              <button
-                                key={day.day}
-                                type="button"
-                                onClick={() => setTargetDayIdx(day.actualIdx)}
-                                className={clsx(
-                                  "px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border transition-all",
-                                  isSelected
-                                    ? "bg-black text-white border-black scale-105"
-                                    : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
-                                )}
-                              >
-                                Day {day.day}
-                                <span className="ml-1.5 font-normal opacity-60 normal-case">
-                                  {format(parseISO(day.date), "M/d")}
-                                </span>
-                              </button>
-                            );
-                          })}
+                      <div className="pt-3 space-y-3">
+                        {/* Day picker */}
+                        <div>
+                          <p className="text-[10px] text-gray-400 tracking-widest mb-2">選擇目標日期：</p>
+                          <div className="flex flex-wrap gap-2">
+                            {otherDays.map(day => {
+                              const isSelected = targetDayIdx === day.actualIdx;
+                              return (
+                                <button
+                                  key={day.day}
+                                  type="button"
+                                  onClick={() => setTargetDayIdx(day.actualIdx)}
+                                  className={clsx(
+                                    "px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border transition-all",
+                                    isSelected
+                                      ? "bg-black text-white border-black"
+                                      : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
+                                  )}
+                                >
+                                  Day {day.day}
+                                  <span className="ml-1.5 font-normal opacity-60 normal-case">
+                                    {format(parseISO(day.date), "M/d")}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
 
+                        {/* ✅ Optional time override */}
+                        {targetDayIdx !== null && (
+                          <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 p-3">
+                            <Clock size={13} className="text-gray-400 shrink-0" />
+                            <div className="flex-1">
+                              <label className="text-[10px] text-gray-400 uppercase tracking-widest block mb-1">
+                                抵達時間 <span className="normal-case text-gray-300">（選填，留空保留原時間）</span>
+                              </label>
+                              <input
+                                type="time"
+                                value={moveTime}
+                                onChange={e => setMoveTime(e.target.value)}
+                                className="w-full bg-transparent text-sm focus:outline-none focus:border-b focus:border-black border-b border-transparent"
+                                placeholder={activity.time || "未設定"}
+                              />
+                            </div>
+                            {moveTime && (
+                              <button
+                                type="button"
+                                onClick={() => setMoveTime("")}
+                                className="text-gray-300 hover:text-gray-500 text-[10px]"
+                              >
+                                清除
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Confirm move button */}
                         {targetDayIdx !== null && (
                           <button
                             type="button"
                             onClick={() => setConfirmMove(true)}
-                            className="w-full mt-1 bg-black text-white py-2.5 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                            className="w-full bg-black text-white py-2.5 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                           >
                             <ArrowRightLeft size={12} />
                             移至 Day {targetDay?.day}（{targetDay?.date}）
+                            {moveTime && <span className="opacity-70 font-normal normal-case">{moveTime}</span>}
                           </button>
                         )}
                       </div>
@@ -258,7 +300,9 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 </AnimatePresence>
               </div>
             </div>
+
           ) : (
+            /* ── View mode ── */
             <>
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -340,6 +384,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
           )}
         </div>
 
+        {/* Footer */}
         <div className="p-6 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
           <button onClick={() => setConfirmDelete(true)}
             className="text-gray-400 p-3 hover:bg-red-50 hover:text-red-500 transition-colors">
@@ -352,6 +397,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         </div>
       </motion.div>
 
+      {/* Expanded image */}
       <AnimatePresence>
         {expandedImg && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -384,8 +430,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
 
       <ConfirmDialog
         isOpen={confirmMove}
-        title="移動景點"
-        message={`確定將「${activity.location}」移至 Day ${targetDay?.day}（${targetDay?.date}）嗎？`}
+        title="移至其他日期"
+        message={`確定將「${activity.location}」移至 Day ${targetDay?.day}（${targetDay?.date}）${moveTime ? `，時間 ${moveTime}` : ""}？`}
         confirmLabel="移動" cancelLabel="取消"
         onConfirm={handleMove}
         onCancel={() => setConfirmMove(false)}
