@@ -45,7 +45,7 @@ export default function TripCard({ trip }: { trip: Trip }) {
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
         {countdownText && (
-          <div className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase rounded-full ${isOngoing ? 'bg-black text-white' : 'bg-white/90 text-black backdrop-blur-sm'}`}>
+          <div className={`absolute top-3 left-3 px-2.5 py-1 text-xs font-bold tracking-widest uppercase rounded-full ${isOngoing ? 'bg-black text-white' : 'bg-white/90 text-black backdrop-blur-sm'}`}>
             {countdownText}
           </div>
         )}
@@ -54,15 +54,15 @@ export default function TripCard({ trip }: { trip: Trip }) {
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between items-baseline">
           <h3 className="text-sm font-bold tracking-widest text-black group-hover:underline decoration-1 underline-offset-4 truncate mr-2">{trip.title}</h3>
-          <span className="text-xs font-mono text-gray-400 shrink-0">{progress}%</span>
+          <span className="text-xs font-mono text-gray-500 shrink-0">{progress}%</span>
         </div>
         <p className="text-[11px] text-gray-500 tracking-wider">{trip.startDate.replace(/-/g,'.')} — {trip.endDate.replace(/-/g,'.')}</p>
         <div className="h-[2px] bg-gray-100 w-full rounded-full overflow-hidden">
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progress}%`, backgroundColor: progress === 100 ? '#16a34a' : '#1a1a1a' }} />
         </div>
         <div className="flex items-center justify-between mt-0.5">
-          <span className="inline-block border border-gray-300 px-2 py-[2px] text-[10px] text-gray-500 uppercase tracking-widest">{statusLabel}</span>
-          {totalPlans > 0 && <span className="text-[10px] text-gray-400 font-mono">{completedPlans}/{totalPlans} 項</span>}
+          <span className="inline-block border border-gray-300 px-2 py-[2px] text-xs text-gray-500 uppercase tracking-widest">{statusLabel}</span>
+          {totalPlans > 0 && <span className="text-xs text-gray-500 font-mono">{completedPlans}/{totalPlans} 項</span>}
         </div>
       </div>
     </motion.div>

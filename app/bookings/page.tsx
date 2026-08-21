@@ -17,8 +17,8 @@ export default function BookingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
 
-  if (isLoading) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">載入中...</div>;
-  if (!trip) return <div className="p-12 text-center text-gray-400 text-xs tracking-widest">暫無旅程，請先新增旅程</div>;
+  if (isLoading) return <div className="p-12 text-center text-gray-500 text-xs tracking-widest animate-pulse">載入中...</div>;
+  if (!trip) return <div className="p-12 text-center text-gray-500 text-xs tracking-widest">暫無旅程，請先新增旅程</div>;
 
   return (
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
@@ -28,8 +28,8 @@ export default function BookingsPage() {
           <div>
             <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1>
             <div className="flex items-center gap-4">
-              <p className="text-xs text-gray-400 tracking-widest uppercase">Bookings</p>
-              <span className="text-gray-300">|</span>
+              <p className="text-xs text-gray-500 tracking-widest uppercase">Bookings</p>
+              <span className="text-gray-400">|</span>
               <TripSwitcher />
             </div>
           </div>
@@ -48,7 +48,7 @@ export default function BookingsPage() {
                   onEdit={() => { setEditingBooking(booking); setIsModalOpen(true); }}
                   onDelete={() => setDeletingBookingId(booking.id)} />
               ))
-            : <div className="text-gray-400 text-sm text-center py-20">暫無預訂</div>
+            : <div className="text-gray-500 text-sm text-center py-20">暫無預訂</div>
           }
         </div>
 
@@ -98,7 +98,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
               {booking.type === "Ticket" && <Ticket size={24} />}
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest">{typeName[booking.type]}</p>
+              <p className="text-xs text-gray-500 uppercase tracking-widest">{typeName[booking.type]}</p>
               <h3 className="text-xl font-bold font-serif">{booking.title}</h3>
               {isFlight && <p className="text-sm font-mono text-gray-600 mt-1">{details.airline} {details.flightNum}</p>}
             </div>
@@ -110,29 +110,29 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
           <div className="flex items-center justify-between bg-gray-50 p-4 border border-gray-100 mb-4">
             <div className="text-center">
               <span className="text-2xl font-black text-gray-800">{details.origin || "ORG"}</span>
-              <p className="text-[10px] text-gray-400 uppercase">{details.departTime || "--:--"}</p>
+              <p className="text-xs text-gray-500 uppercase">{details.departTime || "--:--"}</p>
             </div>
             <div className="flex-1 flex flex-col items-center px-4">
-              <span className="text-[9px] text-gray-400 mb-1">飛行時間</span>
+              <span className="text-[11px] text-gray-500 mb-1">飛行時間</span>
               <div className="w-full h-[1px] bg-gray-300 relative flex items-center justify-center">
-                <Plane size={12} className="text-gray-400 rotate-90 absolute bg-gray-50 px-1" />
+                <Plane size={12} className="text-gray-500 rotate-90 absolute bg-gray-50 px-1" />
               </div>
             </div>
             <div className="text-center">
               <span className="text-2xl font-black text-gray-800">{details.destination || "DST"}</span>
-              <p className="text-[10px] text-gray-400 uppercase">{details.arriveTime || "--:--"}</p>
+              <p className="text-xs text-gray-500 uppercase">{details.arriveTime || "--:--"}</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 mb-4">
-            {details.checkIn  && <div className="bg-gray-50 p-3"><p className="text-[9px] text-gray-400 uppercase">Check-in</p><p className="font-bold">{details.checkIn}</p></div>}
-            {details.checkOut && <div className="bg-gray-50 p-3"><p className="text-[9px] text-gray-400 uppercase">Check-out</p><p className="font-bold">{details.checkOut}</p></div>}
+            {details.checkIn  && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-in</p><p className="font-bold">{details.checkIn}</p></div>}
+            {details.checkOut && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-out</p><p className="font-bold">{details.checkOut}</p></div>}
           </div>
         )}
 
         <div className="grid grid-cols-3 gap-4 text-sm mb-4 pt-2 border-t border-dashed border-gray-200">
-          {details.seat && <div><p className="text-[9px] text-gray-400 uppercase">座位</p><p className="font-bold">{details.seat}</p></div>}
-          {details.gate && <div><p className="text-[9px] text-gray-400 uppercase">登機門</p><p className="font-bold">{details.gate}</p></div>}
+          {details.seat && <div><p className="text-[11px] text-gray-500 uppercase">座位</p><p className="font-bold">{details.seat}</p></div>}
+          {details.gate && <div><p className="text-[11px] text-gray-500 uppercase">登機門</p><p className="font-bold">{details.gate}</p></div>}
           {details.address && (
             <div
               onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(details.address ?? '')}`, '_blank')}
@@ -144,7 +144,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
         </div>
 
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
-          <div className="text-[10px] text-gray-400 tracking-widest uppercase">
+          <div className="text-xs text-gray-500 tracking-widest uppercase">
             {details.price ? `已付: ¥${details.price.toLocaleString()}` : "PREPAID"}
           </div>
           <button
@@ -218,7 +218,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white p-6 w-full max-w-md border border-gray-200 relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black"><X size={20} /></button>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-black"><X size={20} /></button>
         <h2 className="font-serif font-bold text-xl mb-6">{initialData ? "編輯預訂" : "新增預訂"}</h2>
 
         <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
@@ -232,12 +232,12 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
 
         <div className="space-y-3">
           <div>
-            <label className="text-[10px] text-gray-400 uppercase tracking-widest">標題</label>
+            <label className="text-xs text-gray-500 uppercase tracking-widest">標題</label>
             <input className="w-full border-b p-2 text-sm focus:border-black outline-none" placeholder="標題"
               value={title} onChange={e => setTitle(e.target.value)} />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 uppercase tracking-widest">日期</label>
+            <label className="text-xs text-gray-500 uppercase tracking-widest">日期</label>
             <input type="date" className="w-full border-b p-2 text-sm focus:border-black outline-none"
               value={date} onChange={e => setDate(e.target.value)} />
           </div>
@@ -264,12 +264,12 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
           {type === 'Hotel' && (<>
             {/* ✅ New PlacesSearch replaces GooglePlacesAutocomplete */}
             <div>
-              <label className="text-[10px] text-gray-400 uppercase tracking-widest block mb-1">地址</label>
+              <label className="text-xs text-gray-500 uppercase tracking-widest block mb-1">地址</label>
               <PlacesSearch
                 placeholder="搜尋酒店地址..."
                 onSelect={result => setAddress(result.label)}
               />
-              {address && <p className="text-[10px] text-gray-400 mt-1 truncate">{address}</p>}
+              {address && <p className="text-xs text-gray-500 mt-1 truncate">{address}</p>}
             </div>
             <div className="flex gap-2">
               <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="Check-in 時間" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
@@ -306,14 +306,14 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
             </button>
           </div>
           {currency === "HKD" && inputPrice && (
-            <p className="text-[10px] text-gray-400 text-right">
+            <p className="text-xs text-gray-500 text-right">
               approx. ¥{Math.round(Number(inputPrice) / rate).toLocaleString()} (Rate: {rate})
             </p>
           )}
 
           {/* File upload */}
           <div className="pt-2">
-            <label className={`flex items-center justify-center gap-2 w-full p-3 border border-dashed cursor-pointer transition-colors ${fileUrl ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-300 text-gray-400 hover:bg-gray-50'}`}>
+            <label className={`flex items-center justify-center gap-2 w-full p-3 border border-dashed cursor-pointer transition-colors ${fileUrl ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-300 text-gray-500 hover:bg-gray-50'}`}>
               <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} />
               {uploading
                 ? <span className="animate-pulse">上傳中...</span>

@@ -20,7 +20,7 @@ export default function Home() {
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
 
   useEffect(() => { setIsMounted(true) }, [])
-  if (!isMounted) return <div className="p-10 animate-pulse text-center text-gray-400">Loading...</div>
+  if (!isMounted) return <div className="p-10 animate-pulse text-center text-gray-500">Loading...</div>
 
   const handleAddTrip = (data: {
     title: string
@@ -52,7 +52,7 @@ export default function Home() {
             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">
               我的旅程
             </h1>
-            <p className="text-gray-400 text-xs tracking-widest uppercase">My Voyages</p>
+            <p className="text-gray-500 text-xs tracking-widest uppercase">My Voyages</p>
           </div>
           <button
             onClick={() => setIsNewTripOpen(true)}
@@ -113,12 +113,12 @@ export default function Home() {
                 <div className="p-6 flex flex-col justify-between flex-1">
                   <div>
                     <h3 className="text-xl font-medium mb-1 tracking-wide truncate">{trip.title}</h3>
-                    <p className="text-xs text-gray-400 font-light tracking-widest">
+                    <p className="text-xs text-gray-500 font-light tracking-widest">
                       {trip.startDate} → {trip.endDate}
                     </p>
                   </div>
                   <div>
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1 uppercase tracking-widest">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1 uppercase tracking-widest">
                       <span>Progress</span>
                       <span>{progress}%</span>
                     </div>

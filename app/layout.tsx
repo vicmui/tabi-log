@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import MobileNav from "@/components/layout/MobileNav";
+import AuthGate from "@/components/auth/AuthGate";
 import { useTripStore } from "@/store/useTripStore";
 import { supabase } from "@/lib/supabase";
 import "./globals.css";
@@ -33,7 +34,7 @@ function OfflineBanner() {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const { loadTripsFromCloud, isSyncing } = useTripStore();
+  const { isSyncing } = useTripStore();
 
   // Load Google Maps globally so all components (TripMap, TravelStats, PlacesToVisit etc.) can use window.google.maps
   // Non-blocking: UI always renders, Maps loads in background
@@ -42,10 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
     libraries: LIBRARIES,
   });
-
-  useEffect(() => {
-    loadTripsFromCloud();
-  }, [loadTripsFromCloud]);
 
   return (
     <html lang="zh-TW">
@@ -63,11 +60,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans bg-white text-[#333333] antialiased font-light`}>
         {isSyncing && <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />}
         <OfflineBanner />
-        {/* Always render children — no blocking gate */}
-        <div className="pb-24 md:pb-0">
-          {children}
-        </div>
-        <MobileNav />
+        {/* 未登入就只見到登入畫面（/share/... 除外） */}
+        <AuthGate>
+          <div className="pb-24 md:pb-0">
+            {children}
+          </div>
+          <MobileNav />
+        </AuthGate>
       </body>
     </html>
   );

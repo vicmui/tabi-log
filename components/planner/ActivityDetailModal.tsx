@@ -162,14 +162,14 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
             <div className="space-y-5">
               {/* Name */}
               <div>
-                <label className="text-xs text-gray-400 font-bold mb-1 block uppercase tracking-widest">地點名稱</label>
+                <label className="text-xs text-gray-500 font-bold mb-1 block uppercase tracking-widest">地點名稱</label>
                 <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none"
                   value={editLocation} onChange={e => setEditLocation(e.target.value)} />
               </div>
 
               {/* Google places */}
               <div className="bg-neutral-50 p-3 border border-neutral-200">
-                <label className="text-[10px] text-neutral-500 font-bold mb-2 block uppercase tracking-widest">連結 Google Map</label>
+                <label className="text-xs text-neutral-500 font-bold mb-2 block uppercase tracking-widest">連結 Google Map</label>
                 <PlacesSearch
                   placeholder="搜尋地點獲取座標..."
                   onSelect={result => {
@@ -186,18 +186,18 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                     {editPlaceId ? "已連結 Google 地點" : editLat && editLng ? "只有座標，未連結 Google" : "未有座標"}
                   </span>
                 </div>
-                {editAddress && <p className="text-[10px] text-gray-400 mt-1 truncate">{editAddress}</p>}
+                {editAddress && <p className="text-xs text-gray-500 mt-1 truncate">{editAddress}</p>}
               </div>
 
               {/* Time + Type */}
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-400 uppercase tracking-widest">時間</label>
+                  <label className="text-xs text-gray-500 uppercase tracking-widest">時間</label>
                   <input className="w-full border-b p-1 focus:outline-none focus:border-black"
                     value={editTime} onChange={e => setEditTime(e.target.value)} />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-400 uppercase tracking-widest">類別</label>
+                  <label className="text-xs text-gray-500 uppercase tracking-widest">類別</label>
                   <select className="w-full border-b p-1 bg-white focus:outline-none"
                     value={editType} onChange={e => setEditType(e.target.value)}>
                     {TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}
@@ -207,7 +207,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
 
               {/* Note */}
               <div>
-                <label className="text-xs text-gray-400 uppercase tracking-widest">備註</label>
+                <label className="text-xs text-gray-500 uppercase tracking-widest">備註</label>
                 <textarea value={editNote} onChange={e => setEditNote(e.target.value)}
                   className="w-full h-20 border border-gray-200 p-2 text-sm rounded-none resize-none focus:outline-none focus:border-black" />
               </div>
@@ -221,7 +221,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 >
                   <ArrowRightLeft size={13} />
                   移至其他日期
-                  <span className="ml-auto text-gray-300 text-[10px]">{showMovePanel ? "▲" : "▼"}</span>
+                  <span className="ml-auto text-gray-400 text-xs">{showMovePanel ? "▲" : "▼"}</span>
                 </button>
 
                 <AnimatePresence>
@@ -236,7 +236,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                       <div className="pt-3 space-y-3">
                         {/* Day picker */}
                         <div>
-                          <p className="text-[10px] text-gray-400 tracking-widest mb-2">選擇目標日期：</p>
+                          <p className="text-xs text-gray-500 tracking-widest mb-2">選擇目標日期：</p>
                           <div className="flex flex-wrap gap-2">
                             {otherDays.map(day => {
                               const isSelected = targetDayIdx === day.actualIdx;
@@ -246,7 +246,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                                   type="button"
                                   onClick={() => setTargetDayIdx(day.actualIdx)}
                                   className={clsx(
-                                    "px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border transition-all",
+                                    "px-3 py-1.5 text-xs font-bold uppercase tracking-widest border transition-all",
                                     isSelected
                                       ? "bg-black text-white border-black"
                                       : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
@@ -265,10 +265,10 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                         {/* ✅ Optional time override */}
                         {targetDayIdx !== null && (
                           <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 p-3">
-                            <Clock size={13} className="text-gray-400 shrink-0" />
+                            <Clock size={13} className="text-gray-500 shrink-0" />
                             <div className="flex-1">
-                              <label className="text-[10px] text-gray-400 uppercase tracking-widest block mb-1">
-                                抵達時間 <span className="normal-case text-gray-300">（選填，留空保留原時間）</span>
+                              <label className="text-xs text-gray-500 uppercase tracking-widest block mb-1">
+                                抵達時間 <span className="normal-case text-gray-400">（選填，留空保留原時間）</span>
                               </label>
                               <input
                                 type="time"
@@ -282,7 +282,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                               <button
                                 type="button"
                                 onClick={() => setMoveTime("")}
-                                className="text-gray-300 hover:text-gray-500 text-[10px]"
+                                className="text-gray-400 hover:text-gray-500 text-xs"
                               >
                                 清除
                               </button>
@@ -336,7 +336,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 <button onClick={toggleVisited}
                   className={clsx(
                     "flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase transition-colors",
-                    activity.isVisited ? "bg-black text-white" : "text-gray-400"
+                    activity.isVisited ? "bg-black text-white" : "text-gray-500"
                   )}>
                   <CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}
                 </button>
@@ -349,7 +349,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
               )}
 
               <div className="mb-6">
-                <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">我的評分</label>
+                <label className="text-xs text-gray-500 block mb-2 uppercase tracking-widest">我的評分</label>
                 <div className="flex gap-2">
                   {[1,2,3,4,5].map(star => (
                     <button key={star} onClick={() => setRating(star)}
@@ -361,14 +361,14 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
               </div>
 
               <div className="mb-6">
-                <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">旅後回憶</label>
+                <label className="text-xs text-gray-500 block mb-2 uppercase tracking-widest">旅後回憶</label>
                 <textarea value={comment} onChange={e => setComment(e.target.value)}
                   placeholder="寫低感受..."
                   className="w-full h-24 border border-gray-200 p-3 text-sm rounded-none focus:outline-none focus:border-black resize-none" />
               </div>
 
               <div className="mb-4">
-                <label className="text-[10px] text-gray-400 block mb-2 uppercase tracking-widest">
+                <label className="text-xs text-gray-500 block mb-2 uppercase tracking-widest">
                   相簿 Gallery ({photos.length}/3)
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -387,7 +387,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                   ))}
                   {photos.length < 3 && (
                     <label className={clsx(
-                      "w-20 h-20 border border-dashed flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors",
+                      "w-20 h-20 border border-dashed flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 hover:border-black hover:text-black transition-colors",
                       isUploading && "animate-pulse"
                     )}>
                       {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={20} />}
@@ -403,7 +403,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
         {/* Footer */}
         <div className="p-6 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
           <button onClick={() => setConfirmDelete(true)}
-            className="text-gray-400 p-3 hover:bg-red-50 hover:text-red-500 transition-colors">
+            className="text-gray-500 p-3 hover:bg-red-50 hover:text-red-500 transition-colors">
             <Trash2 size={18} />
           </button>
           <button onClick={handleSave}

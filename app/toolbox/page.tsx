@@ -10,6 +10,7 @@ import {
 import { useActiveTrip } from "@/lib/useActiveTrip";
 import { useTripStore } from "@/store/useTripStore";
 import { exportTripPDF } from "@/lib/exportTripPDF";
+import { LogoutButton } from "@/components/auth/AuthGate";
 
 const POPULAR_CURRENCIES = ["JPY", "HKD", "USD", "TWD", "KRW", "SGD", "GBP", "EUR", "THB", "MYR", "AUD"];
 
@@ -125,16 +126,16 @@ export default function ToolboxPage() {
                 {/* Currency pair */}
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
-                    <label className="text-[9px] text-gray-400 block mb-1 tracking-widest uppercase">From</label>
+                    <label className="text-[11px] text-gray-500 block mb-1 tracking-widest uppercase">From</label>
                     <input value={currencyFrom}
                       onChange={e => { setCurrencyFrom(e.target.value.toUpperCase()); setLastUpdated(null); }}
                       className="w-full border-b text-2xl font-black p-1 uppercase focus:outline-none focus:border-black" />
                   </div>
-                  <button onClick={handleSwap} className="text-gray-300 mb-2 hover:text-black transition-colors">
+                  <button onClick={handleSwap} className="text-gray-400 mb-2 hover:text-black transition-colors">
                     <ArrowRightLeft size={20} />
                   </button>
                   <div className="flex-1">
-                    <label className="text-[9px] text-gray-400 block mb-1 tracking-widest uppercase">To</label>
+                    <label className="text-[11px] text-gray-500 block mb-1 tracking-widest uppercase">To</label>
                     <input value={currencyTo}
                       onChange={e => { setCurrencyTo(e.target.value.toUpperCase()); setLastUpdated(null); }}
                       className="w-full border-b text-2xl font-black p-1 uppercase focus:outline-none focus:border-black" />
@@ -145,7 +146,7 @@ export default function ToolboxPage() {
                 <div className="flex flex-wrap gap-1.5">
                   {POPULAR_CURRENCIES.filter(c => c !== currencyFrom).map(c => (
                     <button key={c} onClick={() => { setCurrencyTo(c); setLastUpdated(null); }}
-                      className={`text-[9px] font-bold px-2 py-1 border tracking-widest uppercase transition-colors ${currencyTo === c ? "bg-black text-white border-black" : "border-gray-200 text-gray-400 hover:border-black hover:text-black"}`}>
+                      className={`text-[11px] font-bold px-2 py-1 border tracking-widest uppercase transition-colors ${currencyTo === c ? "bg-black text-white border-black" : "border-gray-200 text-gray-500 hover:border-black hover:text-black"}`}>
                       {c}
                     </button>
                   ))}
@@ -154,22 +155,22 @@ export default function ToolboxPage() {
                 {/* Rate row */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[9px] text-gray-400 tracking-widest uppercase">
+                    <span className="text-[11px] text-gray-500 tracking-widest uppercase">
                       1 {currencyFrom} = ? {currencyTo}
                     </span>
                     <div className="flex items-center gap-2">
                       {lastUpdated && !fetchError && (
-                        <span className="text-[9px] text-gray-400 flex items-center gap-1">
+                        <span className="text-[11px] text-gray-500 flex items-center gap-1">
                           <CheckCircle2 size={10} className="text-green-500" /> 即時匯率 {lastUpdated}
                         </span>
                       )}
                       {fetchError && (
-                        <span className="text-[9px] text-red-400 flex items-center gap-1">
+                        <span className="text-[11px] text-red-400 flex items-center gap-1">
                           <WifiOff size={10} /> 網絡錯誤
                         </span>
                       )}
                       <button onClick={fetchLiveRate} disabled={isFetching}
-                        className="flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase border border-gray-200 px-3 py-1.5 hover:border-black hover:text-black transition-colors disabled:opacity-50">
+                        className="flex items-center gap-1.5 text-[11px] font-bold tracking-widest uppercase border border-gray-200 px-3 py-1.5 hover:border-black hover:text-black transition-colors disabled:opacity-50">
                         {isFetching ? <Loader2 size={10} className="animate-spin" /> : <Wifi size={10} />}
                         {isFetching ? "抓取中..." : "即時匯率"}
                       </button>
@@ -185,10 +186,10 @@ export default function ToolboxPage() {
                   <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
                     placeholder="輸入金額..."
                     className="w-full bg-transparent text-center text-4xl font-bold mb-1 outline-none placeholder-gray-300" />
-                  <p className="text-[10px] text-gray-400 mb-4 tracking-widest">{currencyFrom}</p>
+                  <p className="text-xs text-gray-500 mb-4 tracking-widest">{currencyFrom}</p>
                   <div className="h-[1px] w-10 bg-gray-300 mx-auto mb-4" />
                   <p className="text-5xl font-serif font-black">{result}</p>
-                  <p className="text-[10px] text-gray-400 mt-2 tracking-widest">{currencyTo}</p>
+                  <p className="text-xs text-gray-500 mt-2 tracking-widest">{currencyTo}</p>
                 </div>
               </div>
             </div>
@@ -200,7 +201,7 @@ export default function ToolboxPage() {
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
                     <p className="text-sm font-bold mb-1">一鍵匯出行程手冊</p>
-                    <p className="text-xs text-gray-400 leading-relaxed">
+                    <p className="text-xs text-gray-500 leading-relaxed">
                       將完整行程（封面、每日行程、預訂憑證）匯出成 A4 PDF。<br />
                       出發前列印或儲存至手機，上機後無網絡亦可查閱。
                     </p>
@@ -216,7 +217,7 @@ export default function ToolboxPage() {
                   ].map(item => (
                     <div key={item.label} className="border border-gray-100 p-4 bg-gray-50">
                       <p className="text-[11px] font-bold tracking-widest uppercase mb-1">{item.label}</p>
-                      <p className="text-[10px] text-gray-400">{item.desc}</p>
+                      <p className="text-xs text-gray-500">{item.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -248,7 +249,7 @@ export default function ToolboxPage() {
                 </button>
 
                 {trip && (
-                  <p className="text-[9px] text-gray-300 tracking-widest text-center uppercase">
+                  <p className="text-[11px] text-gray-400 tracking-widest text-center uppercase">
                     當前行程：{trip.title} · {trip.dailyItinerary.length} 天 · {trip.bookings?.length ?? 0} 項預訂
                   </p>
                 )}
@@ -262,12 +263,12 @@ export default function ToolboxPage() {
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
                     <p className="text-sm font-bold mb-1">一鍵下載離線版</p>
-                    <p className="text-xs text-gray-400 leading-relaxed">
+                    <p className="text-xs text-gray-500 leading-relaxed">
                       預先緩存所有頁面至本機 — 上機後開 Airplane Mode 照用。<br />
                       行程資料存於本機，即使無網絡亦可查閱。
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[9px] text-gray-400 shrink-0">
+                  <div className="flex items-center gap-1.5 text-[11px] text-gray-500 shrink-0">
                     <Signal size={10} />
                     <span className="tracking-widest uppercase">Offline Ready</span>
                   </div>
@@ -275,7 +276,7 @@ export default function ToolboxPage() {
 
                 {cacheStatus === "caching" && (
                   <div className="space-y-2">
-                    <div className="flex justify-between text-[9px] text-gray-400 tracking-widest uppercase">
+                    <div className="flex justify-between text-[11px] text-gray-500 tracking-widest uppercase">
                       <span>緩存中...</span><span>{cacheProgress}%</span>
                     </div>
                     <div className="h-[2px] bg-gray-100 w-full">
@@ -303,11 +304,13 @@ export default function ToolboxPage() {
                     : <><HardDrive size={14} /> 立即緩存離線版</>
                   }
                 </button>
-                <p className="text-[9px] text-gray-300 tracking-widest text-center uppercase">
+                <p className="text-[11px] text-gray-400 tracking-widest text-center uppercase">
                   建議每次出發前重新緩存以獲取最新資料
                 </p>
               </div>
             </div>
+
+            <LogoutButton />
 
           </div>
         </main>

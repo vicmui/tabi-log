@@ -31,7 +31,7 @@ export default function MembersPage() {
       <div className="flex min-h-screen bg-white">
         <Sidebar />
         <main className="flex-1 ml-0 md:ml-64 p-12 flex items-center justify-center">
-           <div className="text-center text-gray-400 text-xs tracking-widest animate-pulse">
+           <div className="text-center text-gray-500 text-xs tracking-widest animate-pulse">
               {isSyncing ? "成員資料同步中..." : "載入中..."}
            </div>
         </main>
@@ -109,8 +109,8 @@ export default function MembersPage() {
         <header className="mb-10">
           <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">成員管理</h1>
           <div className="flex items-center gap-4">
-             <p className="text-xs text-gray-400 tracking-widest uppercase">Travel Companions</p>
-             <span className="text-gray-300">|</span>
+             <p className="text-xs text-gray-500 tracking-widest uppercase">Travel Companions</p>
+             <span className="text-gray-400">|</span>
              <TripSwitcher />
           </div>
         </header>
@@ -122,26 +122,26 @@ export default function MembersPage() {
                  <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
               </div>
               <h3 className="text-xl font-bold font-serif mb-1">{member.name}</h3>
-              <p className="text-[10px] text-gray-400 tracking-widest uppercase">{member.role || "旅伴"}</p>
+              <p className="text-xs text-gray-500 tracking-widest uppercase">{member.role || "旅伴"}</p>
               <div className="absolute top-4 right-4 flex gap-2">
-                 <button onClick={() => startEditing(member)} className="text-gray-400 hover:text-black transition-colors p-1"><Edit2 size={14} /></button>
-                 <button onClick={() => handleDeleteMember(member.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={14} /></button>
+                 <button onClick={() => startEditing(member)} className="text-gray-500 hover:text-black transition-colors p-1"><Edit2 size={14} /></button>
+                 <button onClick={() => handleDeleteMember(member.id)} className="text-gray-500 hover:text-red-500 transition-colors p-1"><Trash2 size={14} /></button>
               </div>
             </div>
           ))}
 
           <div className={clsx("border border-dashed p-6 flex flex-col items-center justify-center gap-4 rounded-none transition-colors", editingMemberId ? "bg-white border-black" : "bg-gray-50 border-gray-300")}>
              <div className="w-full flex justify-between items-center mb-2">
-                 <span className="text-xs font-bold tracking-widest uppercase text-gray-400">{editingMemberId ? "編輯資料" : "新增成員"}</span>
-                 {editingMemberId && <button onClick={resetForm} className="text-gray-400 hover:text-black"><X size={16}/></button>}
+                 <span className="text-xs font-bold tracking-widest uppercase text-gray-500">{editingMemberId ? "編輯資料" : "新增成員"}</span>
+                 {editingMemberId && <button onClick={resetForm} className="text-gray-500 hover:text-black"><X size={16}/></button>}
              </div>
-             <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-400 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all" title="400x400 JPG/PNG max 2MB">
-                {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"/> : <div className="flex flex-col items-center gap-1"><Camera size={20} /><span className="text-[9px]">上傳</span></div>}
+             <label className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-gray-500 border border-gray-200 cursor-pointer hover:border-black relative overflow-hidden group transition-all" title="400x400 JPG/PNG max 2MB">
+                {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"/> : <div className="flex flex-col items-center gap-1"><Camera size={20} /><span className="text-[11px]">上傳</span></div>}
                 {isSubmitting && !nameInput && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><Loader2 className="w-5 h-5 text-white animate-spin"/></div>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={isSubmitting} />
              </label>
              <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="輸入名字..." className="bg-transparent border-b border-gray-300 text-center py-2 focus:outline-none focus:border-black w-full text-lg font-serif placeholder-gray-400" disabled={isSubmitting} />
-             <input type="text" value={roleInput} onChange={(e) => setRoleInput(e.target.value)} placeholder="身份（如：主辦、媽咪、旅伴...）" className="bg-transparent border-b border-gray-200 text-center py-1.5 focus:outline-none focus:border-black w-full text-xs text-gray-400 tracking-widest uppercase placeholder-gray-300" disabled={isSubmitting} />
+             <input type="text" value={roleInput} onChange={(e) => setRoleInput(e.target.value)} placeholder="身份（如：主辦、媽咪、旅伴...）" className="bg-transparent border-b border-gray-200 text-center py-1.5 focus:outline-none focus:border-black w-full text-xs text-gray-500 tracking-widest uppercase placeholder-gray-300" disabled={isSubmitting} />
              <button onClick={handleSave} disabled={!nameInput.trim() || isSubmitting} className={clsx("text-white px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all w-full rounded-none flex items-center justify-center gap-2", (!nameInput.trim() || isSubmitting) ? "bg-gray-300 cursor-not-allowed" : "bg-[#333333] hover:bg-black active:scale-95")}>
                {isSubmitting ? "處理中..." : <>{editingMemberId ? <Check size={14}/> : <Plus size={14}/>} {editingMemberId ? "更新資料" : "確認新增"}</>}
              </button>

@@ -84,10 +84,10 @@ function EditLocationModal({
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-[9px] text-gray-400 tracking-[0.2em] uppercase mb-0.5">當日地點</p>
+              <p className="text-[11px] text-gray-500 tracking-[0.2em] uppercase mb-0.5">當日地點</p>
               <h3 className="font-bold text-base tracking-tight">修改地點名稱</h3>
             </div>
-            <button onClick={onClose} className="text-gray-300 hover:text-black transition-colors">
+            <button onClick={onClose} className="text-gray-400 hover:text-black transition-colors">
               <X size={16} />
             </button>
           </div>
@@ -103,7 +103,7 @@ function EditLocationModal({
         </div>
         <div className="flex border-t border-gray-100">
           <button onClick={onClose}
-            className="flex-1 py-3.5 text-xs font-semibold tracking-widest text-gray-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100">
+            className="flex-1 py-3.5 text-xs font-semibold tracking-widest text-gray-500 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100">
             取消
           </button>
           <button onClick={handleConfirm}
@@ -145,6 +145,21 @@ export default function PlannerPage() {
 
   const getCoverPos = (tId: string, dIdx: number) => positionMap[`${tId}-${dIdx}`] ?? 50;
 
+  // 旅途模式：如果今日喺行程範圍之內，一入嚟就自動跳去今日嗰版，
+  // 唔使喺日曆度撳嚟撳去搵返自己喺邊一日。用本地時間計，唔用 UTC —
+  // 喺日本朝早開個 app，UTC 仲係前一日。
+  const todayKey = (() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  })();
+  const [autoJumped, setAutoJumped] = useState(false);
+  useEffect(() => {
+    if (!trip || autoJumped) return;
+    const idx = trip.dailyItinerary.findIndex(d => d.date === todayKey);
+    if (idx >= 0) setActiveDay(idx);
+    setAutoJumped(true);
+  }, [trip, autoJumped, todayKey]);
+
   useEffect(() => { if (trip && activeDay >= trip.dailyItinerary.length) setActiveDay(Math.max(0, trip.dailyItinerary.length - 1)); }, [trip, activeDay]);
   useEffect(() => { setRepositioning(false); }, [activeDay]);
 
@@ -173,8 +188,8 @@ export default function PlannerPage() {
       }).catch(() => {});
   }, [trip?.id]);
 
-  if (!_hasHydrated) return <div className="p-10 text-center animate-pulse text-gray-400 text-xs tracking-widest">載入中...</div>;
-  if (!trip) return <div className="p-10 text-center text-gray-400 text-xs tracking-widest">找不到旅程</div>;
+  if (!_hasHydrated) return <div className="p-10 text-center animate-pulse text-gray-500 text-xs tracking-widest">載入中...</div>;
+  if (!trip) return <div className="p-10 text-center text-gray-500 text-xs tracking-widest">找不到旅程</div>;
 
   const currentDay      = trip.dailyItinerary[activeDay];
   const coverSrc        = currentDay?.coverImage || trip.coverImage || "";
@@ -214,12 +229,12 @@ export default function PlannerPage() {
   };
 
   const WeatherIcon = ({ code }: { code?: number }) => {
-    if (!code) return <Cloud size={12} className="text-gray-400" />;
+    if (!code) return <Cloud size={12} className="text-gray-500" />;
     if (code <= 1) return <Sun size={12} className="text-gray-500" />;
     if (code <= 3) return <CloudSun size={12} className="text-gray-500" />;
     if (code >= 51 && code <= 67) return <CloudRain size={12} className="text-gray-500" />;
     if (code >= 71) return <Snowflake size={12} className="text-gray-500" />;
-    return <Cloud size={12} className="text-gray-400" />;
+    return <Cloud size={12} className="text-gray-500" />;
   };
 
   return (
@@ -241,7 +256,7 @@ export default function PlannerPage() {
 
           {/* Mobile Header */}
           <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
-            <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-400" /></Link>
+            <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-500" /></Link>
             <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
             <button onClick={() => setIsModalOpen(true)} className="bg-black text-white p-2 shadow-sm active:scale-95 transition-transform"><Plus size={20} /></button>
           </div>
@@ -249,10 +264,10 @@ export default function PlannerPage() {
           {/* Desktop Day Sidebar */}
           <div className="hidden md:flex w-72 border-r border-gray-100 bg-white h-full overflow-y-auto flex-col shrink-0 z-20 pt-10">
             <div className="px-8 pb-8 border-b border-gray-50 sticky top-0 bg-white z-10">
-              <Link href="/" className="flex items-center gap-2 text-[10px] text-gray-300 hover:text-black mb-6 transition-colors tracking-widest uppercase font-medium"><ArrowLeft size={10} /> BACK</Link>
+              <Link href="/" className="flex items-center gap-2 text-xs text-gray-400 hover:text-black mb-6 transition-colors tracking-widest uppercase font-medium"><ArrowLeft size={10} /> BACK</Link>
               <div className="cursor-pointer" onClick={() => setIsSettingsOpen(true)}>
                 <h2 className="text-lg font-bold leading-snug mb-1 text-black tracking-tight">{trip.title}</h2>
-                <p className="text-[9px] text-gray-400 tracking-[0.2em] uppercase">{trip.startDate}</p>
+                <p className="text-[11px] text-gray-500 tracking-[0.2em] uppercase">{trip.startDate}</p>
               </div>
             </div>
             <div className="flex-1 py-4">
@@ -262,11 +277,11 @@ export default function PlannerPage() {
                   <button key={dayItem.day} onClick={() => setActiveDay(index)}
                     className={`w-full text-left py-6 px-8 transition-all duration-300 relative border-b border-gray-50 last:border-0 ${activeDay === index ? "bg-gray-50" : "hover:bg-gray-50"}`}>
                     <div className="flex justify-between items-center">
-                      <span className={clsx("text-xs tracking-[0.15em] uppercase", activeDay === index ? "font-semibold text-black" : "font-light text-gray-400")}>Day {dayItem.day}</span>
-                      <span className="text-[9px] text-gray-400 font-medium uppercase">{format(parseISO(dayItem.date), "EEE")}</span>
+                      <span className={clsx("text-xs tracking-[0.15em] uppercase", activeDay === index ? "font-semibold text-black" : "font-light text-gray-500")}>Day {dayItem.day}</span>
+                      <span className="text-[11px] text-gray-500 font-medium uppercase">{format(parseISO(dayItem.date), "EEE")}</span>
                     </div>
-                    <div className="text-[9px] mt-1 text-gray-500 font-light">{dayItem.date}</div>
-                    <div className="mt-2 flex items-center gap-2 text-[9px] text-gray-400">
+                    <div className="text-[11px] mt-1 text-gray-500 font-light">{dayItem.date}</div>
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
                       <WeatherIcon code={info?.code} />
                       <span>{info?.temp ?? "15/25"}</span>
                     </div>
@@ -274,7 +289,7 @@ export default function PlannerPage() {
                   </button>
                 );
               })}
-              <button onClick={() => addDayToTrip(trip.id)} className="w-full py-6 text-[10px] text-gray-300 hover:text-black flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-colors"><Plus size={12} /> Add Day</button>
+              <button onClick={() => addDayToTrip(trip.id)} className="w-full py-6 text-xs text-gray-400 hover:text-black flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-colors"><Plus size={12} /> Add Day</button>
             </div>
           </div>
 
@@ -285,18 +300,25 @@ export default function PlannerPage() {
                 const info = weatherMap[dayItem.date];
                 return (
                   <button key={dayItem.day} onClick={() => setActiveDay(index)}
-                    className={clsx("flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-300",
-                      activeDay === index ? "bg-black text-white border-black shadow-lg scale-105" : "bg-white text-gray-400 border-gray-100")}>
-                    <span className="text-[9px] font-bold uppercase tracking-widest">{format(parseISO(dayItem.date), "EEE")}</span>
+                    className={clsx("relative flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-300",
+                      activeDay === index ? "bg-black text-white border-black shadow-lg scale-105" : "bg-white text-gray-500 border-gray-100",
+                      dayItem.date === todayKey && activeDay !== index && "border-black")}>
+                    {dayItem.date === todayKey && (
+                      <span className={clsx(
+                        "absolute -top-2 px-1.5 py-0.5 text-[10px] font-bold tracking-widest",
+                        activeDay === index ? "bg-white text-black" : "bg-black text-white"
+                      )}>今日</span>
+                    )}
+                    <span className="text-[11px] font-bold uppercase tracking-widest">{format(parseISO(dayItem.date), "EEE")}</span>
                     <span className="text-xl font-bold leading-none my-1">{format(parseISO(dayItem.date), "d")}</span>
                     <div className="flex flex-col items-center gap-1 border-t border-current/10 pt-2 w-full mt-1">
                       <WeatherIcon code={info?.code} />
-                      <span className="text-[8px] font-bold">{info?.temp ?? "15/25"}</span>
+                      <span className="text-[11px] font-bold">{info?.temp ?? "15/25"}</span>
                     </div>
                   </button>
                 );
               })}
-              <button onClick={() => addDayToTrip(trip.id)} className="flex-shrink-0 flex items-center justify-center w-12 h-24 border border-dashed border-gray-200 text-gray-300 snap-center"><Plus size={20} /></button>
+              <button onClick={() => addDayToTrip(trip.id)} className="flex-shrink-0 flex items-center justify-center w-12 h-24 border border-dashed border-gray-200 text-gray-400 snap-center"><Plus size={20} /></button>
             </div>
           </div>
 
@@ -330,12 +352,12 @@ export default function PlannerPage() {
                     <label className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:from-gray-200 hover:to-gray-300 transition-colors">
                       <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                       <div className="w-14 h-14 rounded-full bg-white/60 flex items-center justify-center shadow-sm">
-                        <ImagePlus size={26} className="text-gray-400" />
+                        <ImagePlus size={26} className="text-gray-500" />
                       </div>
                       <div className="text-center px-4">
                         <p className="text-sm font-bold text-gray-500 tracking-widest uppercase">點擊上傳封面相片</p>
-                        <p className="text-xs text-gray-400 mt-1.5">建議 <span className="font-bold text-gray-600">2400 × 800px</span>，橫向構圖，JPG / PNG</p>
-                        <p className="text-[11px] text-gray-300 mt-1">上傳後可用滑桿調整焦點位置</p>
+                        <p className="text-xs text-gray-500 mt-1.5">建議 <span className="font-bold text-gray-600">2400 × 800px</span>，橫向構圖，JPG / PNG</p>
+                        <p className="text-[11px] text-gray-400 mt-1">上傳後可用滑桿調整焦點位置</p>
                       </div>
                     </label>
                   )}
@@ -347,7 +369,7 @@ export default function PlannerPage() {
                         {/* ✅ Opens custom modal instead of prompt() */}
                         <button
                           onClick={() => setEditLocationOpen(true)}
-                          className="flex items-center gap-3 text-[10px] text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-md hover:bg-white transition-all"
+                          className="flex items-center gap-3 text-xs text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-md hover:bg-white transition-all"
                         >
                           <MapPin size={10} /><span>{displayLocation}</span><Edit size={8} className="opacity-50" />
                           <span className="w-px h-3 bg-gray-300" /><Clock size={10} /><span>{currentDay?.date}</span>
@@ -359,10 +381,10 @@ export default function PlannerPage() {
                   {coverSrc && (
                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <button onClick={() => setRepositioning(true)}
-                        className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm shadow-sm transition-all">
+                        className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm shadow-sm transition-all">
                         調整位置
                       </button>
-                      <label className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm shadow-sm cursor-pointer transition-all">
+                      <label className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm shadow-sm cursor-pointer transition-all">
                         <Camera size={13} /> 換封面
                         <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                       </label>
@@ -377,18 +399,18 @@ export default function PlannerPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <span className="text-[11px] font-bold tracking-[0.2em] text-black uppercase">行程規劃</span>
-                    <button onClick={handleDeleteDay} className="text-gray-300 hover:text-red-400 p-1"><CalendarX size={16} /></button>
+                    <button onClick={handleDeleteDay} className="text-gray-400 hover:text-red-400 p-1"><CalendarX size={16} /></button>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
-                    <button onClick={handleShare} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /><span className="hidden sm:inline">分享</span></button>
-                    <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">路線</span></button>
-                    <Link href={`/planner/${trip.id}/map`} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
+                    <button onClick={handleShare} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /><span className="hidden sm:inline">分享</span></button>
+                    <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">路線</span></button>
+                    <Link href={`/planner/${trip.id}/map`} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       <Globe size={14} /><span className="hidden sm:inline">全程地圖</span>
                     </Link>
-                    <button onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-[10px] font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
+                    <button onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       {viewMode === "list" ? <><MapIcon size={14} /><span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /><span className="hidden sm:inline">列表</span></>}
                     </button>
-                    <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-[10px] tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors shadow-lg uppercase font-bold"><Plus size={12} /> 新增活動</button>
+                    <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-xs tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors shadow-lg uppercase font-bold"><Plus size={12} /> 新增活動</button>
                   </div>
                 </div>
               </div>
@@ -397,7 +419,7 @@ export default function PlannerPage() {
                 {viewMode === "list" ? (
                   currentDay
                     ? <ItineraryList dayIndex={activeDay} activities={currentDay.activities} tripId={trip.id} onActivityClick={id => setSelectedActivityId(id)} />
-                    : <div className="text-center py-20 text-gray-300 text-[10px] uppercase tracking-widest">今日暫無行程安排</div>
+                    : <div className="text-center py-20 text-gray-400 text-xs uppercase tracking-widest">今日暫無行程安排</div>
                 ) : (
                   <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50">
                     <TripMap

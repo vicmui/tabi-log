@@ -135,8 +135,8 @@ export default function PlacesSearch({
     <div ref={containerRef} className="relative w-full">
       <div className="flex items-center gap-2 border-b border-gray-200 focus-within:border-black transition-colors">
         {loading
-          ? <Loader2 size={14} className="text-gray-400 animate-spin shrink-0" />
-          : <Search size={14} className="text-gray-400 shrink-0" />
+          ? <Loader2 size={14} className="text-gray-500 animate-spin shrink-0" />
+          : <Search size={14} className="text-gray-500 shrink-0" />
         }
         <input
           type="text"
@@ -145,7 +145,7 @@ export default function PlacesSearch({
           onFocus={() => items.length > 0 && setOpen(true)}
           placeholder={placeholder}
           autoComplete="off"
-          className={`w-full bg-transparent focus:outline-none placeholder:text-gray-400 text-base ${compact ? 'py-1.5' : 'py-2'}`}
+          className={`w-full bg-transparent focus:outline-none placeholder:text-gray-500 text-base ${compact ? 'py-1.5' : 'py-2'}`}
         />
       </div>
 
@@ -160,7 +160,7 @@ export default function PlacesSearch({
                 onMouseDown={e => { e.preventDefault(); handlePick(s) }}
                 className="flex items-start gap-2 px-3 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
               >
-                <MapPin size={12} className="text-gray-400 mt-1 shrink-0" />
+                <MapPin size={12} className="text-gray-500 mt-1 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{main}</p>
                   {sub && <p className="text-xs text-gray-500 truncate">{sub}</p>}
@@ -169,7 +169,7 @@ export default function PlacesSearch({
             )
           })}
           {/* Google 條款：結果唔係顯示喺 Google 地圖上面，就要標明來源 */}
-          <li className="px-3 py-1.5 text-[11px] text-gray-400 bg-gray-50">
+          <li className="px-3 py-1.5 text-[11px] text-gray-500 bg-gray-50">
             搜尋結果由 Google 提供
           </li>
         </ul>

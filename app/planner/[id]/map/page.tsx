@@ -150,7 +150,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
 
   if (!isMounted || !trip) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-400 text-xs tracking-widest animate-pulse">
+      <div className="flex items-center justify-center h-screen text-gray-500 text-xs tracking-widest animate-pulse">
         載入中...
       </div>
     )
@@ -163,7 +163,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
       <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 shrink-0 bg-white z-10">
         <Link
           href={`/planner/${params.id}`}
-          className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors text-xs tracking-widest uppercase"
+          className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-xs tracking-widest uppercase"
         >
           <ArrowLeft size={16} /> 返回行程
         </Link>
@@ -192,7 +192,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
             className={`px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-full border transition-all ${
               selectedDays.size === 0
                 ? 'bg-black text-white border-black'
-                : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
             }`}
           >
             全部
@@ -213,7 +213,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
               <span className="opacity-60">({d.date})</span>
             </button>
           ))}
-          <button onClick={() => setIsFilterOpen(false)} className="ml-auto text-gray-300 hover:text-black">
+          <button onClick={() => setIsFilterOpen(false)} className="ml-auto text-gray-400 hover:text-black">
             <X size={16} />
           </button>
         </div>
@@ -222,7 +222,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
       {/* Map */}
       <div className="flex-1 relative">
         {!isLoaded ? (
-          <div className="flex items-center justify-center h-full text-gray-400 text-xs animate-pulse">
+          <div className="flex items-center justify-center h-full text-gray-500 text-xs animate-pulse">
             地圖載入中...
           </div>
         ) : (
@@ -379,7 +379,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
               }`}
             >
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
-              <span className="text-[10px] font-bold tracking-widest uppercase text-gray-600 whitespace-nowrap">
+              <span className="text-xs font-bold tracking-widest uppercase text-gray-600 whitespace-nowrap">
                 DAY {d.day} ({d.date}) · {d.points.length}個點
               </span>
             </button>

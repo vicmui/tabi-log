@@ -37,7 +37,7 @@ export default function ShareItinerary({ elementId, tripTitle, day }: { elementI
     <button 
       onClick={handleCapture} 
       disabled={loading}
-      className="flex-none flex items-center gap-2 text-[10px] tracking-widest border border-gray-200 text-gray-500 px-3 py-2  hover:border-black hover:text-black transition-colors bg-white uppercase"
+      className="flex-none flex items-center gap-2 text-xs tracking-widest border border-gray-200 text-gray-500 px-3 py-2  hover:border-black hover:text-black transition-colors bg-white uppercase"
     >
       {loading ? <Loader2 size={12} className="animate-spin"/> : <Share2 size={12} />}
       {loading ? "生成中..." : "分享 (IG)"}

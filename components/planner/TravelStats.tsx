@@ -69,9 +69,9 @@ export default function TravelStats({ origin, dest }: Props) {
         // ── Collapsed: just a subtle clickable line ──
         <button
           onClick={() => setIsExpanded(true)}
-          className="relative z-10 flex items-center gap-1.5 text-[10px] text-gray-300 hover:text-gray-500 transition-colors group"
+          className="relative z-10 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-500 transition-colors group"
         >
-          <ChevronDown size={10} className="group-hover:text-gray-400" />
+          <ChevronDown size={10} className="group-hover:text-gray-500" />
           <span className="tracking-widest uppercase">查看距離</span>
         </button>
       ) : (
@@ -85,7 +85,7 @@ export default function TravelStats({ origin, dest }: Props) {
                   key={m}
                   onClick={() => setMode(m)}
                   className={clsx(
-                    "p-1.5 rounded-full transition-colors " + (mode === m ? "text-white" : "text-gray-400 hover:bg-gray-200")
+                    "p-1.5 rounded-full transition-colors " + (mode === m ? "text-white" : "text-gray-500 hover:bg-gray-200")
                   )}
                   title={MODE_CONFIG[m].label}
                 >
@@ -95,23 +95,23 @@ export default function TravelStats({ origin, dest }: Props) {
             })}
           </div>
 
-          <div className="text-[10px] text-gray-500 font-medium">
+          <div className="text-xs text-gray-500 font-medium">
             {loading ? (
-              <div className="flex items-center gap-1 text-gray-300 animate-pulse">
+              <div className="flex items-center gap-1 text-gray-400 animate-pulse">
                 <Loader2 size={10} className="animate-spin" /> 計算中...
               </div>
             ) : stats ? (
               <div className="flex items-center gap-2">
                 <span>{stats.duration}</span>
-                <span className="text-gray-300">•</span>
+                <span className="text-gray-400">•</span>
                 <span>{stats.distance}</span>
               </div>
             ) : (
-              <span className="text-gray-300">無法計算</span>
+              <span className="text-gray-400">無法計算</span>
             )}
           </div>
 
-          <button onClick={() => setIsExpanded(false)} className="text-[10px] text-gray-300 hover:text-gray-500 ml-1">
+          <button onClick={() => setIsExpanded(false)} className="text-xs text-gray-400 hover:text-gray-500 ml-1">
             ✕
           </button>
         </div>

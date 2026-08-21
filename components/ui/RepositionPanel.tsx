@@ -32,7 +32,7 @@ export function RepositionPanel({ src, initialY = 50, onConfirm, onCancel, compa
     <div className={`flex flex-col ${compact ? '' : 'h-full'}`}>
       {/* Instruction bar */}
       <div className="bg-neutral-900 text-white text-center py-2.5 px-4 shrink-0">
-        <p className="text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-1.5">
+        <p className="text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-1.5">
           <Move size={11} /> 拖動滑桿調整封面焦點
         </p>
       </div>
@@ -50,7 +50,7 @@ export function RepositionPanel({ src, initialY = 50, onConfirm, onCancel, compa
         {/* Centre guide line */}
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center gap-1">
           <div className="w-full h-px bg-white/35" />
-          <span className="bg-black/55 text-white text-[9px] px-2.5 py-0.5 rounded-full tracking-widest">
+          <span className="bg-black/55 text-white text-[11px] px-2.5 py-0.5 rounded-full tracking-widest">
             焦點區域
           </span>
         </div>
@@ -60,7 +60,7 @@ export function RepositionPanel({ src, initialY = 50, onConfirm, onCancel, compa
       <div className="bg-white px-5 py-4 shrink-0">
         <div className="flex items-center gap-3">
           {/* Top icon */}
-          <span className="text-[10px] text-gray-400 font-bold select-none">頂</span>
+          <span className="text-xs text-gray-500 font-bold select-none">頂</span>
           <input
             type="range"
             min={0}
@@ -71,9 +71,9 @@ export function RepositionPanel({ src, initialY = 50, onConfirm, onCancel, compa
             className="flex-1 h-2 accent-black cursor-pointer touch-pan-x"
             style={{ touchAction: 'pan-x' }}   // only block vertical scroll on the slider itself
           />
-          <span className="text-[10px] text-gray-400 font-bold select-none">底</span>
+          <span className="text-xs text-gray-500 font-bold select-none">底</span>
         </div>
-        <p className="text-center text-[9px] text-gray-300 mt-1 tracking-widest">
+        <p className="text-center text-[11px] text-gray-400 mt-1 tracking-widest">
           左右滑動調整 · 唔影響 browser 捲動
         </p>
       </div>
@@ -82,13 +82,13 @@ export function RepositionPanel({ src, initialY = 50, onConfirm, onCancel, compa
       <div className="flex border-t border-gray-100 shrink-0">
         <button
           onClick={onCancel}
-          className="flex-1 py-3.5 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100 flex items-center justify-center gap-1.5"
+          className="flex-1 py-3.5 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100 flex items-center justify-center gap-1.5"
         >
           <X size={11} /> 取消
         </button>
         <button
           onClick={() => onConfirm(posY)}
-          className="flex-1 py-3.5 text-[10px] font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors flex items-center justify-center gap-1.5"
+          className="flex-1 py-3.5 text-xs font-bold tracking-widest text-neutral-900 uppercase hover:bg-neutral-50 transition-colors flex items-center justify-center gap-1.5"
         >
           <Check size={11} /> 完成
         </button>

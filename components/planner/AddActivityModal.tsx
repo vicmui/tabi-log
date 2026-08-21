@@ -85,18 +85,18 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif font-bold tracking-widest text-[#333333]">新增活動</h2>
-              <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-black" /></button>
+              <button onClick={onClose}><X size={20} className="text-gray-500 hover:text-black" /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Type */}
               <div>
-                <label className="block text-xs text-gray-400 mb-2">類別</label>
+                <label className="block text-xs text-gray-500 mb-2">類別</label>
                 <div className="grid grid-cols-6 gap-2">
                   {TYPES.map(t => (
                     <button key={t.type} type="button" onClick={() => setType(t.type)}
                       className={clsx("flex flex-col items-center justify-center py-2 gap-1 border",
-                        type === t.type ? "bg-black text-white" : "bg-white text-gray-400 border-gray-100"
+                        type === t.type ? "bg-black text-white" : "bg-white text-gray-500 border-gray-100"
                       )}>
                       <t.icon size={14} />
                     </button>
@@ -106,7 +106,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
 
               {/* Name */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1">活動名稱</label>
+                <label className="block text-xs text-gray-500 mb-1">活動名稱</label>
                 <input type="text" placeholder="例: Harbs 午餐" value={customName}
                   onChange={e => setCustomName(e.target.value)}
                   className="w-full border-b py-2 text-sm focus:outline-none focus:border-black" />
@@ -114,7 +114,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
 
               {/* ✅ New Places Search using AutocompleteSuggestion API */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1">地點搜尋</label>
+                <label className="block text-xs text-gray-500 mb-1">地點搜尋</label>
                 <PlacesSearch
                   placeholder="搜尋地點獲取座標..."
                   locationBias={destLat && destLng ? { lat: destLat, lng: destLng } : undefined}
@@ -137,12 +137,12 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
               {/* Time + Note */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">時間 <span className="text-gray-300">(選填)</span></label>
+                  <label className="block text-xs text-gray-500 mb-1">時間 <span className="text-gray-400">(選填)</span></label>
                   <input type="time" value={time} onChange={e => setTime(e.target.value)}
                     className="w-full border-b py-2 text-sm focus:outline-none focus:border-black" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">備註</label>
+                  <label className="block text-xs text-gray-500 mb-1">備註</label>
                   <input type="text" value={note} onChange={e => setNote(e.target.value)}
                     className="w-full border-b py-2 text-sm focus:outline-none focus:border-black" placeholder="選填..." />
                 </div>
@@ -150,8 +150,8 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
 
               {/* Reference photo */}
               <div>
-                <label className="block text-xs text-gray-400 mb-2">
-                  參考圖片 <span className="text-gray-300">(選填)</span>
+                <label className="block text-xs text-gray-500 mb-2">
+                  參考圖片 <span className="text-gray-400">(選填)</span>
                 </label>
                 {refPhoto ? (
                   <div className="relative w-full h-32 overflow-hidden border border-gray-100">
@@ -163,7 +163,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
                     </button>
                   </div>
                 ) : (
-                  <label className="flex items-center gap-2 w-full border border-dashed border-gray-200 py-3 px-4 text-xs text-gray-400 cursor-pointer hover:border-black hover:text-black transition-colors">
+                  <label className="flex items-center gap-2 w-full border border-dashed border-gray-200 py-3 px-4 text-xs text-gray-500 cursor-pointer hover:border-black hover:text-black transition-colors">
                     {uploading
                       ? <><Loader2 size={14} className="animate-spin" /> 上傳中...</>
                       : <><Upload size={14} /> 上傳圖片 (JPG/PNG，最大 5MB)</>

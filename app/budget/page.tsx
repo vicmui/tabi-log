@@ -95,7 +95,7 @@ function FormContent({
           </button>
         </div>
         {currency === 'HKD' && amount && (
-          <p className="text-[10px] text-gray-400 mt-1 text-right">
+          <p className="text-xs text-gray-500 mt-1 text-right">
             {getCurrencySymbol(localCurrency)}{Math.round(Number(amount) / rate).toLocaleString()}
           </p>
         )}
@@ -103,7 +103,7 @@ function FormContent({
 
       {/* Payer */}
       <div>
-        <label className="text-[10px] text-gray-400 uppercase tracking-widest">付款人</label>
+        <label className="text-xs text-gray-500 uppercase tracking-widest">付款人</label>
         <div className="flex gap-2 mt-1 flex-wrap">
           {members.map(m => (
             <button
@@ -121,14 +121,14 @@ function FormContent({
       {/* Split */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-[10px] text-gray-400 uppercase tracking-widest">分攤</label>
+          <label className="text-xs text-gray-500 uppercase tracking-widest">分攤</label>
           <button
             type="button"
             onClick={() => {
               if (!isCustomSplit) distributeEvenly()
               setIsCustomSplit(!isCustomSplit)
             }}
-            className="flex items-center gap-1 text-[10px] bg-gray-100 px-2 py-1 rounded"
+            className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded"
           >
             <Settings2 size={10} /> {isCustomSplit ? '取消自訂' : '自訂'}
           </button>
@@ -137,7 +137,7 @@ function FormContent({
           <button
             type="button"
             onClick={() => setSplitWith(members.map(m => m.id))}
-            className="text-[10px] underline mr-2"
+            className="text-xs underline mr-2"
           >
             全選
           </button>
@@ -152,7 +152,7 @@ function FormContent({
                     : [...splitWith, m.id]
                 )
               }
-              className={`px-3 py-1 text-xs border ${splitWith.includes(m.id) ? 'bg-gray-200' : 'text-gray-300'}`}
+              className={`px-3 py-1 text-xs border ${splitWith.includes(m.id) ? 'bg-gray-200' : 'text-gray-400'}`}
             >
               {m.name}
             </button>
@@ -187,7 +187,7 @@ function FormContent({
             key={c}
             type="button"
             onClick={() => setCategory(c)}
-            className={`px-2 py-1 text-[10px] border ${category === c ? 'bg-black text-white' : 'border-gray-200'}`}
+            className={`px-2 py-1 text-xs border ${category === c ? 'bg-black text-white' : 'border-gray-200'}`}
           >
             {CAT_CONFIG[c].label}
           </button>
@@ -195,7 +195,7 @@ function FormContent({
       </div>
 
       {/* Receipt upload */}
-      <label className="flex items-center gap-2 text-[10px] text-gray-400 border border-dashed w-full justify-center py-3 cursor-pointer">
+      <label className="flex items-center gap-2 text-xs text-gray-500 border border-dashed w-full justify-center py-3 cursor-pointer">
         <input type="file" accept="image/*,.pdf" className="hidden" onChange={onFileUpload} />
         <Upload size={14} />
         {receiptUrl ? '✅ 已上傳收據' : '上傳收據 / PDF (max 10MB)'}
@@ -235,7 +235,7 @@ export default function BudgetPage() {
     return (
       <div className="flex min-h-screen bg-white">
         <Sidebar />
-        <main className="flex-1 ml-0 md:ml-64 p-12 text-center text-gray-400 text-xs tracking-widest animate-pulse">
+        <main className="flex-1 ml-0 md:ml-64 p-12 text-center text-gray-500 text-xs tracking-widest animate-pulse">
           載入中...
         </main>
       </div>
@@ -391,13 +391,13 @@ export default function BudgetPage() {
         {/* Settlement */}
         {debts.length > 0 && (
           <div className="mb-10">
-            <h2 className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">結算建議</h2>
+            <h2 className="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase mb-4">結算建議</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {debts.map((d, idx) => (
                 <div key={idx} className="bg-white p-6 border-l-4 border-jp-charcoal flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-bold">{getMemberName(d.from)}</span>
-                    <ArrowRight size={14} className="text-gray-400" />
+                    <ArrowRight size={14} className="text-gray-500" />
                     <span className="font-bold">{getMemberName(d.to)}</span>
                   </div>
                   <span className="font-serif text-xl font-bold">
@@ -415,7 +415,7 @@ export default function BudgetPage() {
             className="col-span-2 md:col-span-1 bg-jp-charcoal text-white p-6 relative group cursor-pointer"
             onClick={() => { setTempBudget(trip.budgetTotal.toString()); setIsEditingBudget(true) }}
           >
-            <p className="text-[10px] tracking-widest opacity-60 uppercase">
+            <p className="text-xs tracking-widest opacity-60 uppercase">
               總預算 <Edit size={10} className="inline ml-1 opacity-50 group-hover:opacity-100" />
             </p>
             {isEditingBudget ? (
@@ -448,14 +448,14 @@ export default function BudgetPage() {
           </div>
 
           <div className="bg-white p-6 border border-gray-100">
-            <p className="text-[10px] tracking-widest text-gray-400 uppercase">已花費</p>
+            <p className="text-xs tracking-widest text-gray-500 uppercase">已花費</p>
             <h2 className="text-3xl font-serif font-bold text-neutral-900">
               {getCurrencySymbol(trip.localCurrency)}{totalSpent.toLocaleString()}
             </h2>
           </div>
 
           <div className={`p-6 border border-gray-100 ${isOverBudget ? 'bg-red-500 text-white' : 'bg-white'}`}>
-            <p className="text-[10px] tracking-widest opacity-60 uppercase">剩餘</p>
+            <p className="text-xs tracking-widest opacity-60 uppercase">剩餘</p>
             <h2 className="text-3xl font-serif font-bold">
               {getCurrencySymbol(trip.localCurrency)}{remaining.toLocaleString()}
             </h2>
@@ -465,8 +465,8 @@ export default function BudgetPage() {
         {/* Progress Bar */}
         <div className="mb-10 bg-white p-6 border border-gray-100">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] tracking-[0.2em] text-gray-400 uppercase">預算進度</span>
-            <span className="text-[10px] text-gray-400 font-mono">
+            <span className="text-xs tracking-[0.2em] text-gray-500 uppercase">預算進度</span>
+            <span className="text-xs text-gray-500 font-mono">
               {trip.budgetTotal > 0 ? Math.min(Math.round((totalSpent / trip.budgetTotal) * 100), 100) : 0}%
             </span>
           </div>
@@ -480,7 +480,7 @@ export default function BudgetPage() {
                 : '#16a34a',
             }} />
           </div>
-          <p className="text-[10px] text-gray-400 mt-2">
+          <p className="text-xs text-gray-500 mt-2">
             {!isOverBudget
               ? trip.budgetTotal > 0 && totalSpent / trip.budgetTotal >= 0.85
                 ? '🔴 接近預算上限'
@@ -502,7 +502,7 @@ export default function BudgetPage() {
                 <button
                   type="button"
                   onClick={() => { setEditingExpenseId(null); setItemName(''); setAmount(''); setReceiptUrl('') }}
-                  className="text-xs text-gray-400"
+                  className="text-xs text-gray-500"
                 >
                   取消
                 </button>
@@ -568,7 +568,7 @@ export default function BudgetPage() {
                   className="bg-white p-4 flex justify-between items-center border-b hover:bg-gray-50 group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="text-xs text-gray-400 font-mono w-20">{exp.date}</div>
+                    <div className="text-xs text-gray-500 font-mono w-20">{exp.date}</div>
                     <div>
                       <p className="font-bold text-sm flex items-center gap-2">
                         {exp.itemName}
@@ -578,7 +578,7 @@ export default function BudgetPage() {
                           </a>
                         )}
                       </p>
-                      <p className="text-[10px] text-gray-400">
+                      <p className="text-xs text-gray-500">
                         {CAT_CONFIG[exp.category].label} · 由 {trip.members.find(m => m.id === exp.payerId)?.name} 付
                         {exp.customSplit ? ' (自訂分攤)' : ''}
                       </p>
@@ -639,7 +639,7 @@ export default function BudgetPage() {
                   <button
                     type="button"
                     onClick={() => { setIsFormOpen(false); setEditingExpenseId(null) }}
-                    className="text-xs text-gray-400 border border-gray-200 px-3 py-1 rounded-full"
+                    className="text-xs text-gray-500 border border-gray-200 px-3 py-1 rounded-full"
                   >
                     關閉
                   </button>

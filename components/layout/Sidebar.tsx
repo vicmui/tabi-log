@@ -63,7 +63,7 @@ export default function Sidebar() {
       </div>
 
       <div className="h-[2px] w-10 bg-black mb-2" />
-      <p className="text-[10px] text-gray-500 tracking-[0.25em] uppercase font-medium mb-8">旅行手帳</p>
+      <p className="text-xs text-gray-500 tracking-[0.25em] uppercase font-medium mb-8">旅行手帳</p>
 
       {/* Nav Links */}
       <nav className="flex-1 space-y-6 overflow-y-auto no-scrollbar py-2">
@@ -84,12 +84,12 @@ export default function Sidebar() {
                       'text-xs tracking-[0.15em] transition-all duration-300 uppercase',
                       isActive
                         ? 'text-black font-bold'
-                        : 'text-gray-400 group-hover:text-gray-600 font-medium'
+                        : 'text-gray-500 group-hover:text-gray-600 font-medium'
                     )}
                   >
                     {item.label}
                   </span>
-                  <span className="text-[9px] text-gray-500 group-hover:text-gray-600 transition-colors tracking-widest font-light">
+                  <span className="text-[11px] text-gray-500 group-hover:text-gray-600 transition-colors tracking-widest font-light">
                     {item.subLabel}
                   </span>
                 </div>
@@ -101,7 +101,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="mt-auto pt-8 border-t border-gray-50">
-        <div className="text-[9px] text-gray-400 tracking-widest uppercase leading-loose">
+        <div className="text-[11px] text-gray-500 tracking-widest uppercase leading-loose">
           <p>© 2026 VM&apos;S BUILD</p>
         </div>
       </div>

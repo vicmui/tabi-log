@@ -98,7 +98,7 @@ export default function GooglePlaceInfo({
     <div className={compact ? 'flex items-center gap-3 flex-wrap' : 'space-y-2'}>
       {/* 評分 */}
       {loading && !info && (
-        <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
+        <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
           <Loader2 size={12} className="animate-spin" /> 讀緊 Google 資料…
         </span>
       )}
@@ -132,7 +132,7 @@ export default function GooglePlaceInfo({
       {/* 今日營業時間 */}
       {info?.todayHours && !compact && (
         <p className="flex items-center gap-1.5 text-xs text-gray-600">
-          <Clock size={12} className="text-gray-400 shrink-0" />
+          <Clock size={12} className="text-gray-500 shrink-0" />
           {info.todayHours}
         </p>
       )}
@@ -149,7 +149,7 @@ export default function GooglePlaceInfo({
       </a>
 
       {info && !compact && (
-        <p className="text-[11px] text-gray-400">評分及營業時間來自 Google</p>
+        <p className="text-[11px] text-gray-500">評分及營業時間來自 Google</p>
       )}
     </div>
   )

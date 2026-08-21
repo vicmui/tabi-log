@@ -135,36 +135,36 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
       <div className="p-7">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <p className="text-[9px] tracking-[0.25em] text-gray-400 uppercase mb-1">新增旅程</p>
+            <p className="text-[11px] tracking-[0.25em] text-gray-500 uppercase mb-1">新增旅程</p>
             <h2 className="font-serif font-bold text-xl text-neutral-900 tracking-tight">去邊度好呢？</h2>
           </div>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-            <X size={14} className="text-gray-400" />
+            <X size={14} className="text-gray-500" />
           </button>
         </div>
 
         <div className="space-y-5">
           {/* Trip name */}
           <div>
-            <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">旅程名稱</label>
+            <label className="block text-[11px] tracking-[0.2em] text-gray-500 uppercase mb-2">旅程名稱</label>
             <input
               ref={inputRef} type="text" value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !repositioning) handleSubmit(); if (e.key === 'Escape') onClose() }}
               placeholder="例：2026 大阪行 🇯🇵"
-              className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors"
+              className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-400 focus:outline-none focus:border-neutral-800 transition-colors"
             />
           </div>
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">出發日期</label>
+              <label className="block text-[11px] tracking-[0.2em] text-gray-500 uppercase mb-2">出發日期</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
                 className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 focus:outline-none focus:border-neutral-800 transition-colors" />
             </div>
             <div>
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase mb-2">回程日期</label>
+              <label className="block text-[11px] tracking-[0.2em] text-gray-500 uppercase mb-2">回程日期</label>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                 className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 focus:outline-none focus:border-neutral-800 transition-colors" />
             </div>
@@ -173,10 +173,10 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
           {/* Cover photo */}
           <div>
             <div className="flex justify-between items-end mb-2">
-              <label className="block text-[9px] tracking-[0.2em] text-gray-400 uppercase">
-                封面照片 <span className="normal-case text-gray-300">（選填）</span>
+              <label className="block text-[11px] tracking-[0.2em] text-gray-500 uppercase">
+                封面照片 <span className="normal-case text-gray-400">（選填）</span>
               </label>
-              <span className="text-[9px] text-gray-400">建議 <span className="font-bold text-gray-500">2400×800px</span> · 橫向</span>
+              <span className="text-[11px] text-gray-500">建議 <span className="font-bold text-gray-500">2400×800px</span> · 橫向</span>
             </div>
 
             {/* Reposition slider (compact / inline) */}
@@ -198,10 +198,10 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                     {/* Hover / always-visible on mobile controls */}
                     <div className="absolute inset-0 bg-black/30 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity flex items-center justify-center gap-3">
                       <button onClick={() => setRepositioning(true)}
-                        className="flex items-center gap-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1.5">
+                        className="flex items-center gap-1.5 bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-1.5">
                         調整位置
                       </button>
-                      <label className="flex items-center gap-1.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 cursor-pointer">
+                      <label className="flex items-center gap-1.5 bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-1.5 cursor-pointer">
                         <Upload size={11} /> 更換
                         <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
                       </label>
@@ -211,16 +211,16 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                   <label className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer hover:from-gray-100 hover:to-gray-200 transition-colors">
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
                     {uploading ? (
-                      <span className="text-xs text-gray-400 animate-pulse tracking-widest">上傳中...</span>
+                      <span className="text-xs text-gray-500 animate-pulse tracking-widest">上傳中...</span>
                     ) : (
                       <>
                         <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
-                          <ImagePlus size={18} className="text-gray-400" />
+                          <ImagePlus size={18} className="text-gray-500" />
                         </div>
                         <div className="text-center">
                           <p className="text-[11px] font-bold text-gray-500 tracking-widest uppercase">上傳封面</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5"><span className="font-bold text-gray-500">2400 × 800px</span> · JPG / PNG</p>
-                          <p className="text-[9px] text-gray-300 mt-0.5">上傳後可調整焦點位置</p>
+                          <p className="text-xs text-gray-500 mt-0.5"><span className="font-bold text-gray-500">2400 × 800px</span> · JPG / PNG</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">上傳後可調整焦點位置</p>
                         </div>
                       </>
                     )}
@@ -234,7 +234,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
         {!repositioning && (
           <button onClick={handleSubmit} disabled={!title.trim()}
             className={`w-full mt-7 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] rounded-none transition-all ${
-              !title.trim() ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-black text-white hover:opacity-90'
+              !title.trim() ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-black text-white hover:opacity-90'
             }`}>
             建立旅程
           </button>
@@ -272,7 +272,7 @@ export function PromptDialog({ isOpen, title, message, defaultValue = '', placeh
         <input ref={inputRef} type="text" value={value} onChange={e => setValue(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleConfirm(); if (e.key === 'Escape') onCancel() }}
           placeholder={placeholder}
-          className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-300 focus:outline-none focus:border-neutral-800 transition-colors" />
+          className="w-full border-b border-gray-200 py-2 text-sm text-neutral-800 placeholder:text-gray-400 focus:outline-none focus:border-neutral-800 transition-colors" />
       </div>
       <div className="flex border-t border-gray-100">
         <button onClick={onCancel} className="flex-1 py-4 text-xs font-semibold tracking-widest text-neutral-400 uppercase hover:bg-gray-50 transition-colors border-r border-gray-100">Cancel</button>

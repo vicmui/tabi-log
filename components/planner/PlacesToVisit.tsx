@@ -69,14 +69,14 @@ function AddToDayPanel({
         <>
           {/* Day picker */}
           <div>
-            <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1.5">選擇日期</p>
+            <p className="text-[11px] text-gray-500 uppercase tracking-widest mb-1.5">選擇日期</p>
             <div className="flex flex-wrap gap-1.5">
               {trip.dailyItinerary.map((day, idx) => (
                 <button
                   key={day.day}
                   onClick={() => setSelectedDayIdx(idx)}
                   className={clsx(
-                    "px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest border transition-all",
+                    "px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest border transition-all",
                     selectedDayIdx === idx
                       ? "bg-black text-white border-black"
                       : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
@@ -94,10 +94,10 @@ function AddToDayPanel({
           {/* Time picker */}
           {selectedDayIdx !== null && (
             <div className="flex items-center gap-2">
-              <Clock size={11} className="text-gray-400 shrink-0" />
+              <Clock size={11} className="text-gray-500 shrink-0" />
               <div className="flex-1">
-                <label className="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">
-                  時間 <span className="normal-case text-gray-300">（選填）</span>
+                <label className="text-[11px] text-gray-500 uppercase tracking-widest block mb-0.5">
+                  時間 <span className="normal-case text-gray-400">（選填）</span>
                 </label>
                 <input
                   type="time"
@@ -113,14 +113,14 @@ function AddToDayPanel({
           <div className="flex gap-2 pt-1">
             <button
               onClick={onClose}
-              className="flex items-center gap-1 px-3 py-1.5 text-[10px] border border-gray-200 text-gray-400 hover:border-gray-400 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 text-gray-500 hover:border-gray-400 transition-colors"
             >
               <X size={10} /> 取消
             </button>
             <button
               onClick={handleAdd}
               disabled={selectedDayIdx === null}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-black text-white hover:bg-gray-800 disabled:opacity-30 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest bg-black text-white hover:bg-gray-800 disabled:opacity-30 transition-colors"
             >
               <CalendarPlus size={11} /> 加入行程
             </button>
@@ -214,7 +214,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-gray-400 tracking-widest uppercase mb-1.5">{visited} / {places.length} 已打卡</p>
+          <p className="text-xs text-gray-500 tracking-widest uppercase mb-1.5">{visited} / {places.length} 已打卡</p>
           <div className="h-[2px] w-40 bg-gray-100 overflow-hidden">
             <div className="h-full bg-black transition-all duration-500"
               style={{ width: places.length > 0 ? `${(visited / places.length) * 100}%` : "0%" }} />
@@ -222,12 +222,12 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
         </div>
         <div className="flex flex-col items-end gap-1">
           <button onClick={handleAISuggest} disabled={isLoadingAI}
-            className="flex items-center gap-2 border border-black bg-black text-white px-4 py-2.5 text-[10px] font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50">
+            className="flex items-center gap-2 border border-black bg-black text-white px-4 py-2.5 text-xs font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50">
             {isLoadingAI ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {isLoadingAI ? "AI 生成中..." : "AI 建議景點"}
           </button>
-          {aiDone  && <p className="text-[9px] text-green-500 tracking-widest">✓ 已加入建議景點</p>}
-          {aiError && <p className="text-[9px] text-red-400 tracking-widest">{aiError}</p>}
+          {aiDone  && <p className="text-[11px] text-green-500 tracking-widest">✓ 已加入建議景點</p>}
+          {aiError && <p className="text-[11px] text-red-400 tracking-widest">{aiError}</p>}
         </div>
       </div>
 
@@ -237,8 +237,8 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
           const count = cat === "全部" ? places.length : places.filter(p => p.category === cat).length;
           return (
             <button key={cat} onClick={() => setFilter(cat)}
-              className={clsx("text-[9px] font-bold px-2.5 py-1 border tracking-widest uppercase transition-colors",
-                filter === cat ? "bg-black text-white border-black" : "border-gray-200 text-gray-400 hover:border-black hover:text-black")}>
+              className={clsx("text-[11px] font-bold px-2.5 py-1 border tracking-widest uppercase transition-colors",
+                filter === cat ? "bg-black text-white border-black" : "border-gray-200 text-gray-500 hover:border-black hover:text-black")}>
               {cat}{count > 0 && <span className="ml-1 opacity-60">{count}</span>}
             </button>
           );
@@ -260,23 +260,23 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <button onClick={handleAdd} disabled={!newName.trim()}
-              className="flex items-center gap-1 bg-black text-white px-5 py-2 text-[10px] font-bold tracking-widest uppercase hover:opacity-80 disabled:opacity-30 transition-opacity flex-shrink-0">
+              className="flex items-center gap-1 bg-black text-white px-5 py-2 text-xs font-bold tracking-widest uppercase hover:opacity-80 disabled:opacity-30 transition-opacity flex-shrink-0">
               <Plus size={12} /> 新增
             </button>
           </div>
         </div>
         {newAddress && (
           <div className="px-4 pb-3 pt-2 flex items-center gap-1.5 border-t border-dashed border-gray-200">
-            <MapPin size={10} className="text-gray-300 flex-shrink-0" />
-            <span className="text-[10px] text-gray-400 truncate">{newAddress}</span>
-            {newLat && newLng && <span className="text-[10px] text-green-500 font-bold ml-auto shrink-0">座標鎖定</span>}
+            <MapPin size={10} className="text-gray-400 flex-shrink-0" />
+            <span className="text-xs text-gray-500 truncate">{newAddress}</span>
+            {newLat && newLng && <span className="text-xs text-green-500 font-bold ml-auto shrink-0">座標鎖定</span>}
           </div>
         )}
       </div>
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-300">
+        <div className="text-center py-16 text-gray-400">
           <MapPin size={32} className="mx-auto mb-3 opacity-20" />
           <p className="text-xs tracking-widest uppercase">
             {places.length === 0 ? '按「AI 建議景點」或自行搜尋新增' : "此類別暫無景點"}
@@ -302,36 +302,36 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                         {/* Main row */}
                         <div className="flex items-center gap-2 p-3">
                           <div {...provided.dragHandleProps}
-                            className="text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0">
+                            className="text-gray-200 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0">
                             <GripVertical size={16} />
                           </div>
 
                           <button onClick={() => togglePlaceVisited(trip.id, place.id)} className="flex-shrink-0">
                             {place.isVisited
                               ? <CheckCircle2 size={20} className="text-black" />
-                              : <Circle size={20} className="text-gray-300 hover:text-black transition-colors" />
+                              : <Circle size={20} className="text-gray-400 hover:text-black transition-colors" />
                             }
                           </button>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className={clsx("font-bold text-sm", place.isVisited && "line-through text-gray-400")}>
+                              <span className={clsx("font-bold text-sm", place.isVisited && "line-through text-gray-500")}>
                                 {place.name}
                               </span>
                               {place.suggestedBy === "ai" && (
-                                <span className="text-[8px] text-gray-300 tracking-widest border border-gray-200 px-1 py-0.5 uppercase">AI</span>
+                                <span className="text-[11px] text-gray-400 tracking-widest border border-gray-200 px-1 py-0.5 uppercase">AI</span>
                               )}
                               {place.category && (
-                                <span className={clsx("text-[9px] font-bold px-1.5 py-0.5 border uppercase tracking-wider",
-                                  CATEGORY_STYLES[place.category] || "bg-gray-50 text-gray-400 border-gray-200")}>
+                                <span className={clsx("text-[11px] font-bold px-1.5 py-0.5 border uppercase tracking-wider",
+                                  CATEGORY_STYLES[place.category] || "bg-gray-50 text-gray-500 border-gray-200")}>
                                   {place.category}
                                 </span>
                               )}
                             </div>
                             {(place.address || place.note) && (
                               <div className="flex items-start gap-1 mt-0.5">
-                                <MapPin size={9} className="text-gray-300 mt-0.5 flex-shrink-0" />
-                                <span className="text-[10px] text-gray-400 leading-tight truncate">{place.address || place.note}</span>
+                                <MapPin size={9} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                                <span className="text-xs text-gray-500 leading-tight truncate">{place.address || place.note}</span>
                               </div>
                             )}
                           </div>
@@ -341,7 +341,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             <button
                               onClick={() => setExpandedPlaceId(expandedPlaceId === place.id ? null : place.id)}
                               className={clsx(
-                                "flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase border transition-colors whitespace-nowrap",
+                                "flex items-center gap-1 px-2.5 py-1 text-xs font-bold tracking-widest uppercase border transition-colors whitespace-nowrap",
                                 expandedPlaceId === place.id
                                   ? "bg-black text-white border-black"
                                   : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
@@ -355,7 +355,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             <a
                               href={place.googleMapsUri ?? googleMapsLink({ placeId: place.placeId, name: place.name, address: place.address })}
                               target="_blank" rel="noreferrer"
-                              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>

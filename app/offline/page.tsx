@@ -370,7 +370,7 @@ export default function OfflinePage() {
               <WifiOff size={28} className="text-black" />
               <h1 className="text-3xl font-black tracking-tighter uppercase">離線版下載</h1>
             </div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest">OFFLINE PACK</p>
+            <p className="text-xs text-gray-500 uppercase tracking-widest">OFFLINE PACK</p>
           </div>
 
           {/* Explainer */}
@@ -394,7 +394,7 @@ export default function OfflinePage() {
 
           {/* Trip selector */}
           <div className="mb-6">
-            <label className="block text-xs text-gray-400 uppercase tracking-widest mb-2">選擇旅程</label>
+            <label className="block text-xs text-gray-500 uppercase tracking-widest mb-2">選擇旅程</label>
             <div className="relative">
               <select
                 value={selectedTripId}
@@ -405,7 +405,7 @@ export default function OfflinePage() {
                   <option key={t.id} value={t.id}>{t.title} ({t.startDate} – {t.endDate})</option>
                 ))}
               </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
             </div>
           </div>
 
@@ -418,7 +418,7 @@ export default function OfflinePage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base truncate">{trip.title}</h3>
-                  <p className="text-xs text-gray-400 mt-1">{trip.startDate} — {trip.endDate}</p>
+                  <p className="text-xs text-gray-500 mt-1">{trip.startDate} — {trip.endDate}</p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {[
                       `${trip.dailyItinerary.length} 天`,
@@ -442,7 +442,7 @@ export default function OfflinePage() {
             className={clsx(
               "w-full py-4  text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
               status === 'loading'
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                 : "bg-black text-white hover:bg-gray-900 active:scale-[.98]"
             )}
           >
@@ -490,7 +490,7 @@ export default function OfflinePage() {
 
           {/* Usage tip */}
           <div className="mt-8 p-4 border border-dashed border-gray-200 ">
-            <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-400">使用方法</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">使用方法</h3>
             <ol className="space-y-1">
               {[
                 "點擊「一鍵下載」，等待所有圖片打包完成",
@@ -499,7 +499,7 @@ export default function OfflinePage() {
                 "去到目的地，直接用瀏覽器開啟 .html 即可！無需 WiFi",
               ].map((t, i) => (
                 <li key={i} className="text-xs text-gray-500 flex gap-2">
-                  <span className="font-bold text-gray-300 w-4 shrink-0">{i+1}.</span>
+                  <span className="font-bold text-gray-400 w-4 shrink-0">{i+1}.</span>
                   <span>{t}</span>
                 </li>
               ))}

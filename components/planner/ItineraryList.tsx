@@ -31,10 +31,16 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const dest = activity.lat && activity.lng
-      ? `${activity.lat},${activity.lng}`
-      : encodeURIComponent(activity.address || activity.location);
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=transit`, "_blank");
+    const params = new URLSearchParams({ api: "1", travelmode: "transit" });
+    params.set(
+      "destination",
+      activity.lat && activity.lng
+        ? `${activity.lat},${activity.lng}`
+        : (activity.address || activity.location)
+    );
+    // 有 placeId 就鎖死係嗰間，唔會導航去錯咗嘅分店
+    if (activity.placeId) params.set("destination_place_id", activity.placeId);
+    window.open(`https://www.google.com/maps/dir/?${params.toString()}`, "_blank");
   };
 
   const toggleCheck = (e: React.MouseEvent) => {
@@ -72,12 +78,12 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
             <div className="flex justify-between items-start mb-1">
               <h4 className={clsx(
                 "text-sm font-bold tracking-wide leading-tight mr-2",
-                activity.isVisited ? "text-gray-400 line-through" : "text-black"
+                activity.isVisited ? "text-gray-500 line-through" : "text-black"
               )}>
                 {activity.location}
               </h4>
               {hasCost && (
-                <span className="text-[10px] font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 border border-gray-100">
+                <span className="text-xs font-mono text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-0.5 border border-gray-100">
                   ¥ {costValue.toLocaleString()}
                 </span>
               )}
@@ -85,13 +91,13 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
 
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className={clsx(
-                "text-[9px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm border-transparent",
+                "text-[11px] uppercase tracking-wider border px-1.5 py-0.5 rounded-sm border-transparent",
                 config.bg, config.color
               )}>
                 {config.label}
               </span>
               {(activity.rating ?? 0) > 0 && (
-                <span className="text-[9px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>
+                <span className="text-[11px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>
               )}
             </div>
 
@@ -109,19 +115,19 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
             )}>
               <button
                 onClick={handleNavigate}
-                className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-2.5 py-1 border border-blue-100 hover:bg-blue-100 transition-colors"
+                className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2.5 py-1 border border-blue-100 hover:bg-blue-100 transition-colors"
               >
                 <Navigation size={10} fill="currentColor" /> 導航
               </button>
               <button
                 onClick={toggleCheck}
-                className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2.5 py-1 border border-green-100 hover:bg-green-100 transition-colors"
+                className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2.5 py-1 border border-green-100 hover:bg-green-100 transition-colors"
               >
                 {activity.isVisited ? <><Circle size={10} /> 取消</> : <><CheckCircle2 size={10} /> 打卡</>}
               </button>
               <button
                 onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
-                className="flex items-center gap-1 text-[10px] text-red-400 bg-red-50 px-2.5 py-1 border border-red-100 hover:bg-red-100 transition-colors ml-auto"
+                className="flex items-center gap-1 text-xs text-red-400 bg-red-50 px-2.5 py-1 border border-red-100 hover:bg-red-100 transition-colors ml-auto"
               >
                 <Trash2 size={10} /> 刪除
               </button>
@@ -158,8 +164,8 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
   if (validActivities.length === 0) return (
     <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
       <div className="text-6xl mb-4 grayscale">🐈🌸</div>
-      <p className="text-sm font-bold text-gray-400 tracking-widest uppercase">今日暫無行程</p>
-      {!isReadOnly && <p className="text-[10px] text-gray-300 mt-1">按右下角 &quot;+&quot; 開始規劃冒險</p>}
+      <p className="text-sm font-bold text-gray-500 tracking-widest uppercase">今日暫無行程</p>
+      {!isReadOnly && <p className="text-xs text-gray-400 mt-1">按右下角 &quot;+&quot; 開始規劃冒險</p>}
     </div>
   );
 
@@ -222,7 +228,7 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
                         {/* ✅ Drag handle lives OUTSIDE ItemContent to avoid pointer conflicts */}
                         <div
                           {...provided.dragHandleProps}
-                          className="absolute left-[-26px] top-1/2 -translate-y-1/2 z-30 p-2 text-gray-300 hover:text-gray-600 active:text-black transition-colors touch-none cursor-grab active:cursor-grabbing"
+                          className="absolute left-[-26px] top-1/2 -translate-y-1/2 z-30 p-2 text-gray-400 hover:text-gray-600 active:text-black transition-colors touch-none cursor-grab active:cursor-grabbing"
                           onClick={e => e.stopPropagation()}
                         >
                           <GripVertical size={16} />
