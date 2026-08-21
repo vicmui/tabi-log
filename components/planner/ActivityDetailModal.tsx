@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import PlacesSearch from "@/components/ui/PlacesSearch";
+import GooglePlaceInfo from "@/components/ui/GooglePlaceInfo";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { format, parseISO } from "date-fns";
 
@@ -34,6 +35,8 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
   const [editAddress, setEditAddress]   = useState(activity?.address || "");
   const [editLat, setEditLat]           = useState(activity?.lat);
   const [editLng, setEditLng]           = useState(activity?.lng);
+  const [editPlaceId, setEditPlaceId]   = useState<string | undefined>(activity?.placeId);
+  const [editMapsUri, setEditMapsUri]   = useState<string | undefined>(activity?.googleMapsUri);
 
   const [comment, setComment]           = useState(activity?.comment || "");
   const [rating, setRating]             = useState(activity?.rating || 0);
@@ -96,6 +99,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
       updateActivity(tripId, dayIndex, activityId, {
         location: editLocation, type: editType, time: editTime,
         note: editNote, address: editAddress, lat: editLat, lng: editLng,
+        placeId: editPlaceId, googleMapsUri: editMapsUri,
       });
       setIsEditing(false);
     } else {
@@ -172,11 +176,15 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                     setEditAddress(result.label);
                     if (result.lat && result.lng) { setEditLat(result.lat); setEditLng(result.lng); }
                     if (!editLocation) setEditLocation(result.name);
+                    setEditPlaceId(result.placeId);
+                    setEditMapsUri(result.googleMapsUri);
                   }}
                 />
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={clsx("w-2 h-2 rounded-full", editLat && editLng ? "bg-green-500" : "bg-red-400")} />
-                  <span className="text-[10px] text-gray-500">{editLat && editLng ? "座標鎖定" : "未有座標"}</span>
+                  <span className={clsx("w-2 h-2 rounded-full", editPlaceId ? "bg-green-500" : editLat && editLng ? "bg-amber-400" : "bg-red-400")} />
+                  <span className="text-xs text-gray-500">
+                    {editPlaceId ? "已連結 Google 地點" : editLat && editLng ? "只有座標，未連結 Google" : "未有座標"}
+                  </span>
                 </div>
                 {editAddress && <p className="text-[10px] text-gray-400 mt-1 truncate">{editAddress}</p>}
               </div>
@@ -312,10 +320,18 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                     <span>{activity.time}</span>
                   </div>
                   {activity.address && (
-                    <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                      <MapPin size={10} /> {activity.address}
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                      <MapPin size={11} /> {activity.address}
                     </p>
                   )}
+                  <div className="mt-3">
+                    <GooglePlaceInfo
+                      placeId={activity.placeId}
+                      googleMapsUri={activity.googleMapsUri}
+                      name={activity.location}
+                      address={activity.address}
+                    />
+                  </div>
                 </div>
                 <button onClick={toggleVisited}
                   className={clsx(

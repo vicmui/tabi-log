@@ -306,9 +306,9 @@ export default function BudgetPage() {
     const file = e.target.files?.[0]
     if (!file || !trip) return
     const filePath = `public/${trip.id}/receipts/${uuidv4()}-${file.name}`
-    const { error } = await supabase.storage.from('tripfiles').upload(filePath, file)
+    const { error } = await supabase.storage.from('trip_files').upload(filePath, file)
     if (error) { setAlertMsg(error.message); return }
-    const { data: { publicUrl } } = supabase.storage.from('tripfiles').getPublicUrl(filePath)
+    const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath)
     setReceiptUrl(publicUrl)
   }
 

@@ -32,6 +32,8 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
   const [note, setNote]             = useState("");
   const [lat, setLat]               = useState<number | null>(null);
   const [lng, setLng]               = useState<number | null>(null);
+  const [placeId, setPlaceId]       = useState<string | null>(null);
+  const [googleMapsUri, setGoogleMapsUri] = useState<string | null>(null);
   const [refPhoto, setRefPhoto]     = useState<string | null>(null);
   const [uploading, setUploading]   = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -56,13 +58,14 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
   const reset = () => {
     setCustomName(''); setAddress(''); setNote('');
     setLat(null); setLng(null); setTime(''); setRefPhoto(null);
+    setPlaceId(null); setGoogleMapsUri(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const finalTitle = customName || address;
     if (!finalTitle) return;
-    onSubmit({ type, time: time || null, location: finalTitle, address, note, lat, lng, refPhoto });
+    onSubmit({ type, time: time || null, location: finalTitle, address, note, lat, lng, refPhoto, placeId: placeId ?? undefined, googleMapsUri: googleMapsUri ?? undefined });
     reset();
     onClose();
   };
@@ -119,11 +122,15 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
                     if (!customName) setCustomName(result.name);
                     setAddress(result.label);
                     if (result.lat && result.lng) { setLat(result.lat); setLng(result.lng); }
+                    setPlaceId(result.placeId ?? null);
+                    setGoogleMapsUri(result.googleMapsUri ?? null);
                   }}
                 />
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={clsx("w-2 h-2 rounded-full", lat && lng ? "bg-green-500" : "bg-red-400")} />
-                  <span className="text-[10px] text-gray-500">{lat && lng ? "座標鎖定" : "未有座標"}</span>
+                  <span className={clsx("w-2 h-2 rounded-full", placeId ? "bg-green-500" : lat && lng ? "bg-amber-400" : "bg-red-400")} />
+                  <span className="text-xs text-gray-500">
+                    {placeId ? "已連結 Google 地點" : lat && lng ? "只有座標，未連結 Google" : "未有座標"}
+                  </span>
                 </div>
               </div>
 

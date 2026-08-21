@@ -5,7 +5,7 @@ import { useTripStore, Trip } from "@/store/useTripStore";
 import { CheckCircle2, Circle, Trash2, GripVertical, Plus, Sparkles, Loader2, MapPin, CalendarPlus, Clock, Check, X } from "lucide-react";
 import clsx from "clsx";
 import { ConfirmDialog } from "@/components/ui/Dialog";
-import PlacesSearch, { PlaceResult } from "@/components/ui/PlacesSearch";
+import PlacesSearch, { PlaceResult, googleMapsLink } from "@/components/ui/PlacesSearch";
 import { format, parseISO } from "date-fns";
 
 // ✅ Aligned with Planner activity types (Food/Sightseeing/Shopping/Transport/Hotel/Other)
@@ -139,6 +139,8 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
   const [newAddress, setNewAddress]   = useState("");
   const [newLat, setNewLat]           = useState<number | undefined>();
   const [newLng, setNewLng]           = useState<number | undefined>();
+  const [newPlaceId, setNewPlaceId]   = useState<string | undefined>();
+  const [newMapsUri, setNewMapsUri]   = useState<string | undefined>();
   const [newCategory, setNewCategory] = useState("景點");
   const [filter, setFilter]           = useState("全部");
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -156,6 +158,8 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
     setNewName(result.name);
     setNewAddress(result.label);
     if (result.lat && result.lng) { setNewLat(result.lat); setNewLng(result.lng); }
+    setNewPlaceId(result.placeId);
+    setNewMapsUri(result.googleMapsUri);
   };
 
   const handleAdd = () => {
@@ -163,9 +167,11 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
     addPlaceToVisit(trip.id, {
       name: newName.trim(), address: newAddress || undefined,
       lat: newLat, lng: newLng, category: newCategory,
+      placeId: newPlaceId, googleMapsUri: newMapsUri,
       isVisited: false, suggestedBy: "user",
     });
     setNewName(""); setNewAddress(""); setNewLat(undefined); setNewLng(undefined);
+    setNewPlaceId(undefined); setNewMapsUri(undefined);
   };
 
   const handleDragEnd = (result: DropResult) => {
@@ -347,7 +353,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
 
                             {/* Navigate */}
                             <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + (place.address ? ' ' + place.address : ''))}`}
+                              href={place.googleMapsUri ?? googleMapsLink({ placeId: place.placeId, name: place.name, address: place.address })}
                               target="_blank" rel="noreferrer"
                               className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
                             >

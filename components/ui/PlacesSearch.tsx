@@ -1,12 +1,19 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Search, Loader2, MapPin } from 'lucide-react'
+import { Search, Loader2, MapPin, Star } from 'lucide-react'
 
 export interface PlaceResult {
   label: string   // formattedAddress
   name: string    // displayName / first segment
   lat: number
   lng: number
+  /** Google 嘅唯一地點 ID。呢個係唯一可以永久儲存嘅 Google 資料。 */
+  placeId?: string
+  /** 官方 Google Maps 頁面連結（一按就睇到評價、相、街景） */
+  googleMapsUri?: string
+  /** 攞返嚟即刻畀用家睇，方便佢揀啱個地方。唔好存落 DB。 */
+  rating?: number
+  userRatingCount?: number
 }
 
 interface Props {
@@ -19,8 +26,10 @@ interface Props {
 /**
  * PlacesSearch
  * Uses the NEW google.maps.places.AutocompleteSuggestion API (2025+).
- * Drop-in replacement for react-google-places-autocomplete.
  * Place this file at: @/components/ui/PlacesSearch.tsx
+ *
+ * 揀完之後會連 placeId、Google Maps 連結、評分一齊交返出去，
+ * 咁樣個景點就唔會再係一舊「唔知係咩嚟」嘅文字。
  */
 export default function PlacesSearch({
   placeholder = '搜尋地點...',
@@ -88,15 +97,36 @@ export default function PlacesSearch({
     try {
       const Place = (window as any).google.maps.places.Place
       const place = new Place({ id: pred.placeId })
-      await place.fetchFields({ fields: ['location', 'formattedAddress', 'displayName'] })
+      await place.fetchFields({
+        fields: [
+          'id',
+          'location',
+          'formattedAddress',
+          'displayName',
+          'googleMapsURI',
+          'rating',
+          'userRatingCount',
+        ],
+      })
       onSelect({
         label: place.formattedAddress ?? text,
         name:  place.displayName ?? text.split(',')[0],
         lat:   place.location?.lat() ?? 0,
         lng:   place.location?.lng() ?? 0,
+        placeId: place.id ?? pred.placeId,
+        googleMapsUri: place.googleMapsURI ?? undefined,
+        rating: place.rating ?? undefined,
+        userRatingCount: place.userRatingCount ?? undefined,
       })
     } catch (_) {
-      onSelect({ label: text, name: text.split(',')[0], lat: 0, lng: 0 })
+      // 就算 details 攞唔到，最低限度都要保住 placeId
+      onSelect({
+        label: text,
+        name: text.split(',')[0],
+        lat: 0,
+        lng: 0,
+        placeId: pred.placeId ?? undefined,
+      })
     }
     tokenRef.current = null // reset session token after selection
   }
@@ -105,8 +135,8 @@ export default function PlacesSearch({
     <div ref={containerRef} className="relative w-full">
       <div className="flex items-center gap-2 border-b border-gray-200 focus-within:border-black transition-colors">
         {loading
-          ? <Loader2 size={12} className="text-gray-300 animate-spin shrink-0" />
-          : <Search size={12} className="text-gray-300 shrink-0" />
+          ? <Loader2 size={14} className="text-gray-400 animate-spin shrink-0" />
+          : <Search size={14} className="text-gray-400 shrink-0" />
         }
         <input
           type="text"
@@ -115,7 +145,7 @@ export default function PlacesSearch({
           onFocus={() => items.length > 0 && setOpen(true)}
           placeholder={placeholder}
           autoComplete="off"
-          className={`w-full bg-transparent focus:outline-none placeholder:text-gray-300 text-sm ${compact ? 'py-1.5' : 'py-2'}`}
+          className={`w-full bg-transparent focus:outline-none placeholder:text-gray-400 text-base ${compact ? 'py-1.5' : 'py-2'}`}
         />
       </div>
 
@@ -130,16 +160,44 @@ export default function PlacesSearch({
                 onMouseDown={e => { e.preventDefault(); handlePick(s) }}
                 className="flex items-start gap-2 px-3 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
               >
-                <MapPin size={11} className="text-gray-300 mt-0.5 shrink-0" />
+                <MapPin size={12} className="text-gray-400 mt-1 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{main}</p>
-                  {sub && <p className="text-[10px] text-gray-400 truncate">{sub}</p>}
+                  {sub && <p className="text-xs text-gray-500 truncate">{sub}</p>}
                 </div>
               </li>
             )
           })}
+          {/* Google 條款：結果唔係顯示喺 Google 地圖上面，就要標明來源 */}
+          <li className="px-3 py-1.5 text-[11px] text-gray-400 bg-gray-50">
+            搜尋結果由 Google 提供
+          </li>
         </ul>
       )}
     </div>
   )
+}
+
+/** 景點卡上面嘅細細個評分標籤 */
+export function RatingBadge({ rating, count }: { rating?: number; count?: number }) {
+  if (rating === undefined || rating === null) return null
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-gray-600">
+      <Star size={11} className="text-amber-500 fill-amber-500" />
+      <span className="font-bold text-gray-800">{rating.toFixed(1)}</span>
+      {count !== undefined && <span className="text-gray-500">({count.toLocaleString()})</span>}
+    </span>
+  )
+}
+
+/**
+ * 砌一條去 Google Maps 嘅連結。
+ * 有 placeId 就用 placeId（百分百準），冇就 fallback 用個名去 search。
+ */
+export function googleMapsLink(opts: { placeId?: string; name?: string; address?: string }) {
+  if (opts.placeId) {
+    return `https://www.google.com/maps/place/?q=place_id:${opts.placeId}`
+  }
+  const q = [opts.name, opts.address].filter(Boolean).join(' ')
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 }

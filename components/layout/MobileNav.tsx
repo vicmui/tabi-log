@@ -11,11 +11,13 @@ import {
   Users,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useTripStore } from '@/store/useTripStore'
 
-const MENU_ITEMS = [
+// 冇 /planner 呢一頁（只有 /planner/[id]），所以「行程」要動態砌條 href，
+// 同 Sidebar 用同一套邏輯。之前硬寫 "/planner" 係會 404 嘅。
+const STATIC_ITEMS = [
   { label: "首頁",  href: "/",        icon: Home },
   { label: "預訂",  href: "/bookings", icon: Ticket },
-  { label: "行程",  href: "/planner",  icon: CalendarRange },
   { label: "預算",  href: "/budget",   icon: Wallet },
   { label: "準備",  href: "/planning", icon: ClipboardList },
   { label: "工具",  href: "/toolbox",  icon: Briefcase },
@@ -24,6 +26,28 @@ const MENU_ITEMS = [
 
 export default function MobileNav() {
   const pathname = usePathname()
+  const { trips, activeTripId } = useTripStore()
+
+  // 1. 現正選中嘅行程 → 2. 最近將要出發嘅 → 3. 最新嗰個
+  const plannerHref = (() => {
+    if (trips.length === 0) return '/'
+    const active = activeTripId ? trips.find(t => t.id === activeTripId) : null
+    if (active) return `/planner/${active.id}`
+    const today = new Date().toISOString().split('T')[0]
+    const upcoming = trips
+      .filter(t => t.startDate >= today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    if (upcoming.length > 0) return `/planner/${upcoming[0].id}`
+    const sorted = [...trips].sort((a, b) => b.startDate.localeCompare(a.startDate))
+    return `/planner/${sorted[0].id}`
+  })()
+
+  const MENU_ITEMS = [
+    STATIC_ITEMS[0],
+    STATIC_ITEMS[1],
+    { label: "行程", href: plannerHref, icon: CalendarRange },
+    ...STATIC_ITEMS.slice(2),
+  ]
 
   // Share 頁隱藏 nav（唯讀 view）
   if (pathname.startsWith('/share')) return null
@@ -33,13 +57,15 @@ export default function MobileNav() {
       <div className="flex justify-between items-center px-1 py-2 overflow-x-auto no-scrollbar">
         {MENU_ITEMS.map(item => {
           const isActive =
-            item.href === '/'
-              ? pathname === '/'
-              : pathname.startsWith(item.href)
+            item.label === '行程'
+              ? pathname.startsWith('/planner')
+              : item.href === '/'
+                ? pathname === '/'
+                : pathname.startsWith(item.href)
 
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className="flex flex-col items-center justify-center min-w-[56px] py-1 gap-0.5 transition-colors duration-200 relative"
             >
@@ -51,13 +77,13 @@ export default function MobileNav() {
               <item.icon
                 size={20}
                 strokeWidth={isActive ? 2.5 : 1.5}
-                className={isActive ? 'text-black' : 'text-gray-400'}
+                className={isActive ? 'text-black' : 'text-gray-500'}
               />
 
               <span
                 className={clsx(
-                  'text-[9px] font-medium tracking-wide',
-                  isActive ? 'font-bold text-black' : 'text-gray-400'
+                  'text-[11px] font-medium tracking-wide',
+                  isActive ? 'font-bold text-black' : 'text-gray-500'
                 )}
               >
                 {item.label}
