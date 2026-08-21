@@ -255,7 +255,7 @@ export default function PlannerPage() {
 
       <div className="flex flex-col md:flex-row h-screen bg-white font-sans text-[#333333] overflow-hidden">
         <Sidebar />
-        <main className="flex-1 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative overflow-hidden">
+        <main className="flex-1 min-w-0 flex flex-col md:flex-row h-full ml-0 md:ml-64 relative overflow-hidden">
 
           {/* Mobile Header */}
           <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">

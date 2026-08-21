@@ -105,7 +105,7 @@ export default function MembersPage() {
     <ClientOnly>
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 pb-24">
+      <main className="flex-1 min-w-0 ml-0 md:ml-64 p-5 sm:p-8 md:p-12 pb-24">
         <header className="mb-10">
           <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">成員管理</h1>
           <div className="flex items-center gap-4">

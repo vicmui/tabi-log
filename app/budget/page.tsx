@@ -380,7 +380,7 @@ export default function BudgetPage() {
   return (
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 overflow-y-auto h-screen bg-gray-50 pb-24">
+      <main className="flex-1 min-w-0 ml-0 md:ml-64 p-5 sm:p-8 md:p-12 overflow-y-auto h-screen bg-gray-50 pb-24">
 
         {/* Header */}
         <header className="mb-10">

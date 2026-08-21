@@ -181,7 +181,10 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
               <ItemContent activity={activity} isReadOnly config={TYPE_CONFIG[activity.type] || TYPE_CONFIG.Other} tripId={tripId} dayIndex={dayIndex} index={index} />
               {showStats && (
                 <div className="pl-4">
-                  <TravelStats origin={{ lat: Number(activity.lat), lng: Number(activity.lng) }} dest={{ lat: Number(next.lat), lng: Number(next.lng) }} />
+                  <TravelStats
+                    origin={{ lat: Number(activity.lat), lng: Number(activity.lng), placeId: activity.placeId }}
+                    dest={{ lat: Number(next.lat), lng: Number(next.lng), placeId: next.placeId }}
+                  />
                 </div>
               )}
             </div>
@@ -251,8 +254,8 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
                   {showStats && !droppableSnapshot.isDraggingOver && (
                     <div className="pl-4">
                       <TravelStats
-                        origin={{ lat: Number(activity.lat), lng: Number(activity.lng) }}
-                        dest={{ lat: Number(next.lat), lng: Number(next.lng) }}
+                        origin={{ lat: Number(activity.lat), lng: Number(activity.lng), placeId: activity.placeId }}
+                        dest={{ lat: Number(next.lat), lng: Number(next.lng), placeId: next.placeId }}
                       />
                     </div>
                   )}

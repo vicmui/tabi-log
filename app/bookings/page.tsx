@@ -23,11 +23,11 @@ export default function BookingsPage() {
   return (
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
-      <main className="flex-1 ml-0 md:ml-64 p-8 md:p-12 bg-gray-50 min-h-screen pb-24">
-        <header className="mb-10 flex justify-between items-end">
+      <main className="flex-1 min-w-0 ml-0 md:ml-64 p-5 sm:p-8 md:p-12 bg-gray-50 min-h-screen pb-24">
+        <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end">
           <div>
             <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
               <p className="text-xs text-gray-500 tracking-widest uppercase">Bookings</p>
               <span className="text-gray-400">|</span>
               <TripSwitcher />
@@ -35,7 +35,7 @@ export default function BookingsPage() {
           </div>
           <button
             onClick={() => { setEditingBooking(null); setIsModalOpen(true); }}
-            className="bg-jp-charcoal text-white px-6 py-3 text-xs tracking-widest uppercase flex items-center gap-2 hover:bg-black whitespace-nowrap transition-colors"
+            className="bg-jp-charcoal text-white px-6 py-3 text-xs tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-black whitespace-nowrap transition-colors w-full sm:w-auto shrink-0"
           >
             <Plus size={14} /> 新增預訂
           </button>

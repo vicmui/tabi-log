@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-white">
       <Sidebar />
-      <main className="flex-1 p-8 ml-0 md:ml-64 pb-24">
+      <main className="flex-1 min-w-0 p-5 sm:p-8 ml-0 md:ml-64 pb-24">
         <div className="flex justify-between items-center mb-12 mt-4">
           <div>
             <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">

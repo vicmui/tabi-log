@@ -329,8 +329,8 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                               )}
                             </div>
                             {(place.address || place.note) && (
-                              <div className="flex items-start gap-1 mt-0.5">
-                                <MapPin size={9} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex items-start gap-1 mt-0.5 min-w-0">
+                                <MapPin size={11} className="text-gray-400 mt-0.5 flex-shrink-0" />
                                 <span className="text-xs text-gray-500 leading-tight truncate">{place.address || place.note}</span>
                               </div>
                             )}
