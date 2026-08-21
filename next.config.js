@@ -9,7 +9,6 @@ const withPWA = require("@ducanh2912/next-pwa").default({
     additionalManifestEntries: [
       { url: "/", revision: null },
       { url: "/bookings", revision: null },
-      { url: "/planner", revision: null },
       { url: "/budget", revision: null },
       { url: "/planning", revision: null },
       { url: "/toolbox", revision: null },

@@ -36,11 +36,13 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
   const [googleMapsUri, setGoogleMapsUri] = useState<string | null>(null);
   const [refPhoto, setRefPhoto]     = useState<string | null>(null);
   const [uploading, setUploading]   = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const ext  = file.name.split('.').pop();
       const path = `public/${tripId || 'tmp'}/ref-photos/${Date.now()}.${ext}`;
@@ -49,7 +51,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
       const { data } = supabase.storage.from('trip_files').getPublicUrl(path);
       setRefPhoto(data.publicUrl);
     } catch (err: any) {
-      alert('上傳失敗: ' + err.message);
+      setUploadError('上傳失敗：' + (err?.message || '未知錯誤'));
     } finally {
       setUploading(false);
     }
@@ -171,6 +173,11 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
                     <input ref={fileRef} type="file" accept="image/*" className="hidden"
                       onChange={handlePhotoUpload} disabled={uploading} />
                   </label>
+                )}
+                {uploadError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 mt-2">
+                    {uploadError}
+                  </p>
                 )}
               </div>
 

@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { RepositionPanel } from "@/components/ui/RepositionPanel";
+import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -130,6 +131,8 @@ export default function PlannerPage() {
   const [repositioning, setRepositioning]       = useState(false);
   // ✅ Custom edit-location modal state
   const [editLocationOpen, setEditLocationOpen] = useState(false);
+  const [alertMsg, setAlertMsg]                 = useState<string | null>(null);
+  const [confirmDeleteDay, setConfirmDeleteDay] = useState(false);
 
   const trip = trips.find((t) => t.id === params.id);
 
@@ -199,8 +202,8 @@ export default function PlannerPage() {
 
   const handleAddActivity = (data: any) => { addActivity(trip.id, activeDay, data); setIsModalOpen(false); };
   const handleDeleteDay = () => {
-    if (trip.dailyItinerary.length <= 1) { alert("最少保留一天！"); return; }
-    if (confirm(`確定要刪除 Day ${activeDay + 1} 嗎？`)) deleteDayFromTrip(trip.id, activeDay);
+    if (trip.dailyItinerary.length <= 1) { setAlertMsg("最少要保留一日行程。"); return; }
+    setConfirmDeleteDay(true);
   };
   const handleShare = async () => {
     const url = `${window.location.origin}/share/${trip.id}`;
@@ -208,7 +211,7 @@ export default function PlannerPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(trip.title + "\n" + url)}`, "_blank");
   };
   const handleOpenDayRoute = () => {
-    if (!currentDay || currentDay.activities.length < 2) { alert("請至少安排兩個地點"); return; }
+    if (!currentDay || currentDay.activities.length < 2) { setAlertMsg("要至少兩個地點先計到路線。"); return; }
     const acts = currentDay.activities.filter(a => a && (a.address || a.location));
     const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location);
     const dest   = acts[acts.length-1].lat ? `${acts[acts.length-1].lat},${acts[acts.length-1].lng}` : encodeURIComponent(acts[acts.length-1].address || acts[acts.length-1].location);
@@ -435,6 +438,21 @@ export default function PlannerPage() {
             <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} tripId={trip.id} destLat={trip.destLat} destLng={trip.destLng} />
             {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
             {isSettingsOpen && <EditTripModal trip={trip} onClose={() => setIsSettingsOpen(false)} />}
+
+            <ConfirmDialog
+              isOpen={confirmDeleteDay}
+              title={`刪除 Day ${activeDay + 1}`}
+              message="呢一日嘅所有行程都會一併刪走，冇得復原。"
+              confirmLabel="刪除"
+              danger
+              onConfirm={() => { deleteDayFromTrip(trip.id, activeDay); setConfirmDeleteDay(false); }}
+              onCancel={() => setConfirmDeleteDay(false)}
+            />
+            <AlertDialog
+              isOpen={!!alertMsg}
+              message={alertMsg || ""}
+              onClose={() => setAlertMsg(null)}
+            />
           </div>
         </main>
       </div>

@@ -54,7 +54,7 @@ export default function MobileNav() {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
-      <div className="flex justify-between items-center px-1 py-2 overflow-x-auto no-scrollbar">
+      <div className="flex items-center px-1 py-2">
         {MENU_ITEMS.map(item => {
           const isActive =
             item.label === '行程'
@@ -67,7 +67,7 @@ export default function MobileNav() {
             <Link
               key={item.label}
               href={item.href}
-              className="flex flex-col items-center justify-center min-w-[56px] py-1 gap-0.5 transition-colors duration-200 relative"
+              className="flex-1 min-w-0 flex flex-col items-center justify-center py-1 gap-0.5 transition-colors duration-200 relative"
             >
               {/* Active top bar */}
               {isActive && (
@@ -82,7 +82,7 @@ export default function MobileNav() {
 
               <span
                 className={clsx(
-                  'text-[11px] font-medium tracking-wide',
+                  'text-[11px] font-medium tracking-wide whitespace-nowrap',
                   isActive ? 'font-bold text-black' : 'text-gray-500'
                 )}
               >

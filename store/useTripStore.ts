@@ -23,6 +23,8 @@ interface TripState {
   setHasHydrated: (v: boolean) => void;
   setActiveTrip: (id: string) => void;
   loadTripsFromCloud: () => Promise<void>;
+  applyRemoteTrip: (row: { content: Trip; updated_at?: string }) => void;
+  removeRemoteTrip: (tripId: string) => void;
   saveTripToCloud: (trip: Trip) => Promise<void>;
   importData: (trips: Trip[]) => void;
   addTrip: (trip: Omit<Trip, 'id'|'members'|'bookings'|'expenses'|'plans'|'dailyItinerary'|'budgetTotal'|'exchangeRate'>) => void;
@@ -59,6 +61,25 @@ interface TripState {
 const DEFAULT_PACKING_LIST = ["✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包", "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡", "🌂 雨具", "🔌 轉接頭"];
 const INITIAL_TRIP: Trip = { id: "trip-osaka-mum", title: "Osaka Trip (March) 🇯🇵", startDate: "2026-03-20", endDate: "2026-03-24", status: "planning", coverImage: "/osaka-cover.jpg", budgetTotal: 300000, exchangeRate: 0.052, members: [{ id: "m1", name: "VM", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" }, { id: "m2", name: "媽咪", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" }], bookings: [], expenses: [], placesToVisit: [], plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false })), dailyItinerary: [{ day: 1, date: "2026-03-20", weather: "Cloud", activities: [] }, { day: 2, date: "2026-03-21", weather: "Sun", activities: [] }, { day: 3, date: "2026-03-22", weather: "Sun", activities: [] }, { day: 4, date: "2026-03-23", weather: "Rain", activities: [] }, { day: 5, date: "2026-03-24", weather: "Cloud", activities: [] }] };
 
+// 補返啲舊資料可能冇嘅欄位，避免 render 嗰陣爆
+const normalizeTrip = (trip: Trip): Trip => {
+  if (!trip.placesToVisit) trip.placesToVisit = [];
+  if (!trip.members) trip.members = [];
+  if (!trip.bookings) trip.bookings = [];
+  if (!trip.expenses) trip.expenses = [];
+  if (!trip.plans) trip.plans = [];
+  if (!trip.dailyItinerary) trip.dailyItinerary = [];
+  trip.dailyItinerary.forEach(day => {
+    if (!day.activities) day.activities = [];
+    day.activities = day.activities.filter(a => !!a && !!a.id);
+  });
+  return trip;
+};
+
+// 記住自己啱啱 push 上去嘅 updated_at。Realtime 會將自己嘅寫入都推返落嚟，
+// 唔隔開就會用「啱啱寫上去嗰份」蓋返自己本機更新緊嘅 state。
+const ownWrites = new Set<string>();
+
 const updateStateAndSave = (set: any, get: any, updateFn: (state: TripState) => Partial<TripState>, tripId?: string) => {
   set(updateFn);
   if (tripId) {
@@ -90,20 +111,7 @@ export const useTripStore = create<TripState>()(
         try {
           const { data, error } = await supabase.from('trips').select('*');
           if (!error && data && data.length > 0) {
-            const loadedTrips = data.map(row => {
-              const trip = row.content as Trip;
-              if (!trip.placesToVisit) trip.placesToVisit = [];
-              if (!trip.members) trip.members = [];
-              if (!trip.bookings) trip.bookings = [];
-              if (!trip.expenses) trip.expenses = [];
-              if (!trip.plans) trip.plans = [];
-              if (!trip.dailyItinerary) trip.dailyItinerary = [];
-              trip.dailyItinerary.forEach(day => {
-                if (!day.activities) day.activities = [];
-                day.activities = day.activities.filter(a => !!a && !!a.id);
-              });
-              return trip;
-            });
+            const loadedTrips = data.map(row => normalizeTrip(row.content as Trip));
             set({ trips: loadedTrips });
             // Always validate activeTripId against the loaded trips
             const currentId = get().activeTripId;
@@ -118,7 +126,37 @@ export const useTripStore = create<TripState>()(
         set({ isSyncing: false });
       },
 
-      saveTripToCloud: async (trip: Trip) => { set({ isSyncing: true }); try { await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: new Date().toISOString() }); } catch(e){} set({ isSyncing: false }); },
+      saveTripToCloud: async (trip: Trip) => {
+        set({ isSyncing: true });
+        const stamp = new Date().toISOString();
+        ownWrites.add(stamp);
+        setTimeout(() => ownWrites.delete(stamp), 60000);
+        try {
+          await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: stamp });
+        } catch (e) {}
+        set({ isSyncing: false });
+      },
+
+      // 由 Realtime 推落嚟嘅改動（即係另一部機改咗嘢）
+      applyRemoteTrip: (row) => {
+        if (row.updated_at && ownWrites.has(row.updated_at)) return; // 自己寫嘅，唔使理
+        const incoming = row?.content;
+        if (!incoming || !incoming.id) return;
+        const trip = normalizeTrip(incoming);
+        set(state => ({
+          trips: state.trips.some(t => t.id === trip.id)
+            ? state.trips.map(t => (t.id === trip.id ? trip : t))
+            : [...state.trips, trip],
+        }));
+      },
+
+      removeRemoteTrip: (tripId) => set(state => {
+        const newTrips = state.trips.filter(t => t.id !== tripId);
+        return {
+          trips: newTrips,
+          activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId,
+        };
+      }),
       importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if (newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
       addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], placesToVisit: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
       deleteTrip: async (tripId) => { set({ isSyncing: true }); try { await supabase.from('trips').delete().eq('id', tripId); } catch(e){} set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },

@@ -23,6 +23,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [signedIn, setSignedIn] = useState(false)
 
   const loadTripsFromCloud = useTripStore(s => s.loadTripsFromCloud)
+  const applyRemoteTrip = useTripStore(s => s.applyRemoteTrip)
+  const removeRemoteTrip = useTripStore(s => s.removeRemoteTrip)
 
   useEffect(() => {
     let alive = true
@@ -45,6 +47,42 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   // 登入咗先去雲端攞資料（未登入嘅話 RLS 一定會擋，call 都嘥氣）
   useEffect(() => {
     if (signedIn) loadTripsFromCloud()
+  }, [signedIn, loadTripsFromCloud])
+
+  // 即時同步：另一部機一改，呢部機即刻收到。
+  // 冇咗呢個，兩個人各自改嘢就會互相蓋走對方（成個 trip 係一舊 JSON upsert 上去）。
+  useEffect(() => {
+    if (!signedIn) return
+    const channel = supabase
+      .channel('trips-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trips' },
+        (payload: any) => {
+          if (payload.eventType === 'DELETE') {
+            if (payload.old?.id) removeRemoteTrip(payload.old.id)
+            return
+          }
+          if (payload.new) applyRemoteTrip(payload.new)
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [signedIn, applyRemoteTrip, removeRemoteTrip])
+
+  // 保險：由背景切返出嚟就重新攞一次
+  // （手機熄咗屏、PWA 擺咗喺背景嗰陣，WebSocket 好可能已經斷咗）
+  useEffect(() => {
+    if (!signedIn) return
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadTripsFromCloud()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onVisible)
+    }
   }, [signedIn, loadTripsFromCloud])
 
   if (isPublicRoute) return <>{children}</>
