@@ -131,7 +131,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
                 <div className="flex items-center gap-2 mt-2">
                   <span className={clsx("w-2 h-2 rounded-full", placeId ? "bg-green-500" : lat && lng ? "bg-amber-400" : "bg-red-400")} />
                   <span className="text-xs text-gray-500">
-                    {placeId ? "已連結 Google 地點" : lat && lng ? "只有座標，未連結 Google" : "未有座標"}
+                    {placeId ? "已連結 Google 地點" : lat && lng ? "只有座標，未連結 Google" : "尚未取得座標"}
                   </span>
                 </div>
               </div>

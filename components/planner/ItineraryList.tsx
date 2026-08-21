@@ -38,7 +38,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
         ? `${activity.lat},${activity.lng}`
         : (activity.address || activity.location)
     );
-    // 有 placeId 就鎖死係嗰間，唔會導航去錯咗嘅分店
+    // 有 placeId 便鎖定該分店，不會導航至錯誤的地點
     if (activity.placeId) params.set("destination_place_id", activity.placeId);
     window.open(`https://www.google.com/maps/dir/?${params.toString()}`, "_blank");
   };

@@ -74,7 +74,7 @@ export function RepositionPanel({ src, initialY = 50, onConfirm, onCancel, compa
           <span className="text-xs text-gray-500 font-bold select-none">底</span>
         </div>
         <p className="text-center text-[11px] text-gray-400 mt-1 tracking-widest">
-          左右滑動調整 · 唔影響 browser 捲動
+          左右滑動調整 · 不影響頁面捲動
         </p>
       </div>
 

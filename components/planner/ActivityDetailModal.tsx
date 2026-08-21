@@ -183,7 +183,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 <div className="flex items-center gap-2 mt-2">
                   <span className={clsx("w-2 h-2 rounded-full", editPlaceId ? "bg-green-500" : editLat && editLng ? "bg-amber-400" : "bg-red-400")} />
                   <span className="text-xs text-gray-500">
-                    {editPlaceId ? "已連結 Google 地點" : editLat && editLng ? "只有座標，未連結 Google" : "未有座標"}
+                    {editPlaceId ? "已連結 Google 地點" : editLat && editLng ? "只有座標，未連結 Google" : "尚未取得座標"}
                   </span>
                 </div>
                 {editAddress && <p className="text-xs text-gray-500 mt-1 truncate">{editAddress}</p>}

@@ -13,7 +13,7 @@ export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping
 export interface PlaceToVisit { id: string; name: string; placeId?: string; googleMapsUri?: string; address?: string; note?: string; category?: string; suggestedBy?: string; order?: number; lat?: number; lng?: number; isVisited: boolean; }
 export interface Activity { id: string; time?: string; type: string; location: string; placeId?: string; googleMapsUri?: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; refPhoto?: string; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; customLocation?: string; }
-export interface Trip { id: string; title: string; startDate: string; endDate: string; coverImage?: string; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; placesToVisit?: PlaceToVisit[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
+export interface Trip { id: string; sortOrder?: number; title: string; startDate: string; endDate: string; coverImage?: string; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; placesToVisit?: PlaceToVisit[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
 
 interface TripState {
   trips: Trip[];
@@ -30,6 +30,7 @@ interface TripState {
   addTrip: (trip: Omit<Trip, 'id'|'members'|'bookings'|'expenses'|'plans'|'dailyItinerary'|'budgetTotal'|'exchangeRate'>) => void;
   deleteTrip: (tripId: string) => Promise<void>;
   updateTrip: (tripId: string, data: Partial<Trip>) => void;
+  reorderTrips: (orderedTrips: Trip[]) => void;
   updateTripSettings: (tripId: string, title: string, newStartDate: string, coverImage: string) => void;
   updateBudgetTotal: (tripId: string, total: number) => void;
   updateTripRate: (tripId: string, rate: number) => void;
@@ -61,7 +62,7 @@ interface TripState {
 const DEFAULT_PACKING_LIST = ["✈️ 護照、簽證", "💳 信用卡、現金", "📱 手機、充電器", "🧳 行李打包", "🏨 飯店預訂確認", "🎫 機票確認", "💊 常用藥品", "📸 相機、記憶卡", "🌂 雨具", "🔌 轉接頭"];
 const INITIAL_TRIP: Trip = { id: "trip-osaka-mum", title: "Osaka Trip (March) 🇯🇵", startDate: "2026-03-20", endDate: "2026-03-24", status: "planning", coverImage: "/osaka-cover.jpg", budgetTotal: 300000, exchangeRate: 0.052, members: [{ id: "m1", name: "VM", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" }, { id: "m2", name: "媽咪", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" }], bookings: [], expenses: [], placesToVisit: [], plans: DEFAULT_PACKING_LIST.map((text, i) => ({ id: `default-${i}`, category: 'Packing', text, priority: 'High', isCompleted: false })), dailyItinerary: [{ day: 1, date: "2026-03-20", weather: "Cloud", activities: [] }, { day: 2, date: "2026-03-21", weather: "Sun", activities: [] }, { day: 3, date: "2026-03-22", weather: "Sun", activities: [] }, { day: 4, date: "2026-03-23", weather: "Rain", activities: [] }, { day: 5, date: "2026-03-24", weather: "Cloud", activities: [] }] };
 
-// 補返啲舊資料可能冇嘅欄位，避免 render 嗰陣爆
+// 補上舊資料可能缺少的欄位，避免渲染時出錯
 const normalizeTrip = (trip: Trip): Trip => {
   if (!trip.placesToVisit) trip.placesToVisit = [];
   if (!trip.members) trip.members = [];
@@ -76,8 +77,17 @@ const normalizeTrip = (trip: Trip): Trip => {
   return trip;
 };
 
-// 記住自己啱啱 push 上去嘅 updated_at。Realtime 會將自己嘅寫入都推返落嚟，
-// 唔隔開就會用「啱啱寫上去嗰份」蓋返自己本機更新緊嘅 state。
+// 首頁旅程卡的排序：先按使用者拖曳出來的次序，未排過的排最後（按出發日期）
+const sortTrips = (trips: Trip[]): Trip[] =>
+  [...trips].sort((a, b) => {
+    const ao = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+    const bo = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+    if (ao !== bo) return ao - bo;
+    return (a.startDate || '').localeCompare(b.startDate || '');
+  });
+
+// 記錄本機剛上傳的 updated_at。Realtime 會把自己的寫入一併推回，
+// 若不加以區分，便會用「剛上傳的版本」覆蓋本機正在編輯的狀態。
 const ownWrites = new Set<string>();
 
 const updateStateAndSave = (set: any, get: any, updateFn: (state: TripState) => Partial<TripState>, tripId?: string) => {
@@ -111,7 +121,7 @@ export const useTripStore = create<TripState>()(
         try {
           const { data, error } = await supabase.from('trips').select('*');
           if (!error && data && data.length > 0) {
-            const loadedTrips = data.map(row => normalizeTrip(row.content as Trip));
+            const loadedTrips = sortTrips(data.map(row => normalizeTrip(row.content as Trip)));
             set({ trips: loadedTrips });
             // Always validate activeTripId against the loaded trips
             const currentId = get().activeTripId;
@@ -137,16 +147,18 @@ export const useTripStore = create<TripState>()(
         set({ isSyncing: false });
       },
 
-      // 由 Realtime 推落嚟嘅改動（即係另一部機改咗嘢）
+      // 由 Realtime 推送而來的改動（即另一部裝置的編輯）
       applyRemoteTrip: (row) => {
-        if (row.updated_at && ownWrites.has(row.updated_at)) return; // 自己寫嘅，唔使理
+        if (row.updated_at && ownWrites.has(row.updated_at)) return; // 本機自己的寫入，略過
         const incoming = row?.content;
         if (!incoming || !incoming.id) return;
         const trip = normalizeTrip(incoming);
         set(state => ({
-          trips: state.trips.some(t => t.id === trip.id)
-            ? state.trips.map(t => (t.id === trip.id ? trip : t))
-            : [...state.trips, trip],
+          trips: sortTrips(
+            state.trips.some(t => t.id === trip.id)
+              ? state.trips.map(t => (t.id === trip.id ? trip : t))
+              : [...state.trips, trip]
+          ),
         }));
       },
 
@@ -161,6 +173,13 @@ export const useTripStore = create<TripState>()(
       addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], placesToVisit: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
       deleteTrip: async (tripId) => { set({ isSyncing: true }); try { await supabase.from('trips').delete().eq('id', tripId); } catch(e){} set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
       updateTrip: (tripId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) }), tripId),
+
+      // 首頁拖曳排序：把新次序寫入每張卡的 sortOrder，逐張存回雲端
+      reorderTrips: (orderedTrips) => {
+        const stamped = orderedTrips.map((t, i) => ({ ...t, sortOrder: i }));
+        set({ trips: stamped });
+        stamped.forEach(t => get().saveTripToCloud(t));
+      },
       updateTripSettings: (tripId, title, newStartDate, coverImage) => updateStateAndSave(set, get, (state) => ({ trips: state.trips.map(t => { if (t.id !== tripId) return t; const start = new Date(newStartDate); const newItinerary = t.dailyItinerary.map((day, index) => { const d = new Date(start); d.setDate(start.getDate() + index); return { ...day, date: d.toISOString().split('T')[0] }; }); const lastDate = new Date(start); if (newItinerary.length > 0) lastDate.setDate(start.getDate() + newItinerary.length - 1); return { ...t, title, startDate: newStartDate, coverImage, dailyItinerary: newItinerary, endDate: lastDate.toISOString().split('T')[0] }; }) }), tripId),
       updateBudgetTotal: (tripId, total) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, budgetTotal: total } : t) }), tripId),
       updateTripRate: (tripId, rate) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, exchangeRate: rate } : t) }), tripId),

@@ -5,10 +5,10 @@ import { googleMapsLink } from '@/components/ui/PlacesSearch'
 
 interface Props {
   placeId?: string
-  /** 冇 placeId 嗰陣用嚟砌 fallback 連結 */
+  /** 沒有 placeId 時，用作組成備用連結 */
   name?: string
   address?: string
-  /** 存低咗嘅 Google Maps 連結（有就唔使等 API） */
+  /** 已儲存的 Google Maps 連結（有此值便不必等待 API） */
   googleMapsUri?: string
   compact?: boolean
 }
@@ -22,13 +22,13 @@ interface Info {
 }
 
 /**
- * 喺景點卡／詳情頁顯示 Google 嘅評分同今日營業時間，
- * 再加一個「睇 Google 評價」掣直接跳出 Google Maps。
+ * 於景點詳情顯示 Google 評分與當日營業時間，並提供
+ * 「查看 Google 評價」連結直接開啟 Google Maps。
  *
- * ⚠️ 條款：Google 只准長期儲存 placeId。評分同營業時間唔可以 cache 落
- * Supabase，所以呢個 component 係開嗰陣先即場問 Google 攞。
+ * ⚠️ 條款：Google 僅允許長期儲存 placeId，評分與營業時間不得快取至
+ * Supabase，因此本元件在開啟時才即時向 Google 查詢。
  *
- * 慳額度：只喺詳情頁用，唔好喺 list 度逐個 render。
+ * 節省用量：僅在詳情頁使用，勿於清單中逐項載入。
  */
 export default function GooglePlaceInfo({
   placeId,
@@ -61,7 +61,7 @@ export default function GooglePlaceInfo({
         })
         if (!alive) return
 
-        // weekdayDescriptions 由星期一排到星期日
+        // weekdayDescriptions 由星期一起排至星期日
         const descriptions: string[] | undefined =
           place.regularOpeningHours?.weekdayDescriptions
         const mondayFirstIndex = (new Date().getDay() + 6) % 7
@@ -83,7 +83,7 @@ export default function GooglePlaceInfo({
           openNow,
         })
       } catch (_) {
-        // 靜靜地失敗 — 下面個連結照樣行得通
+        // 靜默失敗即可 —— 下方的連結不受影響
       } finally {
         if (alive) setLoading(false)
       }
@@ -99,7 +99,7 @@ export default function GooglePlaceInfo({
       {/* 評分 */}
       {loading && !info && (
         <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
-          <Loader2 size={12} className="animate-spin" /> 讀緊 Google 資料…
+          <Loader2 size={12} className="animate-spin" /> 正在載入 Google 資料…
         </span>
       )}
 
@@ -110,7 +110,7 @@ export default function GooglePlaceInfo({
             <span className="font-bold text-gray-900">{info.rating.toFixed(1)}</span>
             {info.userRatingCount !== undefined && (
               <span className="text-gray-500 text-xs">
-                {info.userRatingCount.toLocaleString()} 個評價
+                {info.userRatingCount.toLocaleString()} 則評價
               </span>
             )}
           </span>
@@ -145,7 +145,7 @@ export default function GooglePlaceInfo({
         className="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 text-xs font-bold tracking-widest uppercase text-gray-700 hover:border-black hover:text-black transition-colors"
       >
         <ExternalLink size={12} />
-        睇 Google 評價
+        查看 Google 評價
       </a>
 
       {info && !compact && (

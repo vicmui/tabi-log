@@ -7,11 +7,11 @@ export interface PlaceResult {
   name: string    // displayName / first segment
   lat: number
   lng: number
-  /** Google 嘅唯一地點 ID。呢個係唯一可以永久儲存嘅 Google 資料。 */
+  /** Google 的唯一地點 ID。這是唯一可長期儲存的 Google 資料。 */
   placeId?: string
-  /** 官方 Google Maps 頁面連結（一按就睇到評價、相、街景） */
+  /** 官方 Google Maps 頁面連結（可直接查看評價、相片與街景） */
   googleMapsUri?: string
-  /** 攞返嚟即刻畀用家睇，方便佢揀啱個地方。唔好存落 DB。 */
+  /** 即時顯示予使用者，方便確認選中的地點。請勿存入資料庫。 */
   rating?: number
   userRatingCount?: number
 }
@@ -28,8 +28,8 @@ interface Props {
  * Uses the NEW google.maps.places.AutocompleteSuggestion API (2025+).
  * Place this file at: @/components/ui/PlacesSearch.tsx
  *
- * 揀完之後會連 placeId、Google Maps 連結、評分一齊交返出去，
- * 咁樣個景點就唔會再係一舊「唔知係咩嚟」嘅文字。
+ * 選取後會一併回傳 placeId、Google Maps 連結與評分，
+ * 景點便不再只是一段無從辨識的文字。
  */
 export default function PlacesSearch({
   placeholder = '搜尋地點...',
@@ -119,7 +119,7 @@ export default function PlacesSearch({
         userRatingCount: place.userRatingCount ?? undefined,
       })
     } catch (_) {
-      // 就算 details 攞唔到，最低限度都要保住 placeId
+      // 即使取不到詳細資料，至少要保留 placeId
       onSelect({
         label: text,
         name: text.split(',')[0],
@@ -168,7 +168,7 @@ export default function PlacesSearch({
               </li>
             )
           })}
-          {/* Google 條款：結果唔係顯示喺 Google 地圖上面，就要標明來源 */}
+          {/* Google 條款：結果並非顯示於 Google 地圖上，必須標明來源 */}
           <li className="px-3 py-1.5 text-[11px] text-gray-500 bg-gray-50">
             搜尋結果由 Google 提供
           </li>
@@ -178,7 +178,7 @@ export default function PlacesSearch({
   )
 }
 
-/** 景點卡上面嘅細細個評分標籤 */
+/** 景點卡上的小型評分標籤 */
 export function RatingBadge({ rating, count }: { rating?: number; count?: number }) {
   if (rating === undefined || rating === null) return null
   return (
@@ -191,8 +191,8 @@ export function RatingBadge({ rating, count }: { rating?: number; count?: number
 }
 
 /**
- * 砌一條去 Google Maps 嘅連結。
- * 有 placeId 就用 placeId（百分百準），冇就 fallback 用個名去 search。
+ * 組成 Google Maps 連結。
+ * 有 placeId 時以 placeId 為準（完全精確），否則退而以名稱搜尋。
  */
 export function googleMapsLink(opts: { placeId?: string; name?: string; address?: string }) {
   if (opts.placeId) {

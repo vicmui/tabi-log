@@ -148,9 +148,9 @@ export default function PlannerPage() {
 
   const getCoverPos = (tId: string, dIdx: number) => positionMap[`${tId}-${dIdx}`] ?? 50;
 
-  // 旅途模式：如果今日喺行程範圍之內，一入嚟就自動跳去今日嗰版，
-  // 唔使喺日曆度撳嚟撳去搵返自己喺邊一日。用本地時間計，唔用 UTC —
-  // 喺日本朝早開個 app，UTC 仲係前一日。
+  // 旅途模式：若今日落在行程日期範圍內，進入頁面即自動跳至當日，
+  // 毋須在日曆上逐格尋找。日期以本地時間計算而非 UTC——
+  // 在日本清晨開啟應用程式時，UTC 仍屬前一日。
   const todayKey = (() => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
@@ -202,7 +202,7 @@ export default function PlannerPage() {
 
   const handleAddActivity = (data: any) => { addActivity(trip.id, activeDay, data); setIsModalOpen(false); };
   const handleDeleteDay = () => {
-    if (trip.dailyItinerary.length <= 1) { setAlertMsg("最少要保留一日行程。"); return; }
+    if (trip.dailyItinerary.length <= 1) { setAlertMsg("行程需保留至少一日。"); return; }
     setConfirmDeleteDay(true);
   };
   const handleShare = async () => {
@@ -211,7 +211,7 @@ export default function PlannerPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(trip.title + "\n" + url)}`, "_blank");
   };
   const handleOpenDayRoute = () => {
-    if (!currentDay || currentDay.activities.length < 2) { setAlertMsg("要至少兩個地點先計到路線。"); return; }
+    if (!currentDay || currentDay.activities.length < 2) { setAlertMsg("需要至少兩個地點才能規劃路線。"); return; }
     const acts = currentDay.activities.filter(a => a && (a.address || a.location));
     const origin = acts[0].lat ? `${acts[0].lat},${acts[0].lng}` : encodeURIComponent(acts[0].address || acts[0].location);
     const dest   = acts[acts.length-1].lat ? `${acts[acts.length-1].lat},${acts[acts.length-1].lng}` : encodeURIComponent(acts[acts.length-1].address || acts[acts.length-1].location);
@@ -442,7 +442,7 @@ export default function PlannerPage() {
             <ConfirmDialog
               isOpen={confirmDeleteDay}
               title={`刪除 Day ${activeDay + 1}`}
-              message="呢一日嘅所有行程都會一併刪走，冇得復原。"
+              message="此日的所有行程項目將一併刪除，且無法復原。"
               confirmLabel="刪除"
               danger
               onConfirm={() => { deleteDayFromTrip(trip.id, activeDay); setConfirmDeleteDay(false); }}

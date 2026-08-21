@@ -13,8 +13,8 @@ import {
 import { clsx } from 'clsx'
 import { useTripStore } from '@/store/useTripStore'
 
-// 冇 /planner 呢一頁（只有 /planner/[id]），所以「行程」要動態砌條 href，
-// 同 Sidebar 用同一套邏輯。之前硬寫 "/planner" 係會 404 嘅。
+// 並沒有 /planner 這一頁（只有 /planner/[id]），因此「行程」需動態組成 href，
+// 與 Sidebar 採用同一套邏輯。原先寫死 "/planner" 會回傳 404。
 const STATIC_ITEMS = [
   { label: "首頁",  href: "/",        icon: Home },
   { label: "預訂",  href: "/bookings", icon: Ticket },
@@ -28,7 +28,7 @@ export default function MobileNav() {
   const pathname = usePathname()
   const { trips, activeTripId } = useTripStore()
 
-  // 1. 現正選中嘅行程 → 2. 最近將要出發嘅 → 3. 最新嗰個
+  // 1. 目前選取的行程 → 2. 最近將出發的行程 → 3. 最新一個
   const plannerHref = (() => {
     if (trips.length === 0) return '/'
     const active = activeTripId ? trips.find(t => t.id === activeTripId) : null
