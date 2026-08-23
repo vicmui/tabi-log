@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import clsx from 'clsx'
 import Sidebar from '@/components/layout/Sidebar'
 import TripSwitcher from '@/components/layout/TripSwitcher'
 import { useTripStore, ExpenseCategory, Expense } from '@/store/useTripStore'
@@ -627,37 +628,68 @@ export default function BudgetPage() {
               </div>
             </div>
 
-            {/* 每日花費 —— 睇得出邊日超支，係記帳頁最實用嗰個切面 */}
+            {/*
+              每日花費 —— 行程頁不再顯示任何金額，這裡是唯一看得到「邊日使幾多」的地方。
+              未有支出的日子照樣列出（顯示為 —），否則看不出哪幾天其實沒有花錢。
+            */}
             {(() => {
-              const days = dailySpend(trip).filter(d => d.amount > 0)
+              const days = dailySpend(trip)
               if (days.length === 0) return null
-              const peak = Math.max(...days.map(d => d.amount))
-              const avg  = days.reduce((a, d) => a + d.amount, 0) / days.length
+              const peak    = Math.max(...days.map(d => d.amount), 0)
+              const spent   = days.filter(d => d.amount > 0)
+              const avg     = spent.length ? spent.reduce((a, d) => a + d.amount, 0) / spent.length : 0
+              // 逐日相加不一定等於總花費：支出的日期可以落在行程日以外
+              const dayTotal = days.reduce((a, d) => a + d.amount, 0)
+              const unassigned = totalSpent - dayTotal
               return (
                 <div className="bg-white border border-gray-100 p-6">
                   <div className="flex items-baseline justify-between mb-5">
                     <h3 className="text-xs tracking-[0.2em] uppercase text-gray-500">每日花費</h3>
-                    <span className="text-xs text-gray-500">
-                      平均 {formatMoney(avg, home)} / 日
-                    </span>
+                    {avg > 0 && (
+                      <span className="text-xs text-gray-500">
+                        平均 {formatMoney(avg, home)} / 日
+                      </span>
+                    )}
                   </div>
+
                   <div className="space-y-3">
                     {days.map(d => (
-                      <div key={d.date} className="flex items-center gap-4">
-                        <span className="w-14 shrink-0 text-[11px] text-gray-500 font-mono">
+                      <div key={d.date} className="flex items-center gap-3 sm:gap-4">
+                        <span className="w-12 sm:w-14 shrink-0 text-[11px] text-gray-500 font-mono">
                           Day {d.day}
                         </span>
-                        <div className="flex-1 h-[3px] bg-gray-100">
+                        <div className="flex-1 min-w-0 h-[3px] bg-gray-100">
                           <div
-                            className="h-full bg-black"
+                            className="h-full bg-black transition-all duration-500"
                             style={{ width: `${peak > 0 ? (d.amount / peak) * 100 : 0}%` }}
                           />
                         </div>
-                        <span className="w-28 shrink-0 text-right text-sm font-serif">
-                          {formatMoney(d.amount, home)}
+                        <span className={clsx(
+                          "w-24 sm:w-28 shrink-0 text-right text-sm font-serif tabular-nums",
+                          d.amount === 0 && "text-gray-300"
+                        )}>
+                          {d.amount > 0 ? formatMoney(d.amount, home) : '—'}
                         </span>
                       </div>
                     ))}
+                  </div>
+
+                  {Math.abs(unassigned) > 0.005 && (
+                    <div className="flex items-center gap-3 sm:gap-4 mt-3 text-gray-500">
+                      <span className="w-12 sm:w-14 shrink-0 text-[11px] font-mono">其他</span>
+                      <div className="flex-1" />
+                      <span className="w-24 sm:w-28 shrink-0 text-right text-sm font-serif tabular-nums">
+                        {formatMoney(unassigned, home)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-baseline gap-3 sm:gap-4 mt-5 pt-4 border-t border-gray-100">
+                    <span className="text-xs tracking-[0.2em] uppercase text-gray-500">全程合計</span>
+                    <div className="flex-1" />
+                    <span className="text-lg font-serif tabular-nums">
+                      {formatMoney(totalSpent, home)}
+                    </span>
                   </div>
                 </div>
               )
@@ -716,19 +748,6 @@ export default function BudgetPage() {
             </div>
           </div>
         </div>
-
-        {/* Mobile FAB */}
-        <button
-          type="button"
-          onClick={() => {
-            setEditingExpenseId(null); setItemName(''); setAmount('')
-            setReceiptUrl(''); setIsFormOpen(true)
-          }}
-          className="fixed bottom-24 right-5 lg:hidden w-14 h-14 bg-[#1a1a1a] text-white rounded-full border border-gray-200 flex items-center justify-center z-40 active:scale-95 transition-transform"
-          aria-label="新增支出"
-        >
-          <span className="text-2xl leading-none">+</span>
-        </button>
 
         {/* Mobile Bottom Sheet */}
         {isFormOpen && (
@@ -795,15 +814,33 @@ export default function BudgetPage() {
         />
       )}
 
-      {/* 手機：懸浮拍照掣 */}
-      <button
-        type="button"
-        onClick={() => setIsScanOpen(true)}
-        aria-label="拍照記帳"
-        className="lg:hidden fixed bottom-28 right-5 z-40 w-14 h-14 bg-black text-white flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <Camera size={20} />
-      </button>
+      {/*
+        手機懸浮掣 —— 兩個掣放在同一個直行容器內，由 gap 決定間距。
+        先前兩個各自 fixed（bottom-24 與 bottom-28，相距僅 16px 而掣高 56px），
+        必然疊住；分開定位就是這樣，一改其中一個高度又會再撞。
+        bottom-24 是為了避開底部導覽列。
+      */}
+      <div className="lg:hidden fixed bottom-24 right-5 z-40 flex flex-col items-end gap-3">
+        <button
+          type="button"
+          onClick={() => setIsScanOpen(true)}
+          aria-label="拍照記帳"
+          className="w-12 h-12 bg-white text-black border border-gray-300 flex items-center justify-center active:scale-95 transition-transform shadow-sm"
+        >
+          <Camera size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingExpenseId(null); setItemName(''); setAmount('')
+            setReceiptUrl(''); setIsFormOpen(true)
+          }}
+          className="w-14 h-14 bg-[#1a1a1a] text-white rounded-full flex items-center justify-center active:scale-95 transition-transform shadow-lg"
+          aria-label="新增支出"
+        >
+          <span className="text-2xl leading-none">+</span>
+        </button>
+      </div>
     </div>
   )
 }

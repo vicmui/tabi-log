@@ -15,7 +15,6 @@ import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
-import { formatMoney, sumOnDate, sumHome, homeOf } from "@/lib/money";
 import { downloadIcs } from "@/lib/calendar";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -420,38 +419,7 @@ export default function PlannerPage() {
                 </div>
               </div>
 
-              {/* 今日花費 vs 預算 —— 資料本身一直都有，只是從未在行程頁顯示過 */}
-              {trip.budgetTotal > 0 && (() => {
-                const home       = homeOf(trip);
-                const todaySpend = currentDay ? sumOnDate(trip, currentDay.date) : 0;
-                const tripSpend  = sumHome(trip.expenses ?? [], trip);
-                const usedPct    = Math.min(Math.round((tripSpend / trip.budgetTotal) * 100), 100);
-                const over       = tripSpend > trip.budgetTotal;
-                return (
-                  <div className="mb-6 border-y border-gray-100 py-4 flex flex-wrap items-baseline gap-x-8 gap-y-2">
-                    <div>
-                      <p className="text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-1">今日花費</p>
-                      <p className="text-xl font-serif">
-                        {formatMoney(todaySpend, home)}
-                      </p>
-                    </div>
-                    <div className="flex-1 min-w-[160px]">
-                      <div className="flex justify-between text-[11px] tracking-widest uppercase text-gray-500 mb-1.5">
-                        <span>全程已用</span>
-                        <span className={over ? "text-red-600" : undefined}>
-                          {formatMoney(tripSpend, home)} / {formatMoney(trip.budgetTotal, home)}　{usedPct}%
-                        </span>
-                      </div>
-                      <div className="h-[3px] bg-gray-100 w-full">
-                        <div
-                          className={clsx("h-full transition-all duration-500", over ? "bg-red-600" : "bg-black")}
-                          style={{ width: `${usedPct}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {/* 花費資訊一律留在「預算」頁 —— 行程頁只講行程，畫面才不會花 */}
 
               <div className="w-full">
                 {viewMode === "list" ? (
