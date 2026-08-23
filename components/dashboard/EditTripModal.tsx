@@ -6,11 +6,17 @@ import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog } from "@/components/ui/Dialog";
 import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
+import { COMMON_CURRENCIES, homeOf, localOf, symbolOf } from "@/lib/money";
 
 export default function EditTripModal({ trip, onClose }: any) {
   const { updateTripSettings, updateTrip } = useTripStore();
   const [title, setTitle]           = useState(trip.title);
   const [startDate, setStartDate]   = useState(trip.startDate);
+  // 這兩個欄位一直沒有介面可以設定，所以永遠是 undefined，
+  // 記帳頁的符號便一路退回預設值，顯示成港元、數字卻是日圓。
+  const [homeCurrency, setHomeCurrency]   = useState(homeOf(trip));
+  const [localCurrency, setLocalCurrency] = useState(localOf(trip));
+  const [fxRate, setFxRate]               = useState(String(trip.exchangeRate ?? 0.052));
   const [coverImage, setCoverImage] = useState(trip.coverImage || '');
   // 焦點存喺 trip 資料本身；舊版存喺 localStorage，一併讀返做 fallback
   const legacyY = (() => { try { const m = localStorage.getItem(`coverPos-trip-${trip.id}`); return m ? Number(m) : undefined; } catch { return undefined; } })();
@@ -46,6 +52,11 @@ export default function EditTripModal({ trip, onClose }: any) {
 
   const handleSave = () => {
     updateTripSettings(trip.id, title, startDate, coverImage);
+    updateTrip(trip.id, {
+      homeCurrency,
+      localCurrency,
+      exchangeRate: Number(fxRate) || trip.exchangeRate || 0.052,
+    });
     // coverPosY is already saved to localStorage in savePosY()
     onClose();
   };
@@ -67,6 +78,55 @@ export default function EditTripModal({ trip, onClose }: any) {
           <div>
             <label className="text-xs text-gray-500 block mb-1">開始日期</label>
             <input type="date" className="w-full border-b p-2 focus:outline-none focus:border-black" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          </div>
+
+          {/* 貨幣設定 */}
+          <div>
+            <label className="text-xs text-gray-500 block mb-2">貨幣</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[11px] text-gray-500 mb-1">當地貨幣</p>
+                <select
+                  value={localCurrency}
+                  onChange={e => setLocalCurrency(e.target.value)}
+                  className="w-full border-b p-2 text-sm bg-transparent focus:outline-none focus:border-black"
+                >
+                  {Array.from(new Set([localCurrency, ...COMMON_CURRENCIES])).map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-500 mb-1">結算貨幣（預算／總計）</p>
+                <select
+                  value={homeCurrency}
+                  onChange={e => setHomeCurrency(e.target.value)}
+                  className="w-full border-b p-2 text-sm bg-transparent focus:outline-none focus:border-black"
+                >
+                  {Array.from(new Set([homeCurrency, ...COMMON_CURRENCIES])).map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="text-[11px] text-gray-500 mb-1">
+                1 {localCurrency} = ? {homeCurrency}
+              </p>
+              <input
+                type="number"
+                step="0.0001"
+                value={fxRate}
+                onChange={e => setFxRate(e.target.value)}
+                className="w-full border-b p-2 text-sm focus:outline-none focus:border-black"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                {Number(fxRate) > 0 && (
+                  <>1,000 {localCurrency} ≈ {symbolOf(homeCurrency)}{(Number(fxRate) * 1000).toFixed(0)}　</>
+                )}
+                改動只影響之後新增的支出，已記錄的帳按當時匯率保留。
+              </p>
+            </div>
           </div>
 
           {/* Cover image */}

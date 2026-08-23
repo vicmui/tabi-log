@@ -6,7 +6,7 @@ import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Clock, Map as MapIcon, List as ListIcon, CalendarX, Camera, Navigation, Share, Globe, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit, ImagePlus, X, Check } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Clock, Map as MapIcon, List as ListIcon, CalendarX, Camera, Navigation, Share, Globe, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit, ImagePlus, X, Check, CalendarPlus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
@@ -15,7 +15,8 @@ import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
-import { formatMoney, sumOnDate, sumLocal } from "@/lib/money";
+import { formatMoney, sumOnDate, sumHome, homeOf } from "@/lib/money";
+import { downloadIcs } from "@/lib/calendar";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -401,6 +402,13 @@ export default function PlannerPage() {
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
                     <button onClick={handleShare} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /><span className="hidden sm:inline">分享</span></button>
                     <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">路線</span></button>
+                    <button
+                      onClick={() => downloadIcs(trip, activeDay)}
+                      title="把今日行程加入行事曆（含提前 30 分鐘提醒）"
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"
+                    >
+                      <CalendarPlus size={14} /><span className="hidden sm:inline">行事曆</span>
+                    </button>
                     <Link href={`/planner/${trip.id}/map`} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       <Globe size={14} /><span className="hidden sm:inline">全程地圖</span>
                     </Link>
@@ -414,8 +422,9 @@ export default function PlannerPage() {
 
               {/* 今日花費 vs 預算 —— 資料本身一直都有，只是從未在行程頁顯示過 */}
               {trip.budgetTotal > 0 && (() => {
+                const home       = homeOf(trip);
                 const todaySpend = currentDay ? sumOnDate(trip, currentDay.date) : 0;
-                const tripSpend  = sumLocal(trip.expenses ?? [], trip);
+                const tripSpend  = sumHome(trip.expenses ?? [], trip);
                 const usedPct    = Math.min(Math.round((tripSpend / trip.budgetTotal) * 100), 100);
                 const over       = tripSpend > trip.budgetTotal;
                 return (
@@ -423,14 +432,14 @@ export default function PlannerPage() {
                     <div>
                       <p className="text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-1">今日花費</p>
                       <p className="text-xl font-serif">
-                        {formatMoney(todaySpend, trip.localCurrency)}
+                        {formatMoney(todaySpend, home)}
                       </p>
                     </div>
                     <div className="flex-1 min-w-[160px]">
                       <div className="flex justify-between text-[11px] tracking-widest uppercase text-gray-500 mb-1.5">
                         <span>全程已用</span>
                         <span className={over ? "text-red-600" : undefined}>
-                          {formatMoney(tripSpend, trip.localCurrency)} / {formatMoney(trip.budgetTotal, trip.localCurrency)}　{usedPct}%
+                          {formatMoney(tripSpend, home)} / {formatMoney(trip.budgetTotal, home)}　{usedPct}%
                         </span>
                       </div>
                       <div className="h-[3px] bg-gray-100 w-full">

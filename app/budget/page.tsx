@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { ConfirmDialog, AlertDialog } from '@/components/ui/Dialog'
-import { COMMON_CURRENCIES, formatMoney, toLocal, symbolOf } from '@/lib/money'
+import { COMMON_CURRENCIES, formatMoney, toHome, sumHome, homeOf, localOf, dailySpend } from '@/lib/money'
 import ReceiptScanModal, { ScannedExpense } from '@/components/budget/ReceiptScanModal'
 
 const getCurrencySymbol = (c?: string): string => {
@@ -41,6 +41,7 @@ interface FormContentProps {
   amount: string; setAmount: (v: string) => void
   currency: string; setCurrency: (v: string) => void
   localCurrency: string
+  homeCurrency: string
   rate: number
   ratesToHKD: Record<string, number>
   payer: string; setPayer: (v: string) => void
@@ -56,7 +57,7 @@ interface FormContentProps {
 
 function FormContent({
   date, setDate, itemName, setItemName, amount, setAmount,
-  currency, setCurrency, localCurrency, rate, ratesToHKD,
+  currency, setCurrency, localCurrency, homeCurrency, rate, ratesToHKD,
   payer, setPayer, splitWith, setSplitWith,
   isCustomSplit, setIsCustomSplit, customAmounts, setCustomAmounts,
   category, setCategory, receiptUrl, members, onFileUpload, distributeEvenly,
@@ -95,15 +96,18 @@ function FormContent({
             aria-label="貨幣"
             className="text-xs font-medium px-2 py-1.5 bg-gray-100 hover:bg-gray-200 min-w-[64px] text-center cursor-pointer focus:outline-none"
           >
-            {Array.from(new Set([localCurrency, 'HKD', ...COMMON_CURRENCIES])).map(c => (
+            {Array.from(new Set([localCurrency, homeCurrency, ...COMMON_CURRENCIES])).map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
         </div>
-        {currency !== localCurrency && amount && (
+        {currency !== homeCurrency && amount && (
           <p className="text-xs text-gray-500 mt-1 text-right">
-            ≈ {formatMoney(Number(amount) * (ratesToHKD[currency] ?? 1) / (rate || 1), localCurrency)}
-            <span className="text-gray-400">（按目前匯率換算）</span>
+            ≈ {formatMoney(
+                 Number(amount) * (currency === localCurrency ? rate : (ratesToHKD[currency] ?? rate)),
+                 homeCurrency
+               )}
+            <span className="text-gray-400">（按目前匯率）</span>
           </p>
         )}
       </div>
@@ -244,7 +248,7 @@ export default function BudgetPage() {
   // 1 單位該貨幣 = 多少港元。與「工具」頁共用同一個免費匯率來源。
   const [ratesToHKD, setRatesToHKD] = useState<Record<string, number>>({})
   const [isScanOpen, setIsScanOpen]  = useState(false)
-  const [currency, setCurrency]     = useState(trip?.localCurrency ?? 'HKD')
+  const [currency, setCurrency]     = useState(trip?.localCurrency ?? 'JPY')
   const [category, setCategory]     = useState<ExpenseCategory>('Food')
   const [date, setDate]             = useState('')
   const [note, setNote]             = useState('')
@@ -271,8 +275,10 @@ export default function BudgetPage() {
   }
 
   const rate        = trip.exchangeRate ?? 0.052
-  // 每筆支出按自己的幣別與當刻匯率折算回旅程當地貨幣後再加總
-  const totalSpent  = trip.expenses.reduce((acc, cur) => acc + toLocal(cur, trip), 0)
+  const home        = homeOf(trip)     // 預算與總計的基準貨幣（預設港元）
+  const local       = localOf(trip)    // 目的地貨幣，記帳預設輸入幣別
+  // 每筆支出按自己的幣別與當刻匯率折算成基準貨幣後再加總
+  const totalSpent  = sumHome(trip.expenses, trip)
   const remaining   = trip.budgetTotal - totalSpent
   const isOverBudget = remaining < 0
 
@@ -286,7 +292,10 @@ export default function BudgetPage() {
     // 金額按輸入的幣別原樣儲存，另外鎖定當刻匯率。
     // 舊做法是即時折算成當地貨幣，一旦匯率改動就無法還原原始金額。
     const finalAmount = Number(amount)
-    const finalRate   = currency === (trip.localCurrency ?? 'JPY') ? rate : (ratesToHKD[currency] ?? rate)
+    // rate = 1 單位輸入幣別 = 幾多基準貨幣
+    const finalRate   = currency === home ? 1
+                      : currency === local ? rate
+                      : (ratesToHKD[currency] ?? rate)
 
     let finalCustomSplit: Record<string, number> | undefined = undefined
     if (isCustomSplit) {
@@ -337,7 +346,7 @@ export default function BudgetPage() {
     setPayer(exp.payerId)
     setSplitWith(exp.splitWithIds)
     setReceiptUrl(exp.receiptUrl ?? '')
-    setCurrency(trip?.localCurrency ?? 'HKD')
+    setCurrency(trip?.localCurrency ?? 'JPY')
     if (exp.customSplit) {
       setIsCustomSplit(true)
       const ca: Record<string, string> = {}
@@ -371,19 +380,19 @@ export default function BudgetPage() {
     trip.members.forEach(m => { balances[m.id] = 0 })
     trip.expenses.forEach(exp => {
       const paidBy = exp.payerId
-      // 全部先折算成旅程當地貨幣，否則 JPY 同 GBP 會被當成同一種錢直接相加
-      const local  = toLocal(exp, trip)
-      const ratio  = exp.amount ? local / exp.amount : 1
+      // 全部先折算成基準貨幣，否則 JPY 同 GBP 會被當成同一種錢直接相加
+      const inHome = toHome(exp, trip)
+      const ratio  = exp.amount ? inHome / exp.amount : 1
       if (exp.customSplit) {
-        balances[paidBy] = (balances[paidBy] ?? 0) + local
+        balances[paidBy] = (balances[paidBy] ?? 0) + inHome
         Object.entries(exp.customSplit).forEach(([mid, amt]) => {
           balances[mid] = (balances[mid] ?? 0) - amt * ratio
         })
       } else {
         const splitCount = exp.splitWithIds.length
         if (splitCount === 0) return
-        const splitAmount = local / splitCount
-        balances[paidBy] = (balances[paidBy] ?? 0) + local
+        const splitAmount = inHome / splitCount
+        balances[paidBy] = (balances[paidBy] ?? 0) + inHome
         exp.splitWithIds.forEach(uid => {
           balances[uid] = (balances[uid] ?? 0) - splitAmount
         })
@@ -405,7 +414,7 @@ export default function BudgetPage() {
   }, [trip.expenses, trip.members])
 
   const catStats = trip.expenses.reduce((acc, cur) => {
-    acc[cur.category] = (acc[cur.category] ?? 0) + toLocal(cur, trip)
+    acc[cur.category] = (acc[cur.category] ?? 0) + toHome(cur, trip)
     return acc
   }, {} as Record<string, number>)
 
@@ -416,7 +425,9 @@ export default function BudgetPage() {
   const formProps: FormContentProps = {
     date, setDate, itemName, setItemName, amount, setAmount,
     currency, setCurrency, ratesToHKD,
-    localCurrency: trip.localCurrency ?? 'JPY',
+    localCurrency: local,
+    homeCurrency: home,
+
     rate,
     payer, setPayer, splitWith, setSplitWith,
     isCustomSplit, setIsCustomSplit, customAmounts, setCustomAmounts,
@@ -450,7 +461,7 @@ export default function BudgetPage() {
                     <span className="font-semibold">{getMemberName(d.to)}</span>
                   </div>
                   <span className="font-serif text-xl font-semibold">
-                    {getCurrencySymbol(trip.localCurrency)}{Math.round(d.amount).toLocaleString()}
+                    {formatMoney(d.amount, home)}
                   </span>
                 </div>
               ))}
@@ -491,7 +502,7 @@ export default function BudgetPage() {
               </div>
             ) : (
               <h2 className="text-3xl font-serif font-semibold">
-                {getCurrencySymbol(trip.localCurrency)}{trip.budgetTotal.toLocaleString()}
+                {formatMoney(trip.budgetTotal, home)}
               </h2>
             )}
           </div>
@@ -499,14 +510,14 @@ export default function BudgetPage() {
           <div className="bg-white p-6 border border-gray-100">
             <p className="text-xs tracking-widest text-gray-500 uppercase">已花費</p>
             <h2 className="text-3xl font-serif font-semibold text-neutral-900">
-              {getCurrencySymbol(trip.localCurrency)}{totalSpent.toLocaleString()}
+              {formatMoney(totalSpent, home)}
             </h2>
           </div>
 
           <div className={`p-6 border border-gray-100 ${isOverBudget ? 'bg-red-500 text-white' : 'bg-white'}`}>
             <p className="text-xs tracking-widest opacity-60 uppercase">剩餘</p>
             <h2 className="text-3xl font-serif font-semibold">
-              {getCurrencySymbol(trip.localCurrency)}{remaining.toLocaleString()}
+              {formatMoney(remaining, home)}
             </h2>
           </div>
         </div>
@@ -616,6 +627,42 @@ export default function BudgetPage() {
               </div>
             </div>
 
+            {/* 每日花費 —— 睇得出邊日超支，係記帳頁最實用嗰個切面 */}
+            {(() => {
+              const days = dailySpend(trip).filter(d => d.amount > 0)
+              if (days.length === 0) return null
+              const peak = Math.max(...days.map(d => d.amount))
+              const avg  = days.reduce((a, d) => a + d.amount, 0) / days.length
+              return (
+                <div className="bg-white border border-gray-100 p-6">
+                  <div className="flex items-baseline justify-between mb-5">
+                    <h3 className="text-xs tracking-[0.2em] uppercase text-gray-500">每日花費</h3>
+                    <span className="text-xs text-gray-500">
+                      平均 {formatMoney(avg, home)} / 日
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {days.map(d => (
+                      <div key={d.date} className="flex items-center gap-4">
+                        <span className="w-14 shrink-0 text-[11px] text-gray-500 font-mono">
+                          Day {d.day}
+                        </span>
+                        <div className="flex-1 h-[3px] bg-gray-100">
+                          <div
+                            className="h-full bg-black"
+                            style={{ width: `${peak > 0 ? (d.amount / peak) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="w-28 shrink-0 text-right text-sm font-serif">
+                          {formatMoney(d.amount, home)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Expense List */}
             <div className="space-y-2">
               {trip.expenses.map(exp => (
@@ -642,10 +689,10 @@ export default function BudgetPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-serif text-right">
-                      {formatMoney(exp.amount, exp.currency ?? trip.localCurrency)}
-                      {(exp.currency ?? trip.localCurrency) !== trip.localCurrency && (
+                      {formatMoney(exp.amount, exp.currency ?? local)}
+                      {(exp.currency ?? local) !== home && (
                         <span className="block text-[11px] text-gray-500 font-sans">
-                          ≈ {formatMoney(toLocal(exp, trip), trip.localCurrency)}
+                          ≈ {formatMoney(toHome(exp, trip), home)}
                         </span>
                       )}
                     </span>
