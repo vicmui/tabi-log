@@ -368,14 +368,14 @@ export default function OfflinePage() {
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-2">
               <WifiOff size={28} className="text-black" />
-              <h1 className="text-3xl font-black tracking-tighter uppercase">離線版下載</h1>
+              <h1 className="text-3xl font-semibold tracking-tighter uppercase">離線版下載</h1>
             </div>
             <p className="text-xs text-gray-500 uppercase tracking-widest">OFFLINE PACK</p>
           </div>
 
           {/* Explainer */}
           <div className="bg-gray-50  p-6 mb-8 border border-gray-100">
-            <h2 className="text-sm font-bold mb-3 uppercase tracking-widest">包含內容</h2>
+            <h2 className="text-sm font-semibold mb-3 uppercase tracking-widest">包含內容</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: "📅", label: "完整每日行程" },
@@ -417,7 +417,7 @@ export default function OfflinePage() {
                   <img src={trip.coverImage} className="w-20 h-20 object-cover  shrink-0" alt={trip.title} />
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base truncate">{trip.title}</h3>
+                  <h3 className="font-semibold text-base truncate">{trip.title}</h3>
                   <p className="text-xs text-gray-500 mt-1">{trip.startDate} — {trip.endDate}</p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {[
@@ -440,7 +440,7 @@ export default function OfflinePage() {
             onClick={handleDownload}
             disabled={!trip || status === 'loading'}
             className={clsx(
-              "w-full py-4  text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
+              "w-full py-4  text-sm font-semibold uppercase tracking-widest flex items-center justify-center gap-3 transition-all",
               status === 'loading'
                 ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                 : "bg-black text-white hover:bg-gray-900 active:scale-[.98]"
@@ -474,7 +474,7 @@ export default function OfflinePage() {
             <div className="mt-4 p-4 bg-green-50  flex items-center gap-2">
               <CheckCircle size={16} className="text-green-600 shrink-0" />
               <div>
-                <div className="text-xs font-bold text-green-700">下載完成！</div>
+                <div className="text-xs font-medium text-green-700">下載完成！</div>
                 <div className="text-[11px] text-green-600 mt-1">
                   儲存到手機後，出行時無需網絡即可查閱完整旅程資料。
                 </div>
@@ -490,7 +490,7 @@ export default function OfflinePage() {
 
           {/* Usage tip */}
           <div className="mt-8 p-4 border border-dashed border-gray-200 ">
-            <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">使用方法</h3>
+            <h3 className="text-xs font-medium uppercase tracking-widest mb-2 text-gray-500">使用方法</h3>
             <ol className="space-y-1">
               {[
                 "點擊「一鍵下載」，等待所有圖片打包完成",
@@ -499,7 +499,7 @@ export default function OfflinePage() {
                 "去到目的地，直接用瀏覽器開啟 .html 即可！無需 WiFi",
               ].map((t, i) => (
                 <li key={i} className="text-xs text-gray-500 flex gap-2">
-                  <span className="font-bold text-gray-400 w-4 shrink-0">{i+1}.</span>
+                  <span className="font-semibold text-gray-400 w-4 shrink-0">{i+1}.</span>
                   <span>{t}</span>
                 </li>
               ))}

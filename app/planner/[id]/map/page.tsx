@@ -168,7 +168,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
           <ArrowLeft size={16} /> 返回行程
         </Link>
         <span className="text-gray-200">|</span>
-        <h1 className="text-sm font-bold tracking-widest uppercase text-black flex-1 truncate">
+        <h1 className="text-sm font-semibold tracking-widest uppercase text-black flex-1 truncate">
           {trip.title} — 全程地圖
         </h1>
         <button
@@ -379,7 +379,7 @@ export default function FullMapPage({ params }: { params: { id: string } }) {
               }`}
             >
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
-              <span className="text-xs font-bold tracking-widest uppercase text-gray-600 whitespace-nowrap">
+              <span className="text-xs font-medium tracking-widest uppercase text-gray-600 whitespace-nowrap">
                 DAY {d.day} ({d.date}) · {d.points.length}個點
               </span>
             </button>

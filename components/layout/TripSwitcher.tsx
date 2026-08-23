@@ -33,7 +33,7 @@ export default function TripSwitcher() {
     <div ref={ref} className="relative z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-sm font-bold tracking-widest uppercase hover:opacity-70 transition-opacity"
+        className="flex items-center gap-2 text-sm font-semibold tracking-widest uppercase hover:opacity-70 transition-opacity"
       >
         <MapPin size={16} />
         <span className="truncate max-w-[150px]">{activeTrip.title}</span>

@@ -55,7 +55,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="mb-10">
         <h1
-          className="text-4xl font-black tracking-tighter text-[#1a1a1a] uppercase leading-none"
+          className="text-4xl font-semibold tracking-tighter text-[#1a1a1a] uppercase leading-none"
           style={{ fontFamily: 'var(--font-inter)' }}
         >
           VM&apos;S<br />BUILD
@@ -83,7 +83,7 @@ export default function Sidebar() {
                     className={clsx(
                       'text-xs tracking-[0.15em] transition-all duration-300 uppercase',
                       isActive
-                        ? 'text-black font-bold'
+                        ? 'text-black font-semibold'
                         : 'text-gray-500 group-hover:text-gray-600 font-medium'
                     )}
                   >

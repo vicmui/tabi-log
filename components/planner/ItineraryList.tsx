@@ -57,7 +57,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
     <>
       <div className="relative group ml-4">
         {/* Sequence bubble */}
-        <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm border-4 border-white z-20 select-none pointer-events-none">
+        <div className="absolute -left-4 top-4 w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center font-semibold text-sm border-4 border-white z-20 select-none pointer-events-none">
           {index + 1}
         </div>
 
@@ -67,7 +67,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
           style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
         >
           <div className="flex flex-col items-center gap-2 min-w-[50px] pt-1">
-            <span className="text-[11px] font-mono text-gray-800 font-bold">{activity.time}</span>
+            <span className="text-[11px] font-mono text-gray-800 font-medium">{activity.time}</span>
             <div className={clsx(
               "w-8 h-8 rounded-full flex items-center justify-center",
               activity.isVisited ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-500"
@@ -79,7 +79,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
           <div className="flex-1 min-w-0 pt-1">
             <div className="flex justify-between items-start mb-1">
               <h4 className={clsx(
-                "text-sm font-bold tracking-wide leading-tight mr-2",
+                "text-sm font-semibold tracking-wide leading-tight mr-2",
                 activity.isVisited ? "text-gray-500 line-through" : "text-black"
               )}>
                 {activity.location}
@@ -99,7 +99,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
                 {config.label}
               </span>
               {(activity.rating ?? 0) > 0 && (
-                <span className="text-[11px] flex items-center gap-1 text-yellow-500 font-bold">★ {activity.rating}</span>
+                <span className="text-[11px] flex items-center gap-1 text-yellow-500 font-medium">★ {activity.rating}</span>
               )}
             </div>
 
@@ -166,8 +166,8 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
   if (validActivities.length === 0) return (
     <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
       <div className="w-10 h-[1px] bg-neutral-300 mb-6" />
-      <p className="text-sm font-bold text-gray-500 tracking-widest uppercase">今日暫無行程</p>
-      {!isReadOnly && <p className="text-xs text-gray-500 mt-2 tracking-wide">按右下角「＋」新增第一個地點</p>}
+      <p className="text-sm font-semibold text-gray-500 tracking-widest uppercase">今日暫無行程</p>
+      {!isReadOnly && <p className="text-xs text-gray-500 mt-2 tracking-wide">按上方「＋」新增第一個地點</p>}
     </div>
   );
 

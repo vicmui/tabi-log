@@ -83,7 +83,7 @@ export default function MobileNav() {
               <span
                 className={clsx(
                   'text-[11px] font-medium tracking-wide whitespace-nowrap',
-                  isActive ? 'font-bold text-black' : 'text-gray-500'
+                  isActive ? 'font-semibold text-black' : 'text-gray-500'
                 )}
               >
                 {item.label}

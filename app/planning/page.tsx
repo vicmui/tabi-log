@@ -124,9 +124,9 @@ export default function PlanningPage() {
     <div className="flex min-h-screen bg-white font-sans text-jp-charcoal">
       <Sidebar />
       <main className="flex-1 min-w-0 ml-0 md:ml-64 p-5 sm:p-8 md:p-12 pb-24">
-        <header className="mb-10"><h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">行前準備</h1><div className="flex items-center gap-4"><TripSwitcher /></div></header>
+        <header className="mb-10"><h1 className="text-3xl font-serif font-semibold tracking-widest uppercase mb-2">行前準備</h1><div className="flex items-center gap-4"><TripSwitcher /></div></header>
         <div className="flex gap-4 md:gap-8 border-b border-gray-100 mb-8 overflow-x-auto no-scrollbar">
-           {['Packing','Todo','Shopping','Places'].map(t => (<button key={t} onClick={()=>{handleTabChange(t); handleCancelEdit();}} className={`pb-4 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-400'}`}>{tabNames[t]}</button>))}
+           {['Packing','Todo','Shopping','Places'].map(t => (<button key={t} onClick={()=>{handleTabChange(t); handleCancelEdit();}} className={`pb-4 text-xs font-medium tracking-[0.2em] uppercase whitespace-nowrap ${activeTab===t?'border-b-2 border-black':'text-gray-400'}`}>{tabNames[t]}</button>))}
         </div>
 
         {activeTab === 'Places' ? (
@@ -146,7 +146,7 @@ export default function PlanningPage() {
            
            {/* Add/Edit Form */}
            <div className={clsx("border border-dashed p-6 bg-gray-50 rounded-none h-fit sticky top-10", editingItemId ? "border-black bg-white" : "border-gray-300")}>
-              <div className="flex justify-between items-center mb-4"><span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{editingItemId ? "編輯項目" : "新增項目"}</span>{editingItemId && <button onClick={handleCancelEdit}><X size={14} className="text-gray-500 hover:text-black"/></button>}</div>
+              <div className="flex justify-between items-center mb-4"><span className="text-xs font-medium text-gray-500 uppercase tracking-widest">{editingItemId ? "編輯項目" : "新增項目"}</span>{editingItemId && <button onClick={handleCancelEdit}><X size={14} className="text-gray-500 hover:text-black"/></button>}</div>
               <input value={text} onChange={e=>setText(e.target.value)} placeholder="項目名稱..." className="w-full bg-transparent border-b mb-3 text-sm p-1 focus:border-black outline-none"/>
               {activeTab === 'Shopping' && (<><input value={location} onChange={e=>setLocation(e.target.value)} placeholder="購買地點..." className="w-full bg-transparent border-b mb-3 text-sm p-1 focus:border-black outline-none"/><input type="number" value={estimatedCost} onChange={e=>setEstimatedCost(e.target.value)} placeholder="預算 (¥)..." className="w-full bg-transparent border-b mb-3 text-sm p-1 focus:border-black outline-none"/><div className="mb-3">{imageUrl ? (<div className="relative w-full h-24 rounded overflow-hidden group"><img src={imageUrl} className="w-full h-full object-cover" /><button onClick={()=>setImageUrl("")} className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full"><X size={12}/></button></div>) : (<label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer hover:text-black transition-colors border border-dashed border-gray-300 p-3 rounded justify-center bg-white">{isUploading ? "上傳中..." : <><ImageIcon size={14}/> 上傳圖片</>}<input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} /></label>)}</div></>)}
               <div className="flex gap-2 mb-3">{['High','Medium','Low'].map(p=>(<button key={p} onClick={()=>setPriority(p as any)} className={`text-xs border px-2 py-1 rounded ${priority===p?'bg-black text-white':'bg-white text-gray-500'}`}>{p}</button>))}</div>

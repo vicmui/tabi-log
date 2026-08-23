@@ -184,7 +184,7 @@ export function RatingBadge({ rating, count }: { rating?: number; count?: number
   return (
     <span className="inline-flex items-center gap-1 text-xs text-gray-600">
       <Star size={11} className="text-amber-500 fill-amber-500" />
-      <span className="font-bold text-gray-800">{rating.toFixed(1)}</span>
+      <span className="font-semibold text-gray-800">{rating.toFixed(1)}</span>
       {count !== undefined && <span className="text-gray-500">({count.toLocaleString()})</span>}
     </span>
   )

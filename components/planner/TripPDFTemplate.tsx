@@ -283,8 +283,8 @@ export default function TripPDFTemplate({ trip, coverDataUrl }: Props) {
                     gap: "0 14px",
                     paddingTop: i === 0 ? 4 : 12,
                   }}>
-                    {/* 時間 */}
-                    <div style={{ textAlign: "right", paddingTop: 3 }}>
+                    {/* 時間 —— 與標題首行光學置中對齊 */}
+                    <div style={{ textAlign: "right", height: 20, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                       {act.time
                         ? <span style={{ fontFamily: MONO, fontSize: 11, color: BLACK, whiteSpace: "nowrap" }}>{act.time}</span>
                         : <span style={{ color: "#dcdcdc", fontSize: 10 }}>—</span>}
@@ -311,16 +311,16 @@ export default function TripPDFTemplate({ trip, coverDataUrl }: Props) {
                       paddingBottom: last ? 0 : 12,
                       borderBottom: last ? undefined : RULE,
                     }}>
-                      <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "3px 8px", marginBottom: 4 }}>
-                        <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: BLACK, lineHeight: 1.35 }}>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "3px 8px", minHeight: 20, marginBottom: 4 }}>
+                        <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 600, color: BLACK, lineHeight: 1.2 }}>
                           {act.location}
                         </span>
                         {/* 不用 emoji：PDF 字型回退不一致，而且與版面調性不符 */}
-                        <span style={{ fontSize: 9, letterSpacing: "0.14em", padding: "1px 6px", border: "1px solid #e0e0e0", color: GRAY, whiteSpace: "nowrap" }}>
+                        <span style={{ fontSize: 9, letterSpacing: "0.14em", padding: "2px 6px", border: "1px solid #e0e0e0", color: GRAY, whiteSpace: "nowrap", lineHeight: 1, display: "inline-block" }}>
                           {TYPE_LABEL[act.type] ?? act.type}
                         </span>
                         {act.isVisited && (
-                          <span style={{ fontSize: 9, letterSpacing: "0.14em", padding: "1px 6px", background: BLACK, color: "#fff", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: 9, letterSpacing: "0.14em", padding: "2px 6px", background: BLACK, color: "#fff", whiteSpace: "nowrap", lineHeight: 1, display: "inline-block" }}>
                             已完成
                           </span>
                         )}

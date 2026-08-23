@@ -14,7 +14,7 @@ import EditTripModal from "@/components/dashboard/EditTripModal";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { format, parseISO, differenceInDays } from "date-fns";
-import { RepositionPanel } from "@/components/ui/RepositionPanel";
+import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -86,7 +86,7 @@ function EditLocationModal({
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-[11px] text-gray-500 tracking-[0.2em] uppercase mb-0.5">當日地點</p>
-              <h3 className="font-bold text-base tracking-tight">修改地點名稱</h3>
+              <h3 className="font-semibold text-base tracking-tight">修改地點名稱</h3>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-black transition-colors">
               <X size={16} />
@@ -108,7 +108,7 @@ function EditLocationModal({
             取消
           </button>
           <button onClick={handleConfirm}
-            className="flex-1 py-3.5 text-xs font-bold tracking-widest text-black uppercase hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
+            className="flex-1 py-3.5 text-xs font-medium tracking-widest text-black uppercase hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
             <Check size={12} /> 確認
           </button>
         </div>
@@ -119,7 +119,7 @@ function EditLocationModal({
 
 export default function PlannerPage() {
   const params = useParams();
-  const { trips, _hasHydrated, addActivity, addDayToTrip, deleteDayFromTrip, updateDayCoverImage, updateDayLocation } = useTripStore();
+  const { trips, _hasHydrated, addActivity, addDayToTrip, deleteDayFromTrip, updateDayCoverImage, updateDayCoverFocus, updateDayLocation } = useTripStore();
 
   const [activeDay, setActiveDay]               = useState(0);
   const [isModalOpen, setIsModalOpen]           = useState(false);
@@ -127,7 +127,6 @@ export default function PlannerPage() {
   const [isSettingsOpen, setIsSettingsOpen]     = useState(false);
   const [viewMode, setViewMode]                 = useState<"list" | "map">("list");
   const [weatherMap, setWeatherMap]             = useState<Record<string, { temp: string; code: number }>>({});
-  const [positionMap, setPositionMap]           = useState<Record<string, number>>({});
   const [repositioning, setRepositioning]       = useState(false);
   // ✅ Custom edit-location modal state
   const [editLocationOpen, setEditLocationOpen] = useState(false);
@@ -136,17 +135,8 @@ export default function PlannerPage() {
 
   const trip = trips.find((t) => t.id === params.id);
 
-  useEffect(() => {
-    if (!trip) return;
-    try { const raw = localStorage.getItem(`coverPos-${trip.id}`); if (raw) setPositionMap(JSON.parse(raw)); } catch (_) {}
-  }, [trip?.id]);
 
-  const savePosMap = (map: Record<string, number>, tripId: string) => {
-    setPositionMap(map);
-    try { localStorage.setItem(`coverPos-${tripId}`, JSON.stringify(map)); } catch (_) {}
-  };
 
-  const getCoverPos = (tId: string, dIdx: number) => positionMap[`${tId}-${dIdx}`] ?? 50;
 
   // 旅途模式：若今日落在行程日期範圍內，進入頁面即自動跳至當日，
   // 毋須在日曆上逐格尋找。日期以本地時間計算而非 UTC——
@@ -196,7 +186,11 @@ export default function PlannerPage() {
 
   const currentDay      = trip.dailyItinerary[activeDay];
   const coverSrc        = currentDay?.coverImage || trip.coverImage || "";
-  const coverPosY       = getCoverPos(trip.id, activeDay);
+  // 若當日冇自己嘅封面，就沿用旅程封面同佢嘅焦點
+  const usingTripCover  = !currentDay?.coverImage && !!trip.coverImage;
+  const coverFocus: CoverFocus = usingTripCover
+    ? { x: trip.coverPosX ?? 50, y: trip.coverPosY ?? 50 }
+    : { x: currentDay?.coverPosX ?? 50, y: currentDay?.coverPosY ?? 50 };
   const displayLocation = currentDay?.customLocation
     || (currentDay?.activities?.length > 0 ? currentDay.activities[0].location.split(" ")[0] : "自由探索");
 
@@ -225,7 +219,6 @@ export default function PlannerPage() {
     if (!error) {
       const { data: { publicUrl } } = supabase.storage.from("trip_files").getPublicUrl(filePath);
       updateDayCoverImage(trip.id, activeDay, publicUrl);
-      savePosMap({ ...positionMap, [`${trip.id}-${activeDay}`]: 50 }, trip.id);
       setRepositioning(true);
     }
     e.target.value = "";
@@ -260,7 +253,7 @@ export default function PlannerPage() {
           {/* Mobile Header */}
           <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
             <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-500" /></Link>
-            <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
+            <h1 className="font-semibold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
             <button onClick={() => setIsModalOpen(true)} className="bg-black text-white p-2 active:scale-95 transition-transform"><Plus size={20} /></button>
           </div>
 
@@ -269,7 +262,7 @@ export default function PlannerPage() {
             <div className="px-8 pb-8 border-b border-gray-50 sticky top-0 bg-white z-10">
               <Link href="/" className="flex items-center gap-2 text-xs text-gray-400 hover:text-black mb-6 transition-colors tracking-widest uppercase font-medium"><ArrowLeft size={10} /> BACK</Link>
               <div className="cursor-pointer" onClick={() => setIsSettingsOpen(true)}>
-                <h2 className="text-lg font-bold leading-snug mb-1 text-black tracking-tight">{trip.title}</h2>
+                <h2 className="text-lg font-semibold leading-snug mb-1 text-black tracking-tight">{trip.title}</h2>
                 <p className="text-[11px] text-gray-500 tracking-[0.2em] uppercase">{trip.startDate}</p>
               </div>
             </div>
@@ -308,15 +301,15 @@ export default function PlannerPage() {
                       dayItem.date === todayKey && activeDay !== index && "border-black")}>
                     {dayItem.date === todayKey && (
                       <span className={clsx(
-                        "absolute -top-2 px-1.5 py-0.5 text-[10px] font-bold tracking-widest",
+                        "absolute -top-2 px-1.5 py-0.5 text-[10px] font-medium tracking-widest",
                         activeDay === index ? "bg-white text-black" : "bg-black text-white"
                       )}>今日</span>
                     )}
-                    <span className="text-[11px] font-bold uppercase tracking-widest">{format(parseISO(dayItem.date), "EEE")}</span>
-                    <span className="text-xl font-bold leading-none my-1">{format(parseISO(dayItem.date), "d")}</span>
+                    <span className="text-[11px] font-medium uppercase tracking-widest">{format(parseISO(dayItem.date), "EEE")}</span>
+                    <span className="text-xl font-semibold leading-none my-1">{format(parseISO(dayItem.date), "d")}</span>
                     <div className="flex flex-col items-center gap-1 border-t border-current/10 pt-2 w-full mt-1">
                       <WeatherIcon code={info?.code} />
-                      <span className="text-[11px] font-bold">{info?.temp ?? "15/25"}</span>
+                      <span className="text-[11px] font-medium">{info?.temp ?? "15/25"}</span>
                     </div>
                   </button>
                 );
@@ -333,13 +326,13 @@ export default function PlannerPage() {
               {repositioning && coverSrc && (
                 <>
                   <div className="fixed inset-0 z-[300] md:hidden">
-                    <RepositionPanel src={coverSrc} initialY={coverPosY}
-                      onConfirm={y => { savePosMap({ ...positionMap, [`${trip.id}-${activeDay}`]: y }, trip.id); setRepositioning(false); }}
+                    <RepositionPanel src={coverSrc} initial={coverFocus} aspect={3.2}
+                      onConfirm={f => { updateDayCoverFocus(trip.id, activeDay, f.x, f.y); setRepositioning(false); }}
                       onCancel={() => setRepositioning(false)} />
                   </div>
                   <div className="hidden md:block">
-                    <RepositionPanel compact src={coverSrc} initialY={coverPosY}
-                      onConfirm={y => { savePosMap({ ...positionMap, [`${trip.id}-${activeDay}`]: y }, trip.id); setRepositioning(false); }}
+                    <RepositionPanel compact src={coverSrc} initial={coverFocus} aspect={2.2}
+                      onConfirm={f => { updateDayCoverFocus(trip.id, activeDay, f.x, f.y); setRepositioning(false); }}
                       onCancel={() => setRepositioning(false)} />
                   </div>
                 </>
@@ -350,7 +343,7 @@ export default function PlannerPage() {
                   {coverSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={coverSrc} alt="Cover" className="w-full h-full object-cover"
-                      style={{ objectPosition: `center ${coverPosY}%` }} />
+                      style={{ objectPosition: `${coverFocus.x}% ${coverFocus.y}%` }} />
                   ) : (
                     <label className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:from-gray-200 hover:to-gray-300 transition-colors">
                       <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
@@ -358,9 +351,9 @@ export default function PlannerPage() {
                         <ImagePlus size={26} className="text-gray-500" />
                       </div>
                       <div className="text-center px-4">
-                        <p className="text-sm font-bold text-gray-500 tracking-widest uppercase">點擊上傳封面相片</p>
-                        <p className="text-xs text-gray-500 mt-1.5">建議 <span className="font-bold text-gray-600">2400 × 800px</span>，橫向構圖，JPG / PNG</p>
-                        <p className="text-[11px] text-gray-400 mt-1">上傳後可用滑桿調整焦點位置</p>
+                        <p className="text-sm font-semibold text-gray-500 tracking-widest uppercase">點擊上傳封面相片</p>
+                        <p className="text-xs text-gray-500 mt-1.5">建議 <span className="font-medium text-gray-700">2400 × 750px</span>（約 3.2:1 橫向），JPG / PNG</p>
+                        <p className="text-[11px] text-gray-500 mt-1">主體置中；上傳後可左右上下調整焦點</p>
                       </div>
                     </label>
                   )}
@@ -368,11 +361,11 @@ export default function PlannerPage() {
                   {coverSrc && (
                     <div className="absolute bottom-0 left-0 right-0 px-6 md:px-16 pb-6 pt-20 pointer-events-none">
                       <div className="pointer-events-auto">
-                        <h3 className="text-4xl md:text-7xl font-bold tracking-tight uppercase leading-none text-black drop-shadow-[0_2px_15px_rgba(255,255,255,0.8)]">Day {activeDay + 1}</h3>
+                        <h3 className="text-4xl md:text-7xl font-semibold tracking-tight uppercase leading-none text-black drop-shadow-[0_2px_15px_rgba(255,255,255,0.8)]">Day {activeDay + 1}</h3>
                         {/* ✅ Opens custom modal instead of prompt() */}
                         <button
                           onClick={() => setEditLocationOpen(true)}
-                          className="flex items-center gap-3 text-xs text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full hover:bg-white transition-all"
+                          className="flex items-center gap-3 text-xs text-gray-600 tracking-[0.3em] uppercase font-medium mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full hover:bg-white transition-all"
                         >
                           <MapPin size={10} /><span>{displayLocation}</span><Edit size={8} className="opacity-50" />
                           <span className="w-px h-3 bg-gray-300" /><Clock size={10} /><span>{currentDay?.date}</span>
@@ -384,10 +377,10 @@ export default function PlannerPage() {
                   {coverSrc && (
                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <button onClick={() => setRepositioning(true)}
-                        className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm transition-all">
+                        className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-medium uppercase tracking-widest px-3 py-2 backdrop-blur-sm transition-all">
                         調整位置
                       </button>
-                      <label className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm cursor-pointer transition-all">
+                      <label className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-medium uppercase tracking-widest px-3 py-2 backdrop-blur-sm cursor-pointer transition-all">
                         <Camera size={13} /> 換封面
                         <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                       </label>
@@ -401,19 +394,19 @@ export default function PlannerPage() {
               <div className="mb-8 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-30 pt-2">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-[11px] font-bold tracking-[0.2em] text-black uppercase">行程規劃</span>
+                    <span className="text-[11px] font-medium tracking-[0.2em] text-black uppercase">行程規劃</span>
                     <button onClick={handleDeleteDay} className="text-gray-400 hover:text-red-400 p-1"><CalendarX size={16} /></button>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
-                    <button onClick={handleShare} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /><span className="hidden sm:inline">分享</span></button>
-                    <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">路線</span></button>
-                    <Link href={`/planner/${trip.id}/map`} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
+                    <button onClick={handleShare} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /><span className="hidden sm:inline">分享</span></button>
+                    <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">路線</span></button>
+                    <Link href={`/planner/${trip.id}/map`} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       <Globe size={14} /><span className="hidden sm:inline">全程地圖</span>
                     </Link>
-                    <button onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
+                    <button onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       {viewMode === "list" ? <><MapIcon size={14} /><span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /><span className="hidden sm:inline">列表</span></>}
                     </button>
-                    <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-xs tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors uppercase font-bold"><Plus size={12} /> 新增活動</button>
+                    <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-xs tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors uppercase font-medium"><Plus size={12} /> 新增活動</button>
                   </div>
                 </div>
               </div>

@@ -73,6 +73,7 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
         <img
           src={trip.coverImage}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          style={{ objectPosition: `${trip.coverPosX ?? 50}% ${trip.coverPosY ?? 50}%` }}
           alt={trip.title}
         />
 
@@ -90,7 +91,7 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
         </button>
 
         {badgeLabel && (
-          <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-bold rounded-full z-20 whitespace-nowrap">
+          <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-medium rounded-full z-20 whitespace-nowrap">
             {badgeLabel}
           </div>
         )}
@@ -157,6 +158,8 @@ export default function Home() {
     startDate: string
     endDate: string
     coverImage?: string
+    coverPosX?: number
+    coverPosY?: number
   }) => {
     addTrip({
       title: data.title,
@@ -164,6 +167,8 @@ export default function Home() {
       endDate: data.endDate,
       status: 'planning',
       coverImage: data.coverImage || DEFAULT_COVER,
+      coverPosX: data.coverPosX ?? 50,
+      coverPosY: data.coverPosY ?? 50,
     })
   }
 
@@ -182,7 +187,7 @@ export default function Home() {
       <main className="flex-1 min-w-0 p-5 sm:p-8 ml-0 md:ml-64 pb-24">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-10 mt-4">
           <div>
-            <h1 className="text-3xl font-serif font-bold tracking-widest text-jp-charcoal uppercase mb-2">
+            <h1 className="text-3xl font-serif font-semibold tracking-widest text-jp-charcoal uppercase mb-2">
               我的旅程
             </h1>
             <p className="text-gray-500 text-xs tracking-widest uppercase">My Voyages</p>

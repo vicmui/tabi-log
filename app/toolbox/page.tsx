@@ -102,7 +102,7 @@ export default function ToolboxPage() {
   const SectionHeader = ({ icon: Icon, label }: { icon: any; label: string }) => (
     <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
       <Icon size={16} />
-      <h2 className="text-xs font-bold tracking-[0.2em] uppercase">{label}</h2>
+      <h2 className="text-xs font-medium tracking-[0.2em] uppercase">{label}</h2>
     </div>
   );
 
@@ -112,7 +112,7 @@ export default function ToolboxPage() {
         <Sidebar />
         <main className="flex-1 min-w-0 ml-0 md:ml-64 p-5 sm:p-8 md:p-12 overflow-y-auto h-screen bg-gray-50 pb-24">
           <header className="mb-10">
-            <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">旅行工具</h1>
+            <h1 className="text-3xl font-serif font-semibold tracking-widest uppercase mb-2">旅行工具</h1>
             <div className="flex items-center gap-4"><TripSwitcher /></div>
           </header>
 
@@ -129,7 +129,7 @@ export default function ToolboxPage() {
                     <label className="text-[11px] text-gray-500 block mb-1 tracking-widest uppercase">From</label>
                     <input value={currencyFrom}
                       onChange={e => { setCurrencyFrom(e.target.value.toUpperCase()); setLastUpdated(null); }}
-                      className="w-full border-b text-2xl font-black p-1 uppercase focus:outline-none focus:border-black" />
+                      className="w-full border-b text-2xl font-semibold p-1 uppercase focus:outline-none focus:border-black" />
                   </div>
                   <button onClick={handleSwap} className="text-gray-400 mb-2 hover:text-black transition-colors">
                     <ArrowRightLeft size={20} />
@@ -138,7 +138,7 @@ export default function ToolboxPage() {
                     <label className="text-[11px] text-gray-500 block mb-1 tracking-widest uppercase">To</label>
                     <input value={currencyTo}
                       onChange={e => { setCurrencyTo(e.target.value.toUpperCase()); setLastUpdated(null); }}
-                      className="w-full border-b text-2xl font-black p-1 uppercase focus:outline-none focus:border-black" />
+                      className="w-full border-b text-2xl font-semibold p-1 uppercase focus:outline-none focus:border-black" />
                   </div>
                 </div>
 
@@ -146,7 +146,7 @@ export default function ToolboxPage() {
                 <div className="flex flex-wrap gap-1.5">
                   {POPULAR_CURRENCIES.filter(c => c !== currencyFrom).map(c => (
                     <button key={c} onClick={() => { setCurrencyTo(c); setLastUpdated(null); }}
-                      className={`text-[11px] font-bold px-2 py-1 border tracking-widest uppercase transition-colors ${currencyTo === c ? "bg-black text-white border-black" : "border-gray-200 text-gray-500 hover:border-black hover:text-black"}`}>
+                      className={`text-[11px] font-medium px-2 py-1 border tracking-widest uppercase transition-colors ${currencyTo === c ? "bg-black text-white border-black" : "border-gray-200 text-gray-500 hover:border-black hover:text-black"}`}>
                       {c}
                     </button>
                   ))}
@@ -170,7 +170,7 @@ export default function ToolboxPage() {
                         </span>
                       )}
                       <button onClick={fetchLiveRate} disabled={isFetching}
-                        className="flex items-center gap-1.5 text-[11px] font-bold tracking-widest uppercase border border-gray-200 px-3 py-1.5 hover:border-black hover:text-black transition-colors disabled:opacity-50">
+                        className="flex items-center gap-1.5 text-[11px] font-medium tracking-widest uppercase border border-gray-200 px-3 py-1.5 hover:border-black hover:text-black transition-colors disabled:opacity-50">
                         {isFetching ? <Loader2 size={10} className="animate-spin" /> : <Wifi size={10} />}
                         {isFetching ? "抓取中..." : "即時匯率"}
                       </button>
@@ -185,10 +185,10 @@ export default function ToolboxPage() {
                 <div className="bg-gray-50 p-6 text-center border border-gray-100">
                   <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
                     placeholder="輸入金額..."
-                    className="w-full bg-transparent text-center text-4xl font-bold mb-1 outline-none placeholder-gray-300" />
+                    className="w-full bg-transparent text-center text-4xl font-semibold mb-1 outline-none placeholder-gray-300" />
                   <p className="text-xs text-gray-500 mb-4 tracking-widest">{currencyFrom}</p>
                   <div className="h-[1px] w-10 bg-gray-300 mx-auto mb-4" />
-                  <p className="text-5xl font-serif font-black">{result}</p>
+                  <p className="text-5xl font-serif font-semibold">{result}</p>
                   <p className="text-xs text-gray-500 mt-2 tracking-widest">{currencyTo}</p>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function ToolboxPage() {
               <div className="bg-white p-8 border border-gray-100 space-y-5">
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-bold mb-1">一鍵匯出行程手冊</p>
+                    <p className="text-sm font-semibold mb-1">一鍵匯出行程手冊</p>
                     <p className="text-xs text-gray-500 leading-relaxed">
                       將完整行程（封面、每日行程、預訂憑證）匯出成 A4 PDF。<br />
                       出發前列印或儲存至手機，上機後無網絡亦可查閱。
@@ -216,7 +216,7 @@ export default function ToolboxPage() {
                     { label: "預訂憑證", desc: "機票 · 酒店 · 票券" },
                   ].map(item => (
                     <div key={item.label} className="border border-gray-100 p-4 bg-gray-50">
-                      <p className="text-[11px] font-bold tracking-widest uppercase mb-1">{item.label}</p>
+                      <p className="text-[11px] font-medium tracking-widest uppercase mb-1">{item.label}</p>
                       <p className="text-xs text-gray-500">{item.desc}</p>
                     </div>
                   ))}
@@ -225,21 +225,21 @@ export default function ToolboxPage() {
                 {/* Trip selector hint */}
                 {!trip && (
                   <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-100 px-4 py-3">
-                    <span className="font-bold tracking-widest uppercase">請先在頂部選擇旅程</span>
+                    <span className="font-semibold tracking-widest uppercase">請先在頂部選擇旅程</span>
                   </div>
                 )}
 
                 {exportDone && (
                   <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 border border-green-100 px-4 py-3">
                     <CheckCircle2 size={14} />
-                    <span className="font-bold tracking-widest uppercase">PDF 已成功下載！</span>
+                    <span className="font-semibold tracking-widest uppercase">PDF 已成功下載！</span>
                   </div>
                 )}
 
                 <button
                   onClick={handleExportPDF}
                   disabled={!trip || isExporting}
-                  className="w-full flex items-center justify-center gap-2 border border-black bg-black text-white py-4 text-xs font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-40"
+                  className="w-full flex items-center justify-center gap-2 border border-black bg-black text-white py-4 text-xs font-medium tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-40"
                 >
                   {isExporting ? (
                     <><Loader2 size={14} className="animate-spin" /> 生成 PDF 中，請稍候...</>
@@ -262,7 +262,7 @@ export default function ToolboxPage() {
               <div className="bg-white p-8 border border-gray-100 space-y-5">
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-bold mb-1">一鍵下載離線版</p>
+                    <p className="text-sm font-semibold mb-1">一鍵下載離線版</p>
                     <p className="text-xs text-gray-500 leading-relaxed">
                       預先緩存所有頁面至本機 — 上機後開 Airplane Mode 照用。<br />
                       行程資料存於本機，即使無網絡亦可查閱。
@@ -287,18 +287,18 @@ export default function ToolboxPage() {
                 {cacheStatus === "done" && (
                   <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 border border-green-100 px-4 py-3">
                     <CheckCircle2 size={14} />
-                    <span className="font-bold tracking-widest uppercase">緩存完成 — 可安心開飛行模式</span>
+                    <span className="font-semibold tracking-widest uppercase">緩存完成 — 可安心開飛行模式</span>
                   </div>
                 )}
                 {cacheStatus === "error" && (
                   <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 border border-red-100 px-4 py-3">
                     <WifiOff size={14} />
-                    <span className="font-bold tracking-widest uppercase">緩存失敗，請確保網絡正常後重試</span>
+                    <span className="font-semibold tracking-widest uppercase">緩存失敗，請確保網絡正常後重試</span>
                   </div>
                 )}
 
                 <button onClick={handlePrecacheAll} disabled={cacheStatus === "caching"}
-                  className="w-full flex items-center justify-center gap-2 border border-black bg-black text-white py-4 text-xs font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50">
+                  className="w-full flex items-center justify-center gap-2 border border-black bg-black text-white py-4 text-xs font-medium tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50">
                   {cacheStatus === "caching"
                     ? <><Loader2 size={14} className="animate-spin" /> 緩存中 {cacheProgress}%</>
                     : <><HardDrive size={14} /> 立即緩存離線版</>

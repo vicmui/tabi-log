@@ -45,7 +45,7 @@ export default function TripCard({ trip }: { trip: Trip }) {
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
         {countdownText && (
-          <div className={`absolute top-3 left-3 px-2.5 py-1 text-xs font-bold tracking-widest uppercase rounded-full ${isOngoing ? 'bg-black text-white' : 'bg-white/90 text-black backdrop-blur-sm'}`}>
+          <div className={`absolute top-3 left-3 px-2.5 py-1 text-xs font-medium tracking-widest uppercase rounded-full ${isOngoing ? 'bg-black text-white' : 'bg-white/90 text-black backdrop-blur-sm'}`}>
             {countdownText}
           </div>
         )}
@@ -53,7 +53,7 @@ export default function TripCard({ trip }: { trip: Trip }) {
 
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-sm font-bold tracking-widest text-black group-hover:underline decoration-1 underline-offset-4 truncate mr-2">{trip.title}</h3>
+          <h3 className="text-sm font-semibold tracking-widest text-black group-hover:underline decoration-1 underline-offset-4 truncate mr-2">{trip.title}</h3>
           <span className="text-xs font-mono text-gray-500 shrink-0">{progress}%</span>
         </div>
         <p className="text-[11px] text-gray-500 tracking-wider">{trip.startDate.replace(/-/g,'.')} — {trip.endDate.replace(/-/g,'.')}</p>

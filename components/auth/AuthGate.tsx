@@ -129,13 +129,13 @@ function LoginScreen() {
           <div className="w-12 h-12 border border-gray-200 flex items-center justify-center mx-auto mb-5">
             <Lock size={18} className="text-gray-700" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#333333]">Tabi Log</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#333333]">Tabi Log</h1>
           <p className="text-sm text-gray-500 mt-2">請登入以繼續</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">
+            <label htmlFor="email" className="block text-xs font-medium tracking-widest uppercase text-gray-500 mb-2">
               電郵
             </label>
             <input
@@ -150,7 +150,7 @@ function LoginScreen() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">
+            <label htmlFor="password" className="block text-xs font-medium tracking-widest uppercase text-gray-500 mb-2">
               密碼
             </label>
             <input
@@ -173,7 +173,7 @@ function LoginScreen() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full bg-black text-white py-4 text-xs font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-black text-white py-4 text-xs font-medium tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {busy ? <><Loader2 size={14} className="animate-spin" /> 登入中…</> : '登入'}
           </button>
@@ -203,12 +203,12 @@ export function LogoutButton() {
   return (
     <div className="border border-gray-200 p-6 space-y-4">
       <div>
-        <p className="text-xs font-bold tracking-widest uppercase text-gray-500 mb-1">帳戶</p>
+        <p className="text-xs font-medium tracking-widest uppercase text-gray-500 mb-1">帳戶</p>
         <p className="text-sm text-gray-700 break-all">{email ?? '—'}</p>
       </div>
       <button
         onClick={() => supabase.auth.signOut()}
-        className="w-full flex items-center justify-center gap-2 border border-gray-300 py-3 text-xs font-bold tracking-widest uppercase text-gray-700 hover:border-black hover:text-black transition-colors"
+        className="w-full flex items-center justify-center gap-2 border border-gray-300 py-3 text-xs font-medium tracking-widest uppercase text-gray-700 hover:border-black hover:text-black transition-colors"
       >
         <LogOut size={14} /> 登出
       </button>

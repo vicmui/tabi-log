@@ -26,7 +26,7 @@ export default function BookingsPage() {
       <main className="flex-1 min-w-0 ml-0 md:ml-64 p-5 sm:p-8 md:p-12 bg-gray-50 min-h-screen pb-24">
         <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end">
           <div>
-            <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預訂憑證</h1>
+            <h1 className="text-3xl font-serif font-semibold tracking-widest uppercase mb-2">預訂憑證</h1>
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-xs text-gray-500 tracking-widest uppercase">Bookings</p>
               <span className="text-gray-400">|</span>
@@ -99,7 +99,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-widest">{typeName[booking.type]}</p>
-              <h3 className="text-xl font-bold font-serif">{booking.title}</h3>
+              <h3 className="text-xl font-semibold font-serif">{booking.title}</h3>
               {isFlight && <p className="text-sm font-mono text-gray-600 mt-1">{details.airline} {details.flightNum}</p>}
             </div>
           </div>
@@ -109,7 +109,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
         {isFlight ? (
           <div className="flex items-center justify-between bg-gray-50 p-4 border border-gray-100 mb-4">
             <div className="text-center">
-              <span className="text-2xl font-black text-gray-800">{details.origin || "ORG"}</span>
+              <span className="text-2xl font-semibold text-gray-800">{details.origin || "ORG"}</span>
               <p className="text-xs text-gray-500 uppercase">{details.departTime || "--:--"}</p>
             </div>
             <div className="flex-1 flex flex-col items-center px-4">
@@ -119,20 +119,20 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
               </div>
             </div>
             <div className="text-center">
-              <span className="text-2xl font-black text-gray-800">{details.destination || "DST"}</span>
+              <span className="text-2xl font-semibold text-gray-800">{details.destination || "DST"}</span>
               <p className="text-xs text-gray-500 uppercase">{details.arriveTime || "--:--"}</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 mb-4">
-            {details.checkIn  && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-in</p><p className="font-bold">{details.checkIn}</p></div>}
-            {details.checkOut && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-out</p><p className="font-bold">{details.checkOut}</p></div>}
+            {details.checkIn  && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-in</p><p className="font-semibold">{details.checkIn}</p></div>}
+            {details.checkOut && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-out</p><p className="font-semibold">{details.checkOut}</p></div>}
           </div>
         )}
 
         <div className="grid grid-cols-3 gap-4 text-sm mb-4 pt-2 border-t border-dashed border-gray-200">
-          {details.seat && <div><p className="text-[11px] text-gray-500 uppercase">座位</p><p className="font-bold">{details.seat}</p></div>}
-          {details.gate && <div><p className="text-[11px] text-gray-500 uppercase">登機門</p><p className="font-bold">{details.gate}</p></div>}
+          {details.seat && <div><p className="text-[11px] text-gray-500 uppercase">座位</p><p className="font-semibold">{details.seat}</p></div>}
+          {details.gate && <div><p className="text-[11px] text-gray-500 uppercase">登機門</p><p className="font-semibold">{details.gate}</p></div>}
           {details.address && (
             <div
               onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(details.address ?? '')}`, '_blank')}
@@ -219,7 +219,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white p-6 w-full max-w-md border border-gray-200 relative max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-black"><X size={20} /></button>
-        <h2 className="font-serif font-bold text-xl mb-6">{initialData ? "編輯預訂" : "新增預訂"}</h2>
+        <h2 className="font-serif font-semibold text-xl mb-6">{initialData ? "編輯預訂" : "新增預訂"}</h2>
 
         <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
           {(Object.keys(TYPE_LABELS) as BookingType[]).map(t => (
@@ -301,7 +301,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
             <input className="w-full p-2 text-sm focus:outline-none" type="number" inputMode="decimal"
               placeholder="費用" value={inputPrice} onChange={e => setInputPrice(e.target.value)} />
             <button onClick={() => setCurrency(currency === localCurr ? "HKD" : localCurr)}
-              className="text-xs font-bold px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center">
+              className="text-xs font-medium px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center">
               {currency} <ArrowRightLeft size={10} />
             </button>
           </div>

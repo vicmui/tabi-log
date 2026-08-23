@@ -162,14 +162,14 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
             <div className="space-y-5">
               {/* Name */}
               <div>
-                <label className="text-xs text-gray-500 font-bold mb-1 block uppercase tracking-widest">地點名稱</label>
-                <input className="text-lg font-bold w-full border-b p-1 focus:border-black outline-none"
+                <label className="text-xs text-gray-500 font-medium mb-1 block uppercase tracking-widest">地點名稱</label>
+                <input className="text-lg font-semibold w-full border-b p-1 focus:border-black outline-none"
                   value={editLocation} onChange={e => setEditLocation(e.target.value)} />
               </div>
 
               {/* Google places */}
               <div className="bg-neutral-50 p-3 border border-neutral-200">
-                <label className="text-xs text-neutral-500 font-bold mb-2 block uppercase tracking-widest">連結 Google Map</label>
+                <label className="text-xs text-neutral-500 font-medium mb-2 block uppercase tracking-widest">連結 Google Map</label>
                 <PlacesSearch
                   placeholder="搜尋地點獲取座標..."
                   onSelect={result => {
@@ -217,7 +217,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 <button
                   type="button"
                   onClick={() => { setShowMovePanel(v => !v); setTargetDayIdx(null); }}
-                  className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors w-full"
+                  className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-widest text-gray-500 hover:text-black transition-colors w-full"
                 >
                   <ArrowRightLeft size={13} />
                   移至其他日期
@@ -246,7 +246,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                                   type="button"
                                   onClick={() => setTargetDayIdx(day.actualIdx)}
                                   className={clsx(
-                                    "px-3 py-1.5 text-xs font-bold uppercase tracking-widest border transition-all",
+                                    "px-3 py-1.5 text-xs font-medium uppercase tracking-widest border transition-all",
                                     isSelected
                                       ? "bg-black text-white border-black"
                                       : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
@@ -295,7 +295,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                           <button
                             type="button"
                             onClick={() => setConfirmMove(true)}
-                            className="w-full bg-black text-white py-2.5 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                            className="w-full bg-black text-white py-2.5 text-[11px] font-medium uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                           >
                             <ArrowRightLeft size={12} />
                             移至 Day {targetDay?.day}（{targetDay?.date}）
@@ -314,7 +314,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
             <>
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-serif font-bold text-jp-charcoal mb-1">{activity.location}</h2>
+                  <h2 className="text-2xl font-serif font-semibold text-jp-charcoal mb-1">{activity.location}</h2>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <span className="bg-gray-100 px-2 py-1 uppercase">{activity.type}</span>
                     <span>{activity.time}</span>
@@ -335,7 +335,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
                 </div>
                 <button onClick={toggleVisited}
                   className={clsx(
-                    "flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-bold tracking-wider uppercase transition-colors",
+                    "flex-shrink-0 flex items-center gap-2 px-3 py-2 border text-xs font-medium tracking-wider uppercase transition-colors",
                     activity.isVisited ? "bg-black text-white" : "text-gray-500"
                   )}>
                   <CheckCircle size={14} /> {activity.isVisited ? "已去" : "未去"}
@@ -407,7 +407,7 @@ export default function ActivityDetailModal({ tripId, dayIndex, activityId, onCl
             <Trash2 size={18} />
           </button>
           <button onClick={handleSave}
-            className="flex-1 bg-[#333333] text-white py-3 text-xs font-bold tracking-[0.2em] uppercase hover:bg-black transition-colors">
+            className="flex-1 bg-[#333333] text-white py-3 text-xs font-medium tracking-[0.2em] uppercase hover:bg-black transition-colors">
             {isEditing ? "儲存變更" : "儲存紀錄"}
           </button>
         </div>

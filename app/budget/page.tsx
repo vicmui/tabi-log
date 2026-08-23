@@ -89,7 +89,7 @@ function FormContent({
           <button
             type="button"
             onClick={() => setCurrency(currency === localCurrency ? 'HKD' : localCurrency)}
-            className="text-xs font-bold px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center"
+            className="text-xs font-medium px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center"
           >
             {currency} <ArrowRightLeft size={10} />
           </button>
@@ -384,23 +384,23 @@ export default function BudgetPage() {
 
         {/* Header */}
         <header className="mb-10">
-          <h1 className="text-3xl font-serif font-bold tracking-widest uppercase mb-2">預算分帳</h1>
+          <h1 className="text-3xl font-serif font-semibold tracking-widest uppercase mb-2">預算分帳</h1>
           <div className="flex items-center gap-4"><TripSwitcher /></div>
         </header>
 
         {/* Settlement */}
         {debts.length > 0 && (
           <div className="mb-10">
-            <h2 className="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase mb-4">結算建議</h2>
+            <h2 className="text-xs font-medium tracking-[0.2em] text-gray-500 uppercase mb-4">結算建議</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {debts.map((d, idx) => (
                 <div key={idx} className="bg-white p-6 border-l-4 border-jp-charcoal flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="font-bold">{getMemberName(d.from)}</span>
+                    <span className="font-semibold">{getMemberName(d.from)}</span>
                     <ArrowRight size={14} className="text-gray-500" />
-                    <span className="font-bold">{getMemberName(d.to)}</span>
+                    <span className="font-semibold">{getMemberName(d.to)}</span>
                   </div>
-                  <span className="font-serif text-xl font-bold">
+                  <span className="font-serif text-xl font-semibold">
                     {getCurrencySymbol(trip.localCurrency)}{Math.round(d.amount).toLocaleString()}
                   </span>
                 </div>
@@ -441,7 +441,7 @@ export default function BudgetPage() {
                 </button>
               </div>
             ) : (
-              <h2 className="text-3xl font-serif font-bold">
+              <h2 className="text-3xl font-serif font-semibold">
                 {getCurrencySymbol(trip.localCurrency)}{trip.budgetTotal.toLocaleString()}
               </h2>
             )}
@@ -449,14 +449,14 @@ export default function BudgetPage() {
 
           <div className="bg-white p-6 border border-gray-100">
             <p className="text-xs tracking-widest text-gray-500 uppercase">已花費</p>
-            <h2 className="text-3xl font-serif font-bold text-neutral-900">
+            <h2 className="text-3xl font-serif font-semibold text-neutral-900">
               {getCurrencySymbol(trip.localCurrency)}{totalSpent.toLocaleString()}
             </h2>
           </div>
 
           <div className={`p-6 border border-gray-100 ${isOverBudget ? 'bg-red-500 text-white' : 'bg-white'}`}>
             <p className="text-xs tracking-widest opacity-60 uppercase">剩餘</p>
-            <h2 className="text-3xl font-serif font-bold">
+            <h2 className="text-3xl font-serif font-semibold">
               {getCurrencySymbol(trip.localCurrency)}{remaining.toLocaleString()}
             </h2>
           </div>
@@ -497,7 +497,7 @@ export default function BudgetPage() {
           {/* Desktop Sticky Form */}
           <div className="bg-white p-8 border border-gray-100 lg:sticky lg:top-4 lg:h-fit lg:z-10 hidden lg:block">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-serif font-bold">{editingExpenseId ? '編輯支出' : '新增支出'}</h3>
+              <h3 className="font-serif font-semibold">{editingExpenseId ? '編輯支出' : '新增支出'}</h3>
               {editingExpenseId && (
                 <button
                   type="button"
@@ -570,7 +570,7 @@ export default function BudgetPage() {
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-500 font-mono w-20">{exp.date}</div>
                     <div>
-                      <p className="font-bold text-sm flex items-center gap-2">
+                      <p className="font-semibold text-sm flex items-center gap-2">
                         {exp.itemName}
                         {exp.receiptUrl && (
                           <a href={exp.receiptUrl} target="_blank" rel="noreferrer">
@@ -635,7 +635,7 @@ export default function BudgetPage() {
               </div>
               <div className="p-6 pb-10">
                 <div className="flex justify-between items-center mb-5">
-                  <h3 className="font-serif font-bold text-lg">{editingExpenseId ? '編輯支出' : '新增支出'}</h3>
+                  <h3 className="font-serif font-semibold text-lg">{editingExpenseId ? '編輯支出' : '新增支出'}</h3>
                   <button
                     type="button"
                     onClick={() => { setIsFormOpen(false); setEditingExpenseId(null) }}

@@ -107,7 +107,7 @@ export default function GooglePlaceInfo({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1 text-sm">
             <Star size={13} className="text-amber-500 fill-amber-500" />
-            <span className="font-bold text-gray-900">{info.rating.toFixed(1)}</span>
+            <span className="font-semibold text-gray-900">{info.rating.toFixed(1)}</span>
             {info.userRatingCount !== undefined && (
               <span className="text-gray-500 text-xs">
                 {info.userRatingCount.toLocaleString()} 則評價
@@ -117,7 +117,7 @@ export default function GooglePlaceInfo({
           {info.openNow !== undefined && (
             <span
               className={
-                'text-xs font-bold px-2 py-0.5 ' +
+                'text-xs font-medium px-2 py-0.5 ' +
                 (info.openNow
                   ? 'bg-green-50 text-green-700'
                   : 'bg-red-50 text-red-600')
@@ -142,7 +142,7 @@ export default function GooglePlaceInfo({
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 text-xs font-bold tracking-widest uppercase text-gray-700 hover:border-black hover:text-black transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 text-xs font-medium tracking-widest uppercase text-gray-700 hover:border-black hover:text-black transition-colors"
       >
         <ExternalLink size={12} />
         查看 Google 評價

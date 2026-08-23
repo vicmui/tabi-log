@@ -5,23 +5,26 @@ import { X, Upload, ImagePlus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog } from "@/components/ui/Dialog";
-import { RepositionPanel } from "@/components/ui/RepositionPanel";
+import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
 
 export default function EditTripModal({ trip, onClose }: any) {
-  const { updateTripSettings } = useTripStore();
+  const { updateTripSettings, updateTrip } = useTripStore();
   const [title, setTitle]           = useState(trip.title);
   const [startDate, setStartDate]   = useState(trip.startDate);
   const [coverImage, setCoverImage] = useState(trip.coverImage || '');
-  // Load saved position from localStorage if exists
-  const savedPos = (() => { try { const m = localStorage.getItem(`coverPos-trip-${trip.id}`); return m ? Number(m) : 50; } catch { return 50; } })();
-  const [coverPosY, setCoverPosY]   = useState<number>(savedPos);
+  // 焦點存喺 trip 資料本身；舊版存喺 localStorage，一併讀返做 fallback
+  const legacyY = (() => { try { const m = localStorage.getItem(`coverPos-trip-${trip.id}`); return m ? Number(m) : undefined; } catch { return undefined; } })();
+  const [focus, setFocus] = useState<CoverFocus>({
+    x: trip.coverPosX ?? 50,
+    y: trip.coverPosY ?? legacyY ?? 50,
+  });
   const [uploading, setUploading]   = useState(false);
   const [repositioning, setRepositioning] = useState(false);
   const [alertMsg, setAlertMsg]     = useState<string | null>(null);
 
-  const savePosY = (y: number) => {
-    setCoverPosY(y);
-    try { localStorage.setItem(`coverPos-trip-${trip.id}`, String(y)); } catch (_) {}
+  const saveFocus = (f: CoverFocus) => {
+    setFocus(f);
+    updateTrip(trip.id, { coverPosX: f.x, coverPosY: f.y });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +35,7 @@ export default function EditTripModal({ trip, onClose }: any) {
     if (!error) {
       const { data: { publicUrl } } = supabase.storage.from('trip_files').getPublicUrl(filePath);
       setCoverImage(publicUrl);
-      setCoverPosY(50);
+      saveFocus({ x: 50, y: 50 });
       setRepositioning(true);   // auto-open reposition after upload
     } else {
       setAlertMsg("封面上傳失敗，請重試。");
@@ -71,7 +74,7 @@ export default function EditTripModal({ trip, onClose }: any) {
             <div className="flex justify-between items-end mb-2">
               <label className="text-xs text-gray-500">封面圖片</label>
               {/* ✅ Size reminder */}
-              <span className="text-[11px] text-gray-500">建議 <span className="font-bold text-gray-500">2400×800px</span> · 橫向</span>
+              <span className="text-[11px] text-gray-500">建議 <span className="font-medium text-gray-700">2000×1000px</span>（2:1 橫向）</span>
             </div>
 
             {/* ✅ Reposition slider (inline, compact) */}
@@ -79,29 +82,30 @@ export default function EditTripModal({ trip, onClose }: any) {
               <RepositionPanel
                 compact
                 src={coverImage}
-                initialY={coverPosY}
-                onConfirm={y => { savePosY(y); setRepositioning(false); }}
+                initial={focus}
+                aspect={1.5}
+                onConfirm={f => { saveFocus(f); setRepositioning(false); }}
                 onCancel={() => setRepositioning(false)}
               />
             ) : (
-              <div className="h-32 w-full bg-gray-100 overflow-hidden relative group">
+              <div className="w-full bg-gray-100 overflow-hidden relative group" style={{ aspectRatio: "1.5" }}>
                 {coverImage ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={coverImage} alt="cover"
                       className="w-full h-full object-cover"
-                      style={{ objectPosition: `center ${coverPosY}%` }}
+                      style={{ objectPosition: `${focus.x}% ${focus.y}%` }}
                     />
                     {/* Controls — always visible on mobile, hover on desktop */}
                     <div className="absolute inset-0 bg-black/30 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity flex items-center justify-center gap-3">
                       <button
                         onClick={() => setRepositioning(true)}
-                        className="flex items-center gap-1.5 bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-1.5"
+                        className="flex items-center gap-1.5 bg-white text-black text-xs font-medium uppercase tracking-widest px-3 py-1.5"
                       >
                         調整位置
                       </button>
-                      <label className="flex items-center gap-1.5 bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-1.5 cursor-pointer">
+                      <label className="flex items-center gap-1.5 bg-white text-black text-xs font-medium uppercase tracking-widest px-3 py-1.5 cursor-pointer">
                         <Upload size={11} /> 更換
                         <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
                       </label>
@@ -119,9 +123,9 @@ export default function EditTripModal({ trip, onClose }: any) {
                           <ImagePlus size={18} className="text-gray-500" />
                         </div>
                         <div className="text-center">
-                          <p className="text-[11px] font-bold text-gray-500 tracking-widest uppercase">上傳封面</p>
-                          <p className="text-xs text-gray-500 mt-0.5"><span className="font-bold text-gray-500">2400 × 800px</span> · JPG / PNG</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">上傳後可調整焦點位置</p>
+                          <p className="text-[11px] font-medium text-gray-500 tracking-widest uppercase">上傳封面</p>
+                          <p className="text-xs text-gray-500 mt-0.5"><span className="font-medium text-gray-700">2000 × 1000px</span> · JPG / PNG</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">主體置中，上傳後可左右上下調整焦點</p>
                         </div>
                       </>
                     )}

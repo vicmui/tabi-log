@@ -86,7 +86,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
             className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white border border-neutral-200 z-[101] p-8 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-serif font-bold tracking-widest text-[#333333]">新增活動</h2>
+              <h2 className="text-xl font-serif font-semibold tracking-widest text-[#333333]">新增活動</h2>
               <button onClick={onClose}><X size={20} className="text-gray-500 hover:text-black" /></button>
             </div>
 
@@ -182,7 +182,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
               </div>
 
               <button type="submit" disabled={!customName && !address}
-                className={clsx("w-full py-3 text-xs font-bold uppercase mt-2",
+                className={clsx("w-full py-3 text-xs font-medium uppercase mt-2",
                   (!customName && !address) ? "bg-gray-300 cursor-not-allowed" : "bg-black text-white"
                 )}>
                 確認新增

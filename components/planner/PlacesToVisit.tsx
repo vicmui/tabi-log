@@ -63,7 +63,7 @@ function AddToDayPanel({
   return (
     <div className="mt-2 mb-1 bg-gray-50 border border-gray-200 p-3 space-y-3">
       {done ? (
-        <p className="text-[11px] text-green-600 font-bold tracking-widest flex items-center gap-1.5">
+        <p className="text-[11px] text-green-600 font-medium tracking-widest flex items-center gap-1.5">
           <Check size={12} /> 已加入行程！
         </p>
       ) : (
@@ -77,7 +77,7 @@ function AddToDayPanel({
                   key={day.day}
                   onClick={() => setSelectedDayIdx(idx)}
                   className={clsx(
-                    "px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest border transition-all",
+                    "px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest border transition-all",
                     selectedDayIdx === idx
                       ? "bg-black text-white border-black"
                       : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
@@ -121,7 +121,7 @@ function AddToDayPanel({
             <button
               onClick={handleAdd}
               disabled={selectedDayIdx === null}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest bg-black text-white hover:bg-gray-800 disabled:opacity-30 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium uppercase tracking-widest bg-black text-white hover:bg-gray-800 disabled:opacity-30 transition-colors"
             >
               <CalendarPlus size={11} /> 加入行程
             </button>
@@ -223,7 +223,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
         </div>
         <div className="flex flex-col items-end gap-1">
           <button onClick={handleAISuggest} disabled={isLoadingAI}
-            className="flex items-center gap-2 border border-black bg-black text-white px-4 py-2.5 text-xs font-bold tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50">
+            className="flex items-center gap-2 border border-black bg-black text-white px-4 py-2.5 text-xs font-medium tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50">
             {isLoadingAI ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {isLoadingAI ? "AI 生成中..." : "AI 建議景點"}
           </button>
@@ -238,7 +238,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
           const count = cat === "全部" ? places.length : places.filter(p => p.category === cat).length;
           return (
             <button key={cat} onClick={() => setFilter(cat)}
-              className={clsx("text-[11px] font-bold px-2.5 py-1 border tracking-widest uppercase transition-colors",
+              className={clsx("text-[11px] font-medium px-2.5 py-1 border tracking-widest uppercase transition-colors",
                 filter === cat ? "bg-black text-white border-black" : "border-gray-200 text-gray-500 hover:border-black hover:text-black")}>
               {cat}{count > 0 && <span className="ml-1 opacity-60">{count}</span>}
             </button>
@@ -261,7 +261,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <button onClick={handleAdd} disabled={!newName.trim()}
-              className="flex items-center gap-1 bg-black text-white px-5 py-2 text-xs font-bold tracking-widest uppercase hover:opacity-80 disabled:opacity-30 transition-opacity flex-shrink-0">
+              className="flex items-center gap-1 bg-black text-white px-5 py-2 text-xs font-medium tracking-widest uppercase hover:opacity-80 disabled:opacity-30 transition-opacity flex-shrink-0">
               <Plus size={12} /> 新增
             </button>
           </div>
@@ -270,7 +270,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
           <div className="px-4 pb-3 pt-2 flex items-center gap-1.5 border-t border-dashed border-gray-200">
             <MapPin size={10} className="text-gray-400 flex-shrink-0" />
             <span className="text-xs text-gray-500 truncate">{newAddress}</span>
-            {newLat && newLng && <span className="text-xs text-green-500 font-bold ml-auto shrink-0">座標鎖定</span>}
+            {newLat && newLng && <span className="text-xs text-green-500 font-medium ml-auto shrink-0">座標鎖定</span>}
           </div>
         )}
       </div>
@@ -316,14 +316,14 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className={clsx("font-bold text-sm", place.isVisited && "line-through text-gray-500")}>
+                              <span className={clsx("font-semibold text-sm", place.isVisited && "line-through text-gray-500")}>
                                 {place.name}
                               </span>
                               {place.suggestedBy === "ai" && (
                                 <span className="text-[11px] text-gray-400 tracking-widest border border-gray-200 px-1 py-0.5 uppercase">AI</span>
                               )}
                               {place.category && (
-                                <span className={clsx("text-[11px] font-bold px-1.5 py-0.5 border uppercase tracking-wider",
+                                <span className={clsx("text-[11px] font-medium px-1.5 py-0.5 border uppercase tracking-wider",
                                   CATEGORY_STYLES[place.category] || "bg-gray-50 text-gray-500 border-gray-200")}>
                                   {place.category}
                                 </span>
@@ -342,7 +342,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             <button
                               onClick={() => setExpandedPlaceId(expandedPlaceId === place.id ? null : place.id)}
                               className={clsx(
-                                "flex items-center gap-1 px-2.5 py-1 text-xs font-bold tracking-widest uppercase border transition-colors whitespace-nowrap",
+                                "flex items-center gap-1 px-2.5 py-1 text-xs font-medium tracking-widest uppercase border transition-colors whitespace-nowrap",
                                 expandedPlaceId === place.id
                                   ? "bg-black text-white border-black"
                                   : "border-gray-200 text-gray-500 hover:border-black hover:text-black"
@@ -356,7 +356,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                             <a
                               href={place.googleMapsUri ?? googleMapsLink({ placeId: place.placeId, name: place.name, address: place.address })}
                               target="_blank" rel="noreferrer"
-                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium tracking-widest uppercase border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
