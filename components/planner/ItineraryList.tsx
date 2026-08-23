@@ -7,13 +7,15 @@ import TravelStats from "./TravelStats";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { useState } from "react";
 
+// 分類不再以顏色區分，改由圖示辨識。彩色標籤是整個介面與
+// United Tokyo / STUDIOUS 那種調性距離最遠的一環。
 const TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; bg: string }> = {
-  Food:        { icon: Utensils,    label: "美食", color: "text-orange-600", bg: "bg-orange-50" },
-  Sightseeing: { icon: Camera,      label: "景點", color: "text-blue-600",   bg: "bg-blue-50"   },
-  Transport:   { icon: Train,       label: "交通", color: "text-green-600",  bg: "bg-green-50"  },
-  Hotel:       { icon: Bed,         label: "住宿", color: "text-purple-600", bg: "bg-purple-50" },
-  Shopping:    { icon: ShoppingBag, label: "購物", color: "text-pink-600",   bg: "bg-pink-50"   },
-  Other:       { icon: MapPin,      label: "其他", color: "text-gray-600",   bg: "bg-gray-50"   },
+  Food:        { icon: Utensils,    label: "美食", color: "text-neutral-700", bg: "bg-white" },
+  Sightseeing: { icon: Camera,      label: "景點", color: "text-neutral-700", bg: "bg-white" },
+  Transport:   { icon: Train,       label: "交通", color: "text-neutral-700", bg: "bg-white" },
+  Hotel:       { icon: Bed,         label: "住宿", color: "text-neutral-700", bg: "bg-white" },
+  Shopping:    { icon: ShoppingBag, label: "購物", color: "text-neutral-700", bg: "bg-white" },
+  Other:       { icon: MapPin,      label: "其他", color: "text-neutral-700", bg: "bg-white" },
 };
 
 interface Props {
@@ -60,7 +62,7 @@ const ItemContent = ({ activity, onActivityClick, isReadOnly, config, index, tri
         </div>
 
         <div
-          className="flex items-start gap-4 p-4 pl-6 bg-white relative z-10 border border-gray-200 hover:shadow-md transition-shadow"
+          className="flex items-start gap-4 p-4 pl-6 bg-white relative z-10 border border-gray-200 hover:border-neutral-400 transition-colors"
           onClick={() => !isReadOnly && onActivityClick?.(activity.id)}
           style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
         >
@@ -163,9 +165,9 @@ export default function ItineraryList({ dayIndex, activities, tripId, onActivity
 
   if (validActivities.length === 0) return (
     <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
-      <div className="text-6xl mb-4 grayscale">🐈🌸</div>
+      <div className="w-10 h-[1px] bg-neutral-300 mb-6" />
       <p className="text-sm font-bold text-gray-500 tracking-widest uppercase">今日暫無行程</p>
-      {!isReadOnly && <p className="text-xs text-gray-400 mt-1">按右下角 &quot;+&quot; 開始規劃冒險</p>}
+      {!isReadOnly && <p className="text-xs text-gray-500 mt-2 tracking-wide">按右下角「＋」新增第一個地點</p>}
     </div>
   );
 

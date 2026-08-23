@@ -117,7 +117,7 @@ export default function MembersPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {trip.members.map(member => (
-            <div key={member.id} className={clsx("group relative bg-white border p-6 flex flex-col items-center transition-all duration-300 rounded-none", editingMemberId === member.id ? "border-black ring-1 ring-black" : "border-gray-200 hover:shadow-lg")}>
+            <div key={member.id} className={clsx("group relative bg-white border p-6 flex flex-col items-center transition-all duration-300 rounded-none", editingMemberId === member.id ? "border-black ring-1 ring-black" : "border-gray-200")}>
               <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-2 border-gray-100 bg-gray-50 relative group/avatar">
                  <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
               </div>

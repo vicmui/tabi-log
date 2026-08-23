@@ -77,9 +77,9 @@ function EditLocationModal({
         initial={{ opacity: 0, y: 8, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 4, scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
-        className="relative bg-white w-full max-w-xs border border-gray-200 shadow-2xl"
+        className="relative bg-white w-full max-w-xs border border-gray-200"
       >
         <div className="h-[3px] bg-black" />
         <div className="p-6">
@@ -261,7 +261,7 @@ export default function PlannerPage() {
           <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white shrink-0 z-40">
             <Link href="/" className="p-1"><ArrowLeft size={22} className="text-gray-500" /></Link>
             <h1 className="font-bold text-sm tracking-widest uppercase truncate flex-1 text-center px-4">{trip.title}</h1>
-            <button onClick={() => setIsModalOpen(true)} className="bg-black text-white p-2 shadow-sm active:scale-95 transition-transform"><Plus size={20} /></button>
+            <button onClick={() => setIsModalOpen(true)} className="bg-black text-white p-2 active:scale-95 transition-transform"><Plus size={20} /></button>
           </div>
 
           {/* Desktop Day Sidebar */}
@@ -297,14 +297,14 @@ export default function PlannerPage() {
           </div>
 
           {/* Mobile Day Picker */}
-          <div className="md:hidden w-full bg-white border-b border-gray-100 z-30 shrink-0 shadow-sm">
+          <div className="md:hidden w-full bg-white border-b border-gray-100 z-30 shrink-0">
             <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar py-4 px-4 gap-3 items-center">
               {trip.dailyItinerary.map((dayItem, index) => {
                 const info = weatherMap[dayItem.date];
                 return (
                   <button key={dayItem.day} onClick={() => setActiveDay(index)}
                     className={clsx("relative flex-shrink-0 snap-center flex flex-col items-center justify-center w-20 h-24 border transition-all duration-300",
-                      activeDay === index ? "bg-black text-white border-black shadow-lg scale-105" : "bg-white text-gray-500 border-gray-100",
+                      activeDay === index ? "bg-black text-white border-black scale-105" : "bg-white text-gray-500 border-gray-100",
                       dayItem.date === todayKey && activeDay !== index && "border-black")}>
                     {dayItem.date === todayKey && (
                       <span className={clsx(
@@ -354,7 +354,7 @@ export default function PlannerPage() {
                   ) : (
                     <label className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:from-gray-200 hover:to-gray-300 transition-colors">
                       <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
-                      <div className="w-14 h-14 rounded-full bg-white/60 flex items-center justify-center shadow-sm">
+                      <div className="w-14 h-14 rounded-full bg-white/60 flex items-center justify-center">
                         <ImagePlus size={26} className="text-gray-500" />
                       </div>
                       <div className="text-center px-4">
@@ -372,7 +372,7 @@ export default function PlannerPage() {
                         {/* ✅ Opens custom modal instead of prompt() */}
                         <button
                           onClick={() => setEditLocationOpen(true)}
-                          className="flex items-center gap-3 text-xs text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full shadow-md hover:bg-white transition-all"
+                          className="flex items-center gap-3 text-xs text-gray-600 tracking-[0.3em] uppercase font-bold mt-2 bg-white/90 backdrop-blur-sm w-fit px-3 py-1 rounded-full hover:bg-white transition-all"
                         >
                           <MapPin size={10} /><span>{displayLocation}</span><Edit size={8} className="opacity-50" />
                           <span className="w-px h-3 bg-gray-300" /><Clock size={10} /><span>{currentDay?.date}</span>
@@ -384,10 +384,10 @@ export default function PlannerPage() {
                   {coverSrc && (
                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <button onClick={() => setRepositioning(true)}
-                        className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm shadow-sm transition-all">
+                        className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm transition-all">
                         調整位置
                       </button>
-                      <label className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm shadow-sm cursor-pointer transition-all">
+                      <label className="flex items-center gap-1.5 bg-white/85 hover:bg-white text-black text-xs font-bold uppercase tracking-widest px-3 py-2 backdrop-blur-sm cursor-pointer transition-all">
                         <Camera size={13} /> 換封面
                         <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                       </label>
@@ -413,7 +413,7 @@ export default function PlannerPage() {
                     <button onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       {viewMode === "list" ? <><MapIcon size={14} /><span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /><span className="hidden sm:inline">列表</span></>}
                     </button>
-                    <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-xs tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors shadow-lg uppercase font-bold"><Plus size={12} /> 新增活動</button>
+                    <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-xs tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors uppercase font-bold"><Plus size={12} /> 新增活動</button>
                   </div>
                 </div>
               </div>
@@ -424,7 +424,7 @@ export default function PlannerPage() {
                     ? <ItineraryList dayIndex={activeDay} activities={currentDay.activities} tripId={trip.id} onActivityClick={id => setSelectedActivityId(id)} />
                     : <div className="text-center py-20 text-gray-400 text-xs uppercase tracking-widest">今日暫無行程安排</div>
                 ) : (
-                  <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-sm bg-gray-50">
+                  <div className="h-[65dvh] w-full border border-gray-200 rounded-3xl overflow-hidden bg-gray-50">
                     <TripMap
                       key={`${trip.id}-${activeDay}`}
                       activities={currentDay?.activities || []}

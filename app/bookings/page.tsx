@@ -82,7 +82,7 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
   const typeName: Record<string, string> = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };
 
   return (
-    <div className="bg-white border border-gray-200 overflow-hidden relative group hover:shadow-md transition-all">
+    <div className="bg-white border border-gray-200 overflow-hidden relative group hover:border-neutral-400 transition-colors">
       <div className={`h-[3px] w-full ${booking.type === 'Flight' ? 'bg-neutral-900' : booking.type === 'Hotel' ? 'bg-neutral-600' : booking.type === 'Rental' ? 'bg-neutral-400' : 'bg-neutral-300'}`} />
       <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <button onClick={onEdit} className="p-1.5 text-gray-500 hover:text-black bg-white rounded-full border border-gray-100"><Edit size={14} /></button>

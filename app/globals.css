@@ -17,6 +17,14 @@
 body {
   color: #333333;
   background: white;
+  /* 中日文亦加少量字距 —— 日系極簡網站的中文字同樣會拉開，
+     密排的中文與 tracking-widest 的英文標籤放在一起會顯得不協調 */
+  letter-spacing: 0.02em;
+}
+
+/* 大標題不需要額外字距，各自的 tracking-* 已經處理 */
+h1, h2, h3 {
+  letter-spacing: normal;
 }
 
 ::placeholder {

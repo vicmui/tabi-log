@@ -150,7 +150,7 @@ export default function PlacesSearch({
       </div>
 
       {open && items.length > 0 && (
-        <ul className="absolute z-[9999] top-full left-0 right-0 mt-1 bg-white border border-gray-200 shadow-lg max-h-56 overflow-y-auto">
+        <ul className="absolute z-[9999] top-full left-0 right-0 mt-1 bg-white border border-gray-200 max-h-56 overflow-y-auto">
           {items.map((s, i) => {
             const pred = s.placePrediction
             const main = pred?.mainText?.toString() ?? ''

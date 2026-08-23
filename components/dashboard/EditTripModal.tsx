@@ -49,7 +49,7 @@ export default function EditTripModal({ trip, onClose }: any) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white p-8 w-full max-w-md shadow-2xl relative">
+      <div className="bg-white border border-neutral-200 p-8 w-full max-w-md relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-black"><X size={20} /></button>
         <h2 className="font-light text-xl mb-6 tracking-widest uppercase">編輯旅程</h2>
 
@@ -115,7 +115,7 @@ export default function EditTripModal({ trip, onClose }: any) {
                       <span className="text-xs text-gray-500 animate-pulse">上傳中...</span>
                     ) : (
                       <>
-                        <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
+                        <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center">
                           <ImagePlus size={18} className="text-gray-500" />
                         </div>
                         <div className="text-center">

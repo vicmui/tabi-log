@@ -22,7 +22,7 @@ function DialogWrapper({ children, onBackdropClick }: { children: React.ReactNod
           initial={{ opacity: 0, y: 10, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           onClick={e => e.stopPropagation()}
           className="w-full max-w-sm bg-white rounded-none overflow-hidden border border-gray-200"
         >
@@ -214,7 +214,7 @@ export function NewTripModal({ isOpen, onClose, onConfirm }: NewTripProps) {
                       <span className="text-xs text-gray-500 animate-pulse tracking-widest">上傳中...</span>
                     ) : (
                       <>
-                        <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
+                        <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center">
                           <ImagePlus size={18} className="text-gray-500" />
                         </div>
                         <div className="text-center">

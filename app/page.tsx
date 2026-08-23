@@ -64,12 +64,12 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
       ref={setNodeRef}
       style={style}
       onClick={() => onSelect(trip.id)}
-      className="relative group cursor-pointer bg-white border border-gray-100 hover:border-gray-200 transition-colors duration-300 overflow-hidden h-[360px] flex flex-col rounded-none"
+      className="relative group cursor-pointer bg-white border border-gray-100 hover:border-gray-200 transition-colors duration-300 overflow-hidden h-[420px] flex flex-col rounded-none"
     >
       {/* 整張卡是連結；拖曳手柄與按鈕的 z-index 都在它之上 */}
       <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
 
-      <div className="h-48 w-full relative overflow-hidden">
+      <div className="h-64 w-full relative overflow-hidden">
         <img
           src={trip.coverImage}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"

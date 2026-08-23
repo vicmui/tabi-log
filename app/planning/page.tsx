@@ -25,7 +25,7 @@ const SortablePlanItem = ({ item, trip, onEdit, onDeleteRequest }: { item: PlanI
     const priorityColor = { High: "border border-neutral-800 text-neutral-800", Medium: "border border-neutral-400 text-neutral-500", Low: "border border-neutral-300 text-neutral-400" };
 
     return (
-        <div ref={setNodeRef} style={style} className={clsx("p-4 border bg-white hover:shadow-md transition-shadow relative group rounded-none flex items-start gap-4", item.isCompleted && "opacity-50")}>
+        <div ref={setNodeRef} style={style} className={clsx("p-4 border border-gray-200 bg-white hover:border-neutral-400 transition-colors relative group rounded-none flex items-start gap-4", item.isCompleted && "opacity-50")}>
             <div className="flex-1 flex items-start gap-4">
                 <button onClick={() => togglePlanItem(trip.id, item.id)} className={clsx("mt-1", item.isCompleted ? "text-gray-500" : "text-black")}>
                     {item.isCompleted ? <CheckCircle2 size={20}/> : <Circle size={20}/>}

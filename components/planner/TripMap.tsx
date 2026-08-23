@@ -70,8 +70,8 @@ export default function TripMap({
   const onLoad = useCallback((map: google.maps.Map) => { mapRef.current = map; }, []);
 
   return (
-    <div className="w-full h-full overflow-hidden shadow-sm border border-gray-200 bg-gray-50 relative">
-      <div className="absolute top-3 left-3 z-10 bg-white/80 backdrop-blur-sm text-neutral-700 px-3 py-1.5 rounded-full shadow-sm text-xs font-semibold flex items-center gap-1.5 tracking-widest uppercase border border-white/60">
+    <div className="w-full h-full overflow-hidden border border-gray-200 bg-gray-50 relative">
+      <div className="absolute top-3 left-3 z-10 bg-white/80 backdrop-blur-sm text-neutral-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 tracking-widest uppercase border border-white/60">
         <MapPin size={10} className={markers.length > 0 ? 'text-black' : 'text-gray-500'} />
         {markers.length > 0 ? `LOCATED: ${markers.length} PLACES` : 'NO COORDINATES'}
       </div>

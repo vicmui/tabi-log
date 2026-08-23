@@ -9,13 +9,14 @@ import PlacesSearch, { PlaceResult, googleMapsLink } from "@/components/ui/Place
 import { format, parseISO } from "date-fns";
 
 // ✅ Aligned with Planner activity types (Food/Sightseeing/Shopping/Transport/Hotel/Other)
+// 單色標籤：靠字重與幼線區分，不用色相
 const CATEGORY_STYLES: Record<string, string> = {
-  美食: "bg-orange-50 text-orange-600 border-orange-200",
-  景點: "bg-blue-50 text-blue-600 border-blue-200",
-  購物: "bg-pink-50 text-pink-600 border-pink-200",
-  交通: "bg-green-50 text-green-600 border-green-200",
-  住宿: "bg-purple-50 text-purple-600 border-purple-200",
-  其他: "bg-gray-50 text-gray-500 border-gray-200",
+  美食: "bg-white text-neutral-700 border-neutral-300",
+  景點: "bg-white text-neutral-700 border-neutral-300",
+  購物: "bg-white text-neutral-700 border-neutral-300",
+  交通: "bg-white text-neutral-700 border-neutral-300",
+  住宿: "bg-white text-neutral-700 border-neutral-300",
+  其他: "bg-white text-neutral-500 border-neutral-200",
 };
 
 // Same order as Planner type selector
@@ -295,7 +296,7 @@ export default function PlacesToVisit({ trip }: { trip: Trip }) {
                         {...provided.draggableProps}
                         className={clsx(
                           "bg-white border transition-all",
-                          snapshot.isDragging ? "border-black shadow-lg" : "border-gray-100 hover:border-gray-200",
+                          snapshot.isDragging ? "border-black" : "border-gray-100 hover:border-gray-200",
                           place.isVisited && "opacity-50"
                         )}
                       >

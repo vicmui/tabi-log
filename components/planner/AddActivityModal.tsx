@@ -83,7 +83,7 @@ export default function AddActivityModal({ isOpen, onClose, onSubmit, tripId, de
           />
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white z-[101] shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
+            className="fixed inset-0 m-auto w-full max-w-md h-fit bg-white border border-neutral-200 z-[101] p-8 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif font-bold tracking-widest text-[#333333]">新增活動</h2>
