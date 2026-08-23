@@ -4,11 +4,23 @@ import Sidebar from "@/components/layout/Sidebar";
 import TripSwitcher from "@/components/layout/TripSwitcher";
 import { useTripStore, Booking, BookingType } from "@/store/useTripStore";
 import { useActiveTrip } from "@/lib/useActiveTrip";
-import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, CheckCircle2, Upload, ArrowRightLeft, Navigation } from "lucide-react";
+import { Plane, Building, Ticket, Car, MapPin, Download, Plus, X, Edit, Trash2, CheckCircle2, Upload, Navigation, CalendarPlus, Moon } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
 import PlacesSearch from "@/components/ui/PlacesSearch";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
+import TravelDocs from "@/components/bookings/TravelDocs";
+import { downloadBookingIcs } from "@/lib/calendar";
+import { COMMON_CURRENCIES, formatMoney, localOf } from "@/lib/money";
+
+/** 兩個日期之間的晚數 */
+function nightsBetween(from?: string, to?: string): number {
+  if (!from || !to) return 0;
+  const a = Date.parse(from + "T00:00:00");
+  const b = Date.parse(to + "T00:00:00");
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 0;
+  return Math.round((b - a) / 86400000);
+}
 
 export default function BookingsPage() {
   const { addBooking, updateBooking, deleteBooking } = useTripStore();
@@ -41,14 +53,23 @@ export default function BookingsPage() {
           </button>
         </header>
 
+        {/* 證件放最前 —— 過關嗰陣要即刻搵到，唔應該要碌到最底 */}
+        <TravelDocs trip={trip} />
+
+        <div className="max-w-3xl mx-auto mb-4">
+          <h2 className="text-xs tracking-[0.2em] uppercase text-gray-500">預訂</h2>
+        </div>
+
         <div className="grid grid-cols-1 gap-6 max-w-3xl mx-auto">
           {trip.bookings && trip.bookings.length > 0
-            ? trip.bookings.map(booking => (
-                <BookingCard key={booking.id} booking={booking}
-                  onEdit={() => { setEditingBooking(booking); setIsModalOpen(true); }}
-                  onDelete={() => setDeletingBookingId(booking.id)} />
-              ))
-            : <div className="text-gray-500 text-sm text-center py-20">暫無預訂</div>
+            ? [...trip.bookings]
+                .sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"))
+                .map(booking => (
+                  <BookingCard key={booking.id} booking={booking} trip={trip}
+                    onEdit={() => { setEditingBooking(booking); setIsModalOpen(true); }}
+                    onDelete={() => setDeletingBookingId(booking.id)} />
+                ))
+            : <div className="text-gray-500 text-sm text-center py-20 border border-dashed border-gray-200 bg-white">暫無預訂</div>
           }
         </div>
 
@@ -76,34 +97,46 @@ export default function BookingsPage() {
   );
 }
 
-function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: () => void; onDelete: () => void }) {
+function BookingCard({ booking, trip, onEdit, onDelete }: { booking: Booking; trip: any; onEdit: () => void; onDelete: () => void }) {
   const isFlight = booking.type === "Flight";
   const details  = booking.details || {};
   const typeName: Record<string, string> = { Flight: "機票", Hotel: "住宿", Rental: "租車", Ticket: "票券" };
+  const hasRange = !!details.endDate && details.endDate !== booking.date;
+  const nights   = nightsBetween(booking.date, details.endDate);
 
   return (
     <div className="bg-white border border-gray-200 overflow-hidden relative group hover:border-neutral-400 transition-colors">
       <div className={`h-[3px] w-full ${booking.type === 'Flight' ? 'bg-neutral-900' : booking.type === 'Hotel' ? 'bg-neutral-600' : booking.type === 'Rental' ? 'bg-neutral-400' : 'bg-neutral-300'}`} />
-      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <button onClick={onEdit} className="p-1.5 text-gray-500 hover:text-black bg-white rounded-full border border-gray-100"><Edit size={14} /></button>
-        <button onClick={onDelete} className="p-1.5 text-gray-500 hover:text-red-500 bg-white rounded-full border border-gray-100"><Trash2 size={14} /></button>
+      <div className="absolute top-4 right-4 flex gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
+        <button onClick={onEdit} aria-label="編輯" className="p-1.5 text-gray-500 hover:text-black bg-white rounded-full border border-gray-100"><Edit size={14} /></button>
+        <button onClick={onDelete} aria-label="刪除" className="p-1.5 text-gray-500 hover:text-red-500 bg-white rounded-full border border-gray-100"><Trash2 size={14} /></button>
       </div>
       <div className="p-6">
-        <div className="flex justify-between items-start mb-6 pr-16">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 text-white ${booking.type === 'Flight' ? 'bg-neutral-900' : booking.type === 'Hotel' ? 'bg-neutral-700' : booking.type === 'Rental' ? 'bg-neutral-500' : 'bg-neutral-400'}`}>
+        <div className="flex justify-between items-start gap-4 mb-6 pr-16">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className={`p-3 text-white shrink-0 ${booking.type === 'Flight' ? 'bg-neutral-900' : booking.type === 'Hotel' ? 'bg-neutral-700' : booking.type === 'Rental' ? 'bg-neutral-500' : 'bg-neutral-400'}`}>
               {booking.type === "Flight" && <Plane size={24} />}
               {booking.type === "Hotel" && <Building size={24} />}
               {booking.type === "Rental" && <Car size={24} />}
               {booking.type === "Ticket" && <Ticket size={24} />}
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-gray-500 uppercase tracking-widest">{typeName[booking.type]}</p>
-              <h3 className="text-xl font-semibold font-serif">{booking.title}</h3>
+              <h3 className="text-xl font-semibold font-serif break-words">{booking.title}</h3>
               {isFlight && <p className="text-sm font-mono text-gray-600 mt-1">{details.airline} {details.flightNum}</p>}
             </div>
           </div>
-          <span className="font-mono text-sm bg-gray-50 border border-gray-100 px-3 py-1 shrink-0">{booking.date}</span>
+          {/* 日期範圍 —— 住宿唔應該只得一個日子 */}
+          <div className="shrink-0 text-right">
+            <span className="font-mono text-sm bg-gray-50 border border-gray-100 px-3 py-1 inline-block">
+              {booking.date || "—"}{hasRange && <> <span className="text-gray-400">→</span> {details.endDate}</>}
+            </span>
+            {nights > 0 && (
+              <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1 justify-end">
+                <Moon size={10} /> {nights} 晚
+              </p>
+            )}
+          </div>
         </div>
 
         {isFlight ? (
@@ -124,10 +157,12 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            {details.checkIn  && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-in</p><p className="font-semibold">{details.checkIn}</p></div>}
-            {details.checkOut && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">Check-out</p><p className="font-semibold">{details.checkOut}</p></div>}
-          </div>
+          (details.checkIn || details.checkOut) && (
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {details.checkIn  && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">{booking.type === 'Rental' ? '取車' : booking.type === 'Ticket' ? '入場' : 'Check-in'}</p><p className="font-semibold">{details.checkIn}</p></div>}
+              {details.checkOut && <div className="bg-gray-50 p-3"><p className="text-[11px] text-gray-500 uppercase">{booking.type === 'Rental' ? '還車' : 'Check-out'}</p><p className="font-semibold">{details.checkOut}</p></div>}
+            </div>
+          )
         )}
 
         <div className="grid grid-cols-3 gap-4 text-sm mb-4 pt-2 border-t border-dashed border-gray-200">
@@ -143,17 +178,29 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
           )}
         </div>
 
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+        <div className="flex flex-wrap justify-between items-center gap-3 mt-4 pt-4 border-t border-gray-100">
           <div className="text-xs text-gray-500 tracking-widest uppercase">
-            {details.price ? `已付: ¥${details.price.toLocaleString()}` : "PREPAID"}
+            {details.price
+              ? `已付 ${formatMoney(details.price, details.currency ?? localOf(trip))}`
+              : "PREPAID"}
           </div>
-          <button
-            onClick={() => details.fileUrl && window.open(details.fileUrl, '_blank')}
-            disabled={!details.fileUrl}
-            className={`flex items-center gap-2 text-xs border border-gray-200 px-4 py-2 transition-colors uppercase tracking-wider ${details.fileUrl ? 'hover:bg-black hover:text-white cursor-pointer' : 'opacity-50 cursor-not-allowed bg-gray-50'}`}
-          >
-            {details.fileUrl ? <><Download size={14} /> 查看憑證</> : <><X size={14} /> 無憑證</>}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => downloadBookingIcs(trip, booking.id)}
+              disabled={!booking.date}
+              title="加入行事曆"
+              className="flex items-center gap-2 text-xs border border-gray-200 px-4 py-2 transition-colors uppercase tracking-wider hover:bg-black hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-current"
+            >
+              <CalendarPlus size={14} /> 行事曆
+            </button>
+            <button
+              onClick={() => details.fileUrl && window.open(details.fileUrl, '_blank')}
+              disabled={!details.fileUrl}
+              className={`flex items-center gap-2 text-xs border border-gray-200 px-4 py-2 transition-colors uppercase tracking-wider ${details.fileUrl ? 'hover:bg-black hover:text-white cursor-pointer' : 'opacity-50 cursor-not-allowed bg-gray-50'}`}
+            >
+              {details.fileUrl ? <><Download size={14} /> 憑證</> : <><X size={14} /> 無憑證</>}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -163,11 +210,13 @@ function BookingCard({ booking, onEdit, onDelete }: { booking: Booking; onEdit: 
 function BookingModal({ onClose, onSave, initialData, trip }: any) {
   const [type, setType]         = useState<BookingType>(initialData?.type || "Flight");
   const [title, setTitle]       = useState(initialData?.title || "");
-  const [date, setDate]         = useState(initialData?.date || "");
+  const [date, setDate]         = useState(initialData?.date || trip?.startDate || "");
   const init = initialData?.details || {};
-  const localCurr = trip?.localCurrency || 'JPY';
+  const localCurr = localOf(trip);
+  const [endDate, setEndDate]         = useState(init.endDate || "");
   const [inputPrice, setInputPrice]   = useState(init.price ? String(init.price) : "");
-  const [currency, setCurrency]       = useState(localCurr);
+  // 舊紀錄冇 currency：當時一律換算成當地貨幣才儲，所以退回當地貨幣就啱返
+  const [currency, setCurrency]       = useState(init.currency || localCurr);
   const [address, setAddress]         = useState(init.address || "");
   const [pickupLocation, setPickupLocation] = useState(init.pickupLocation || "");
   const [dropoffLocation, setDropoffLocation] = useState(init.dropoffLocation || "");
@@ -183,15 +232,20 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
   const [arriveTime, setArriveTime]   = useState(init.arriveTime || "");
   const [checkIn, setCheckIn]         = useState(init.checkIn || "");
   const [checkOut, setCheckOut]       = useState(init.checkOut || "");
-  const rate = trip?.exchangeRate || 0.052;
+  /** 住宿同租車先有結束日期；機票同票券得一日 */
+  const hasRange = type === 'Hotel' || type === 'Rental';
+  const nights = nightsBetween(date, endDate);
 
   const handleSubmit = () => {
-    let finalPrice = Number(inputPrice);
-    if (currency === "HKD") finalPrice = Math.round(Number(inputPrice) / rate);
     onSave({
       id: initialData?.id || uuidv4(), type, title, date,
       details: {
-        price: finalPrice, address, fileUrl,
+        // 直接儲存原幣金額，唔再喺存檔時硬換算 ——
+        // 從前存的是換算後的日圓，日後改匯率，已付的單就跟住變。
+        price: Number(inputPrice) || 0,
+        currency,
+        address, fileUrl,
+        ...(hasRange ? { endDate } : {}),
         ...(type === 'Flight' ? { airline, flightNum, origin, destination, seat, gate, departTime, arriveTime } : {}),
         ...(type === 'Hotel'  ? { checkIn, checkOut } : {}),
         ...(type === 'Rental' ? { pickupLocation, dropoffLocation, checkIn, checkOut } : {}),
@@ -236,11 +290,31 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
             <input className="w-full border-b p-2 text-sm focus:border-black outline-none" placeholder="標題"
               value={title} onChange={e => setTitle(e.target.value)} />
           </div>
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-widest">日期</label>
-            <input type="date" className="w-full border-b p-2 text-sm focus:border-black outline-none"
-              value={date} onChange={e => setDate(e.target.value)} />
+          {/* 日期 —— 住宿／租車係一段期間，唔係一日 */}
+          <div className={hasRange ? "grid grid-cols-2 gap-3" : ""}>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-widest">
+                {type === 'Hotel' ? '入住日期' : type === 'Rental' ? '取車日期' : type === 'Flight' ? '出發日期' : '日期'}
+              </label>
+              <input type="date" className="w-full border-b p-2 text-sm focus:border-black outline-none"
+                value={date} onChange={e => setDate(e.target.value)} />
+            </div>
+            {hasRange && (
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-widest">
+                  {type === 'Hotel' ? '退房日期' : '還車日期'}
+                </label>
+                <input type="date" min={date || undefined} className="w-full border-b p-2 text-sm focus:border-black outline-none"
+                  value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+            )}
           </div>
+          {hasRange && nights > 0 && (
+            <p className="text-[11px] text-gray-500 -mt-1">共 {nights} 晚</p>
+          )}
+          {hasRange && endDate && nights === 0 && (
+            <p className="text-[11px] text-red-600 -mt-1">退房日期要喺入住日期之後</p>
+          )}
 
           {type === 'Flight' && (<>
             <div className="flex gap-2">
@@ -251,9 +325,15 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
               <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="起飛 (HKG)" value={origin} onChange={e => setOrigin(e.target.value)} />
               <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="抵達 (KIX)" value={destination} onChange={e => setDestination(e.target.value)} />
             </div>
-            <div className="flex gap-2">
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="起飛時間" value={departTime} onChange={e => setDepartTime(e.target.value)} />
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="抵達時間" value={arriveTime} onChange={e => setArriveTime(e.target.value)} />
+            <div className="flex gap-3">
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">起飛時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={departTime} onChange={e => setDepartTime(e.target.value)} />
+              </label>
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">抵達時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={arriveTime} onChange={e => setArriveTime(e.target.value)} />
+              </label>
             </div>
             <div className="flex gap-2">
               <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="座位" value={seat} onChange={e => setSeat(e.target.value)} />
@@ -271,10 +351,17 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
               />
               {address && <p className="text-xs text-gray-500 mt-1 truncate">{address}</p>}
             </div>
-            <div className="flex gap-2">
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="Check-in 時間" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="Check-out 時間" value={checkOut} onChange={e => setCheckOut(e.target.value)} />
+            <div className="flex gap-3">
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">入住時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
+              </label>
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">退房時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={checkOut} onChange={e => setCheckOut(e.target.value)} />
+              </label>
             </div>
+            <p className="text-[11px] text-gray-500">留空的話，行事曆會用一般酒店時間：入住 15:00、退房 11:00。</p>
           </>)}
 
           {type === 'Rental' && (<>
@@ -282,34 +369,55 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
               <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="取車地點" value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} />
               <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="還車地點" value={dropoffLocation} onChange={e => setDropoffLocation(e.target.value)} />
             </div>
-            <div className="flex gap-2">
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="取車時間" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="還車時間" value={checkOut} onChange={e => setCheckOut(e.target.value)} />
+            <div className="flex gap-3">
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">取車時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
+              </label>
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">還車時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={checkOut} onChange={e => setCheckOut(e.target.value)} />
+              </label>
             </div>
           </>)}
 
           {type === 'Ticket' && (<>
             <input className="w-full border-b p-2 text-sm focus:outline-none" placeholder="地點 / 場館" value={address} onChange={e => setAddress(e.target.value)} />
-            <div className="flex gap-2">
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="入場時間" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
-              <input className="flex-1 border-b p-2 text-sm focus:outline-none" placeholder="座位 / 區域" value={seat} onChange={e => setSeat(e.target.value)} />
+            <div className="flex gap-3">
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">入場時間</span>
+                <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={checkIn} onChange={e => setCheckIn(e.target.value)} />
+              </label>
+              <label className="flex-1 block">
+                <span className="text-[11px] text-gray-500">座位 / 區域</span>
+                <input className="w-full border-b p-2 text-sm focus:outline-none focus:border-black" value={seat} onChange={e => setSeat(e.target.value)} />
+              </label>
             </div>
           </>)}
 
-          {/* Price */}
-          <div className="flex items-center border-b">
-            <input className="w-full p-2 text-sm focus:outline-none" type="number" inputMode="decimal"
-              placeholder="費用" value={inputPrice} onChange={e => setInputPrice(e.target.value)} />
-            <button onClick={() => setCurrency(currency === localCurr ? "HKD" : localCurr)}
-              className="text-xs font-medium px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center">
-              {currency} <ArrowRightLeft size={10} />
-            </button>
+          {/* 費用 —— 揀邊個幣就儲邊個幣，唔會再喺存檔時偷偷換算 */}
+          <div>
+            <label className="text-xs text-gray-500 uppercase tracking-widest block mb-1">費用</label>
+            <div className="flex items-center gap-2 border-b">
+              <input className="flex-1 min-w-0 p-2 text-sm focus:outline-none" type="number" inputMode="decimal"
+                placeholder="0" value={inputPrice} onChange={e => setInputPrice(e.target.value)} />
+              <select
+                value={currency}
+                onChange={e => setCurrency(e.target.value)}
+                className="text-xs bg-gray-100 px-2 py-1.5 focus:outline-none"
+              >
+                {Array.from(new Set([currency, localCurr, ...COMMON_CURRENCIES])).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            {Number(inputPrice) > 0 && (
+              <p className="text-[11px] text-gray-500 mt-1 text-right">
+                {formatMoney(Number(inputPrice), currency)}
+                {nights > 1 && `　平均每晚 ${formatMoney(Number(inputPrice) / nights, currency)}`}
+              </p>
+            )}
           </div>
-          {currency === "HKD" && inputPrice && (
-            <p className="text-xs text-gray-500 text-right">
-              approx. ¥{Math.round(Number(inputPrice) / rate).toLocaleString()} (Rate: {rate})
-            </p>
-          )}
 
           {/* File upload */}
           <div className="pt-2">

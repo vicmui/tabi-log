@@ -5,7 +5,32 @@ import { supabase } from '@/lib/supabase';
 
 export interface Member { id: string; name: string; avatar: string; role?: string; }
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
-export interface Booking { id: string; type: BookingType; title: string; date: string; details: { price?: number; address?: string; fileUrl?: string; note?: string; airline?: string; flightNum?: string; seat?: string; gate?: string; origin?: string; destination?: string; departTime?: string; arriveTime?: string; checkIn?: string; checkOut?: string; pickupLocation?: string; dropoffLocation?: string; }; }
+// endDate / currency 為後加欄位。
+// 從前住宿只得一個 date，退房日子無處可放，唯有塞落「Check-out 時間」那格文字，
+// 於是「住 11 至 15 號」變成一句人手打的說話 —— 程式讀不到，行事曆亦排不出。
+// currency 同理：從前存檔時把港元硬換成日圓才儲，匯率一改，過去的單就跟著變。
+export interface Booking { id: string; type: BookingType; title: string; date: string; details: { price?: number; currency?: string; endDate?: string; address?: string; fileUrl?: string; note?: string; airline?: string; flightNum?: string; seat?: string; gate?: string; origin?: string; destination?: string; departTime?: string; arriveTime?: string; checkIn?: string; checkOut?: string; pickupLocation?: string; dropoffLocation?: string; }; }
+/**
+ * 旅遊證件 —— 簽證、入境 QR（Visit Japan Web / K-ETA 之類）、保險、護照影本。
+ *
+ * 這裡只存 Storage 的 path，不存 public URL：
+ * 證件不同酒店封面，一條猜不到的公開連結仍然是公開的 —— 誰拿到誰看得到。
+ * 讀取時才即場簽發一條短效連結，過期自動失效。
+ */
+export type TravelDocKind = 'Entry' | 'Visa' | 'Insurance' | 'Passport' | 'Other';
+export interface TravelDoc {
+  id: string;
+  kind: TravelDocKind;
+  title: string;
+  /** 持有人；一家人各自一張 QR 時用來分辨 */
+  holder?: string;
+  /** Supabase Storage 路徑（私人 bucket） */
+  path?: string;
+  /** 舊資料／公開 bucket 的直接連結 */
+  fileUrl?: string;
+  expiry?: string;
+  note?: string;
+}
 export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightseeing' | 'Shopping' | 'Other';
 // currency / rate 為後加欄位：舊紀錄沒有時一律視為旅程當地貨幣 + trip.exchangeRate，
 // 因此既有帳目的顯示完全不變。rate = 記帳當刻「1 單位該貨幣 = 多少港元」。
@@ -15,7 +40,7 @@ export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping
 export interface PlaceToVisit { id: string; name: string; placeId?: string; googleMapsUri?: string; address?: string; note?: string; category?: string; suggestedBy?: string; order?: number; lat?: number; lng?: number; isVisited: boolean; }
 export interface Activity { id: string; time?: string; type: string; location: string; placeId?: string; googleMapsUri?: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; refPhoto?: string; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; coverPosX?: number; coverPosY?: number; customLocation?: string; }
-export interface Trip { id: string; sortOrder?: number; title: string; startDate: string; endDate: string; coverImage?: string; coverPosX?: number; coverPosY?: number; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; homeCurrency?: string; placesToVisit?: PlaceToVisit[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
+export interface Trip { id: string; sortOrder?: number; title: string; startDate: string; endDate: string; coverImage?: string; coverPosX?: number; coverPosY?: number; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; homeCurrency?: string; placesToVisit?: PlaceToVisit[]; documents?: TravelDoc[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
 
 interface TripState {
   trips: Trip[];
@@ -39,6 +64,9 @@ interface TripState {
   addBooking: (tripId: string, booking: Booking) => void;
   updateBooking: (tripId: string, bookingId: string, data: Partial<Booking>) => void;
   deleteBooking: (tripId: string, bookingId: string) => void;
+  addDocument: (tripId: string, doc: TravelDoc) => void;
+  updateDocument: (tripId: string, docId: string, data: Partial<TravelDoc>) => void;
+  deleteDocument: (tripId: string, docId: string) => void;
   addExpense: (tripId: string, expense: Expense) => void;
   updateExpense: (tripId: string, expenseId: string, data: Partial<Expense>) => void;
   deleteExpense: (tripId: string, expenseId: string) => void;
@@ -189,6 +217,9 @@ export const useTripStore = create<TripState>()(
       addBooking: (tripId, booking) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: [...t.bookings, booking] } : t) }), tripId),
       updateBooking: (tripId, bookingId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.map(b => b.id === bookingId ? { ...b, ...data } : b) } : t) }), tripId),
       deleteBooking: (tripId, bookingId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, bookings: t.bookings.filter(b => b.id !== bookingId) } : t) }), tripId),
+      addDocument: (tripId, doc) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, documents: [...(t.documents ?? []), doc] } : t) }), tripId),
+      updateDocument: (tripId, docId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, documents: (t.documents ?? []).map(d => d.id === docId ? { ...d, ...data } : d) } : t) }), tripId),
+      deleteDocument: (tripId, docId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, documents: (t.documents ?? []).filter(d => d.id !== docId) } : t) }), tripId),
       addExpense: (tripId, expense) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: [expense, ...t.expenses] } : t) }), tripId),
       updateExpense: (tripId, expenseId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.map(e => e.id === expenseId ? { ...e, ...data } : e) } : t) }), tripId),
       deleteExpense: (tripId, expenseId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, expenses: t.expenses.filter(e => e.id !== expenseId) } : t) }), tripId),
