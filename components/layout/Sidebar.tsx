@@ -54,8 +54,10 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col py-12 px-8 z-40 hidden md:flex">
       {/* Logo */}
       <div className="mb-10">
+        {/* 品牌標記 —— 不跟隨全站的字重收窄規則。
+            日系極簡網站正文再輕，wordmark 一樣是重的，那是識別而非內文。 */}
         <h1
-          className="text-4xl font-semibold tracking-tighter text-[#1a1a1a] uppercase leading-none"
+          className="text-4xl font-bold tracking-tighter text-[#1a1a1a] uppercase leading-none"
           style={{ fontFamily: 'var(--font-inter)' }}
         >
           VM&apos;S<br />BUILD
