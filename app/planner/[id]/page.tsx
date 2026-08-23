@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
+import { formatMoney, sumOnDate, sumLocal } from "@/lib/money";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -410,6 +411,38 @@ export default function PlannerPage() {
                   </div>
                 </div>
               </div>
+
+              {/* 今日花費 vs 預算 —— 資料本身一直都有，只是從未在行程頁顯示過 */}
+              {trip.budgetTotal > 0 && (() => {
+                const todaySpend = currentDay ? sumOnDate(trip, currentDay.date) : 0;
+                const tripSpend  = sumLocal(trip.expenses ?? [], trip);
+                const usedPct    = Math.min(Math.round((tripSpend / trip.budgetTotal) * 100), 100);
+                const over       = tripSpend > trip.budgetTotal;
+                return (
+                  <div className="mb-6 border-y border-gray-100 py-4 flex flex-wrap items-baseline gap-x-8 gap-y-2">
+                    <div>
+                      <p className="text-[11px] tracking-[0.2em] uppercase text-gray-500 mb-1">今日花費</p>
+                      <p className="text-xl font-serif">
+                        {formatMoney(todaySpend, trip.localCurrency)}
+                      </p>
+                    </div>
+                    <div className="flex-1 min-w-[160px]">
+                      <div className="flex justify-between text-[11px] tracking-widest uppercase text-gray-500 mb-1.5">
+                        <span>全程已用</span>
+                        <span className={over ? "text-red-600" : undefined}>
+                          {formatMoney(tripSpend, trip.localCurrency)} / {formatMoney(trip.budgetTotal, trip.localCurrency)}　{usedPct}%
+                        </span>
+                      </div>
+                      <div className="h-[3px] bg-gray-100 w-full">
+                        <div
+                          className={clsx("h-full transition-all duration-500", over ? "bg-red-600" : "bg-black")}
+                          style={{ width: `${usedPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="w-full">
                 {viewMode === "list" ? (

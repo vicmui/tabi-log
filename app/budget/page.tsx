@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import TripSwitcher from '@/components/layout/TripSwitcher'
 import { useTripStore, ExpenseCategory, Expense } from '@/store/useTripStore'
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { ConfirmDialog, AlertDialog } from '@/components/ui/Dialog'
+import { COMMON_CURRENCIES, formatMoney, toLocal, symbolOf } from '@/lib/money'
+import ReceiptScanModal, { ScannedExpense } from '@/components/budget/ReceiptScanModal'
 
 const getCurrencySymbol = (c?: string): string => {
   const map: Record<string, string> = {
@@ -40,6 +42,7 @@ interface FormContentProps {
   currency: string; setCurrency: (v: string) => void
   localCurrency: string
   rate: number
+  ratesToHKD: Record<string, number>
   payer: string; setPayer: (v: string) => void
   splitWith: string[]; setSplitWith: (v: string[]) => void
   isCustomSplit: boolean; setIsCustomSplit: (v: boolean) => void
@@ -53,7 +56,7 @@ interface FormContentProps {
 
 function FormContent({
   date, setDate, itemName, setItemName, amount, setAmount,
-  currency, setCurrency, localCurrency, rate,
+  currency, setCurrency, localCurrency, rate, ratesToHKD,
   payer, setPayer, splitWith, setSplitWith,
   isCustomSplit, setIsCustomSplit, customAmounts, setCustomAmounts,
   category, setCategory, receiptUrl, members, onFileUpload, distributeEvenly,
@@ -86,17 +89,21 @@ function FormContent({
             value={amount}
             onChange={e => setAmount(e.target.value)}
           />
-          <button
-            type="button"
-            onClick={() => setCurrency(currency === localCurrency ? 'HKD' : localCurrency)}
-            className="text-xs font-medium px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1 min-w-[50px] justify-center"
+          <select
+            value={currency}
+            onChange={e => setCurrency(e.target.value)}
+            aria-label="貨幣"
+            className="text-xs font-medium px-2 py-1.5 bg-gray-100 hover:bg-gray-200 min-w-[64px] text-center cursor-pointer focus:outline-none"
           >
-            {currency} <ArrowRightLeft size={10} />
-          </button>
+            {Array.from(new Set([localCurrency, 'HKD', ...COMMON_CURRENCIES])).map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
-        {currency === 'HKD' && amount && (
+        {currency !== localCurrency && amount && (
           <p className="text-xs text-gray-500 mt-1 text-right">
-            {getCurrencySymbol(localCurrency)}{Math.round(Number(amount) / rate).toLocaleString()}
+            ≈ {formatMoney(Number(amount) * (ratesToHKD[currency] ?? 1) / (rate || 1), localCurrency)}
+            <span className="text-gray-400">（按目前匯率換算）</span>
           </p>
         )}
       </div>
@@ -213,9 +220,30 @@ export default function BudgetPage() {
 
   const trip = trips.find(t => t.id === activeTripId) ?? null
 
+  // 開頁時取一次即時匯率，用於「用其他貨幣記帳」時鎖定快照。
+  // 取唔到就 fallback 去旅程本身嗰個匯率，功能唔會斷。
+  useEffect(() => {
+    let alive = true
+    fetch('https://open.er-api.com/v6/latest/HKD')
+      .then(r => r.json())
+      .then(d => {
+        if (!alive || d.result !== 'success' || !d.rates) return
+        const inv: Record<string, number> = {}
+        Object.entries(d.rates as Record<string, number>).forEach(([c, perHKD]) => {
+          if (perHKD > 0) inv[c] = 1 / perHKD   // 1 單位該貨幣 = 幾多港元
+        })
+        setRatesToHKD(inv)
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
   const [itemName, setItemName]     = useState('')
   const [amount, setAmount]         = useState('')
+  // 1 單位該貨幣 = 多少港元。與「工具」頁共用同一個免費匯率來源。
+  const [ratesToHKD, setRatesToHKD] = useState<Record<string, number>>({})
+  const [isScanOpen, setIsScanOpen]  = useState(false)
   const [currency, setCurrency]     = useState(trip?.localCurrency ?? 'HKD')
   const [category, setCategory]     = useState<ExpenseCategory>('Food')
   const [date, setDate]             = useState('')
@@ -243,7 +271,8 @@ export default function BudgetPage() {
   }
 
   const rate        = trip.exchangeRate ?? 0.052
-  const totalSpent  = trip.expenses.reduce((acc, cur) => acc + cur.amount, 0)
+  // 每筆支出按自己的幣別與當刻匯率折算回旅程當地貨幣後再加總
+  const totalSpent  = trip.expenses.reduce((acc, cur) => acc + toLocal(cur, trip), 0)
   const remaining   = trip.budgetTotal - totalSpent
   const isOverBudget = remaining < 0
 
@@ -254,8 +283,10 @@ export default function BudgetPage() {
 
     if (!amount || !itemName || !finalPayer) { setAlertMsg('請填寫必填欄位'); return }
 
-    let finalAmount = Number(amount)
-    if (currency === 'HKD') finalAmount = Math.round(Number(amount) / rate)
+    // 金額按輸入的幣別原樣儲存，另外鎖定當刻匯率。
+    // 舊做法是即時折算成當地貨幣，一旦匯率改動就無法還原原始金額。
+    const finalAmount = Number(amount)
+    const finalRate   = currency === (trip.localCurrency ?? 'JPY') ? rate : (ratesToHKD[currency] ?? rate)
 
     let finalCustomSplit: Record<string, number> | undefined = undefined
     if (isCustomSplit) {
@@ -264,7 +295,8 @@ export default function BudgetPage() {
     }
 
     const expenseData = {
-      amount: finalAmount, category, itemName, note,
+      amount: finalAmount, currency, rate: finalRate,
+      category, itemName, note,
       date: finalDate, payerId: finalPayer,
       splitWithIds: finalSplit,
       customSplit: finalCustomSplit,
@@ -279,6 +311,20 @@ export default function BudgetPage() {
     }
     setAmount(''); setNote(''); setItemName('')
     setIsCustomSplit(false); setCustomAmounts({}); setReceiptUrl('')
+  }
+
+  // 掃描結果只帶入表單；付款人同分攤方式收據上冇寫，要人手揀
+  const applyScan = (s: ScannedExpense) => {
+    setItemName(s.itemName)
+    setAmount(String(s.amount))
+    setCurrency(s.currency)
+    setDate(s.date)
+    setCategory(s.category)
+    setNote(s.note)
+    setReceiptUrl(s.receiptUrl)
+    setEditingExpenseId(null)
+    setIsScanOpen(false)
+    setIsFormOpen(true)
   }
 
   const handleEditExpense = (exp: Expense) => {
@@ -325,16 +371,19 @@ export default function BudgetPage() {
     trip.members.forEach(m => { balances[m.id] = 0 })
     trip.expenses.forEach(exp => {
       const paidBy = exp.payerId
+      // 全部先折算成旅程當地貨幣，否則 JPY 同 GBP 會被當成同一種錢直接相加
+      const local  = toLocal(exp, trip)
+      const ratio  = exp.amount ? local / exp.amount : 1
       if (exp.customSplit) {
-        balances[paidBy] = (balances[paidBy] ?? 0) + exp.amount
+        balances[paidBy] = (balances[paidBy] ?? 0) + local
         Object.entries(exp.customSplit).forEach(([mid, amt]) => {
-          balances[mid] = (balances[mid] ?? 0) - amt
+          balances[mid] = (balances[mid] ?? 0) - amt * ratio
         })
       } else {
         const splitCount = exp.splitWithIds.length
         if (splitCount === 0) return
-        const splitAmount = exp.amount / splitCount
-        balances[paidBy] = (balances[paidBy] ?? 0) + exp.amount
+        const splitAmount = local / splitCount
+        balances[paidBy] = (balances[paidBy] ?? 0) + local
         exp.splitWithIds.forEach(uid => {
           balances[uid] = (balances[uid] ?? 0) - splitAmount
         })
@@ -356,7 +405,7 @@ export default function BudgetPage() {
   }, [trip.expenses, trip.members])
 
   const catStats = trip.expenses.reduce((acc, cur) => {
-    acc[cur.category] = (acc[cur.category] ?? 0) + cur.amount
+    acc[cur.category] = (acc[cur.category] ?? 0) + toLocal(cur, trip)
     return acc
   }, {} as Record<string, number>)
 
@@ -366,7 +415,7 @@ export default function BudgetPage() {
   // Shared props for FormContent
   const formProps: FormContentProps = {
     date, setDate, itemName, setItemName, amount, setAmount,
-    currency, setCurrency,
+    currency, setCurrency, ratesToHKD,
     localCurrency: trip.localCurrency ?? 'JPY',
     rate,
     payer, setPayer, splitWith, setSplitWith,
@@ -496,6 +545,13 @@ export default function BudgetPage() {
 
           {/* Desktop Sticky Form */}
           <div className="bg-white p-8 border border-gray-100 lg:sticky lg:top-4 lg:h-fit lg:z-10 hidden lg:block">
+            <button
+              type="button"
+              onClick={() => setIsScanOpen(true)}
+              className="w-full mb-6 border border-gray-300 py-3 text-xs tracking-widest uppercase flex items-center justify-center gap-2 hover:border-black transition-colors"
+            >
+              <Camera size={14} /> 拍照記帳
+            </button>
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-serif font-semibold">{editingExpenseId ? '編輯支出' : '新增支出'}</h3>
               {editingExpenseId && (
@@ -585,8 +641,13 @@ export default function BudgetPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-serif">
-                      {getCurrencySymbol(trip.localCurrency)}{exp.amount.toLocaleString()}
+                    <span className="font-serif text-right">
+                      {formatMoney(exp.amount, exp.currency ?? trip.localCurrency)}
+                      {(exp.currency ?? trip.localCurrency) !== trip.localCurrency && (
+                        <span className="block text-[11px] text-gray-500 font-sans">
+                          ≈ {formatMoney(toLocal(exp, trip), trip.localCurrency)}
+                        </span>
+                      )}
                     </span>
                     <div className="flex gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
@@ -677,6 +738,25 @@ export default function BudgetPage() {
         message={alertMsg ?? ''}
         onClose={() => setAlertMsg(null)}
       />
+
+      {isScanOpen && (
+        <ReceiptScanModal
+          trip={trip}
+          fallbackDate={date || new Date().toISOString().split('T')[0]}
+          onConfirm={applyScan}
+          onClose={() => setIsScanOpen(false)}
+        />
+      )}
+
+      {/* 手機：懸浮拍照掣 */}
+      <button
+        type="button"
+        onClick={() => setIsScanOpen(true)}
+        aria-label="拍照記帳"
+        className="lg:hidden fixed bottom-28 right-5 z-40 w-14 h-14 bg-black text-white flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <Camera size={20} />
+      </button>
     </div>
   )
 }

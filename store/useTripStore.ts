@@ -7,7 +7,9 @@ export interface Member { id: string; name: string; avatar: string; role?: strin
 export type BookingType = 'Flight' | 'Hotel' | 'Rental' | 'Ticket';
 export interface Booking { id: string; type: BookingType; title: string; date: string; details: { price?: number; address?: string; fileUrl?: string; note?: string; airline?: string; flightNum?: string; seat?: string; gate?: string; origin?: string; destination?: string; departTime?: string; arriveTime?: string; checkIn?: string; checkOut?: string; pickupLocation?: string; dropoffLocation?: string; }; }
 export type ExpenseCategory = 'Food' | 'Transport' | 'Accommodation' | 'Sightseeing' | 'Shopping' | 'Other';
-export interface Expense { id: string; amount: number; category: ExpenseCategory; itemName: string; note: string; date: string; payerId: string; splitWithIds: string[]; customSplit?: Record<string, number>; receiptUrl?: string; }
+// currency / rate 為後加欄位：舊紀錄沒有時一律視為旅程當地貨幣 + trip.exchangeRate，
+// 因此既有帳目的顯示完全不變。rate = 記帳當刻「1 單位該貨幣 = 多少港元」。
+export interface Expense { id: string; amount: number; currency?: string; rate?: number; category: ExpenseCategory; itemName: string; note: string; date: string; payerId: string; splitWithIds: string[]; customSplit?: Record<string, number>; receiptUrl?: string; }
 export type Priority = 'High' | 'Medium' | 'Low';
 export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping'; text: string; priority: Priority; location?: string; estimatedCost?: number; isCompleted: boolean; assigneeId?: string; imageUrl?: string; }
 export interface PlaceToVisit { id: string; name: string; placeId?: string; googleMapsUri?: string; address?: string; note?: string; category?: string; suggestedBy?: string; order?: number; lat?: number; lng?: number; isVisited: boolean; }
