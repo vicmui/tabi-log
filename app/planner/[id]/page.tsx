@@ -6,7 +6,7 @@ import AddActivityModal from "@/components/planner/AddActivityModal";
 import ActivityDetailModal from "@/components/planner/ActivityDetailModal";
 import TripMap from "@/components/planner/TripMap";
 import { useTripStore } from "@/store/useTripStore";
-import { ArrowLeft, Plus, MapPin, Clock, Map as MapIcon, List as ListIcon, CalendarX, Camera, Navigation, Share, Globe, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit, ImagePlus, X, Check, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Clock, Map as MapIcon, List as ListIcon, CalendarX, Camera, Navigation, Globe, Sun, Cloud, CloudSun, CloudRain, Snowflake, Edit, ImagePlus, X, Check, CalendarPlus, Utensils } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
 import { downloadIcs } from "@/lib/calendar";
+import NearbyFood from "@/components/planner/NearbyFood";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -133,6 +134,7 @@ export default function PlannerPage() {
   const [editLocationOpen, setEditLocationOpen] = useState(false);
   const [alertMsg, setAlertMsg]                 = useState<string | null>(null);
   const [confirmDeleteDay, setConfirmDeleteDay] = useState(false);
+  const [isNearbyOpen, setIsNearbyOpen]         = useState(false);
 
   const trip = trips.find((t) => t.id === params.id);
 
@@ -200,6 +202,8 @@ export default function PlannerPage() {
     if (trip.dailyItinerary.length <= 1) { setAlertMsg("行程需保留至少一日。"); return; }
     setConfirmDeleteDay(true);
   };
+  // 分享按鈕已從行程頁移除，唯讀分享頁 /share/[id] 仍然可用；此函式保留備用。
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleShare = async () => {
     const url = `${window.location.origin}/share/${trip.id}`;
     if (navigator.share) { try { await navigator.share({ title: trip.title, text: `查看我的行程：${trip.title}`, url }); return; } catch (_) {} }
@@ -399,8 +403,11 @@ export default function PlannerPage() {
                     <button onClick={handleDeleteDay} className="text-gray-400 hover:text-red-400 p-1"><CalendarX size={16} /></button>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
-                    <button onClick={handleShare} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Share size={14} /><span className="hidden sm:inline">分享</span></button>
-                    <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">路線</span></button>
+                    {/*
+                      次序：行事曆 → 全日路線 → 全程地圖 → 地圖 → 附近美食。
+                      分享掣已移除（行程頁掣位太多）；對外分享的唯讀頁 /share/[id] 仍然存在，
+                      日後若要重開，把 handleShare 接回按鈕即可。
+                    */}
                     <button
                       onClick={() => downloadIcs(trip, activeDay)}
                       title="把今日行程加入行事曆（含提前 30 分鐘提醒）"
@@ -408,11 +415,19 @@ export default function PlannerPage() {
                     >
                       <CalendarPlus size={14} /><span className="hidden sm:inline">行事曆</span>
                     </button>
+                    <button onClick={handleOpenDayRoute} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"><Navigation size={14} /><span className="hidden sm:inline">全日路線</span></button>
                     <Link href={`/planner/${trip.id}/map`} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       <Globe size={14} /><span className="hidden sm:inline">全程地圖</span>
                     </Link>
                     <button onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5">
                       {viewMode === "list" ? <><MapIcon size={14} /><span className="hidden sm:inline">地圖</span></> : <><ListIcon size={14} /><span className="hidden sm:inline">列表</span></>}
+                    </button>
+                    <button
+                      onClick={() => setIsNearbyOpen(true)}
+                      title="以目前位置搜尋附近評分高的餐廳"
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-medium tracking-widest border border-gray-200 text-gray-500 py-2.5 bg-white uppercase hover:border-black transition-all whitespace-nowrap px-5"
+                    >
+                      <Utensils size={14} /><span className="hidden sm:inline">附近美食</span>
                     </button>
                     <button onClick={() => setIsModalOpen(true)} className="hidden md:flex flex-none items-center gap-2 text-xs tracking-widest bg-black text-white px-6 py-2.5 hover:bg-gray-800 transition-colors uppercase font-medium"><Plus size={12} /> 新增活動</button>
                   </div>
@@ -441,6 +456,10 @@ export default function PlannerPage() {
             <AddActivityModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddActivity} tripId={trip.id} destLat={trip.destLat} destLng={trip.destLng} />
             {selectedActivityId && <ActivityDetailModal tripId={trip.id} dayIndex={activeDay} activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} />}
             {isSettingsOpen && <EditTripModal trip={trip} onClose={() => setIsSettingsOpen(false)} />}
+
+            {isNearbyOpen && (
+              <NearbyFood trip={trip} dayIndex={activeDay} onClose={() => setIsNearbyOpen(false)} />
+            )}
 
             <ConfirmDialog
               isOpen={confirmDeleteDay}
