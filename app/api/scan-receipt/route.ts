@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * 收據掃描 —— Gemini 視覺模型。
  *
- * 為何一定要放喺 server route：
- * NEXT_PUBLIC_GOOGLE_MAPS_KEY 放喺瀏覽器係安全嘅，因為佢有 HTTP referrer 限制擋住。
- * Gemini key 冇呢種保護，一旦流出去就有人可以用你條 key 跑嘢。
- * 所以呢條 key 唔可以有 NEXT_PUBLIC_ 前綴，亦唔可以喺 client 出現。
+ * 為何必須置於 server route：
+ * NEXT_PUBLIC_GOOGLE_MAPS_KEY 放在瀏覽器並無風險，因為它受 HTTP referrer 限制保護。
+ * Gemini key 沒有這層保護，一旦外洩，任何人都可以用你的額度呼叫服務。
+ * 因此這條 key 不可加 NEXT_PUBLIC_ 前綴，亦不可在 client 端出現。
  *
  * 設定：
  *   1. https://aistudio.google.com 開一條 API key
@@ -34,7 +34,7 @@ const MODEL_CANDIDATES = process.env.GEMINI_MODEL
 const ENDPOINT = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-/** 對應 store 入面嘅 ExpenseCategory */
+/** 對應 store 中的 ExpenseCategory */
 const CATEGORIES = ["Food", "Transport", "Accommodation", "Sightseeing", "Shopping", "Other"] as const;
 
 const RESPONSE_SCHEMA = {
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       lastStatus = r.status;
       lastDetail = await r.text();
       // 404 = 這個型號不存在／未提供，換下一個再試。
-      // 其他錯誤（401 key 無效、403 API 未啟用、429 超額）換型號都冇用，直接報出去。
+      // 其他錯誤（401 key 無效、403 API 未啟用、429 超額）換型號亦無補於事，直接回報。
       if (r.status !== 404) break;
     }
 

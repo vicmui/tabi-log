@@ -226,7 +226,7 @@ export default function BudgetPage() {
   const trip = trips.find(t => t.id === activeTripId) ?? null
 
   // 開頁時取一次即時匯率，用於「用其他貨幣記帳」時鎖定快照。
-  // 取唔到就 fallback 去旅程本身嗰個匯率，功能唔會斷。
+  // 取不到即退回旅程本身的匯率，功能不會中斷。
   useEffect(() => {
     let alive = true
     fetch('https://open.er-api.com/v6/latest/HKD')
@@ -323,7 +323,7 @@ export default function BudgetPage() {
     setIsCustomSplit(false); setCustomAmounts({}); setReceiptUrl('')
   }
 
-  // 掃描結果只帶入表單；付款人同分攤方式收據上冇寫，要人手揀
+  // 掃描結果只帶入表單；付款人與分攤方式收據上並無記載，須人手選擇
   const applyScan = (s: ScannedExpense) => {
     setItemName(s.itemName)
     setAmount(String(s.amount))

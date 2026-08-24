@@ -53,7 +53,7 @@ export default function BookingsPage() {
           </button>
         </header>
 
-        {/* 證件放最前 —— 過關嗰陣要即刻搵到，唔應該要碌到最底 */}
+        {/* 證件置於最前 —— 過關時要即時找得到，不應要捲到頁底 */}
         <TravelDocs trip={trip} />
 
         <div className="max-w-3xl mx-auto mb-4">
@@ -126,7 +126,7 @@ function BookingCard({ booking, trip, onEdit, onDelete }: { booking: Booking; tr
               {isFlight && <p className="text-sm font-mono text-gray-600 mt-1">{details.airline} {details.flightNum}</p>}
             </div>
           </div>
-          {/* 日期範圍 —— 住宿唔應該只得一個日子 */}
+          {/* 日期範圍 —— 住宿不應只有單一日期 */}
           <div className="shrink-0 text-right">
             <span className="font-mono text-sm bg-gray-50 border border-gray-100 px-3 py-1 inline-block">
               {booking.date || "—"}{hasRange && <> <span className="text-gray-400">→</span> {details.endDate}</>}
@@ -215,7 +215,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
   const localCurr = localOf(trip);
   const [endDate, setEndDate]         = useState(init.endDate || "");
   const [inputPrice, setInputPrice]   = useState(init.price ? String(init.price) : "");
-  // 舊紀錄冇 currency：當時一律換算成當地貨幣才儲，所以退回當地貨幣就啱返
+  // 舊紀錄沒有 currency：當時一律換算成當地貨幣才儲存，故退回當地貨幣即可對應
   const [currency, setCurrency]       = useState(init.currency || localCurr);
   const [address, setAddress]         = useState(init.address || "");
   const [pickupLocation, setPickupLocation] = useState(init.pickupLocation || "");
@@ -240,7 +240,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
     onSave({
       id: initialData?.id || uuidv4(), type, title, date,
       details: {
-        // 直接儲存原幣金額，唔再喺存檔時硬換算 ——
+        // 直接儲存原幣金額，不再於存檔時強制換算 ——
         // 從前存的是換算後的日圓，日後改匯率，已付的單就跟住變。
         price: Number(inputPrice) || 0,
         currency,
@@ -290,7 +290,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
             <input className="w-full border-b p-2 text-sm focus:border-black outline-none" placeholder="標題"
               value={title} onChange={e => setTitle(e.target.value)} />
           </div>
-          {/* 日期 —— 住宿／租車係一段期間，唔係一日 */}
+          {/* 日期 —— 住宿／租車是一段期間，並非單一日子 */}
           <div className={hasRange ? "grid grid-cols-2 gap-3" : ""}>
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-widest">
@@ -313,7 +313,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
             <p className="text-[11px] text-gray-500 -mt-1">共 {nights} 晚</p>
           )}
           {hasRange && endDate && nights === 0 && (
-            <p className="text-[11px] text-red-600 -mt-1">退房日期要喺入住日期之後</p>
+            <p className="text-[11px] text-red-600 -mt-1">退房日期須晚於入住日期</p>
           )}
 
           {type === 'Flight' && (<>
@@ -361,7 +361,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
                 <input type="time" className="w-full border-b p-2 text-sm focus:outline-none focus:border-black bg-transparent" value={checkOut} onChange={e => setCheckOut(e.target.value)} />
               </label>
             </div>
-            <p className="text-[11px] text-gray-500">留空的話，行事曆會用一般酒店時間：入住 15:00、退房 11:00。</p>
+            <p className="text-[11px] text-gray-500">若未填寫，行事曆將採用一般酒店時間：入住 15:00、退房 11:00。</p>
           </>)}
 
           {type === 'Rental' && (<>
@@ -395,7 +395,7 @@ function BookingModal({ onClose, onSave, initialData, trip }: any) {
             </div>
           </>)}
 
-          {/* 費用 —— 揀邊個幣就儲邊個幣，唔會再喺存檔時偷偷換算 */}
+          {/* 費用 —— 選用哪種貨幣便儲存哪種，不再於存檔時暗中換算 */}
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-widest block mb-1">費用</label>
             <div className="flex items-center gap-2 border-b">

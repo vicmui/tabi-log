@@ -66,7 +66,7 @@ export function RepositionPanel({
         </p>
       </div>
 
-      {/* 即時預覽 —— 用實際顯示比例，睇到嘅就係之後嘅效果 */}
+      {/* 即時預覽 —— 採用實際顯示比例，所見即日後的效果 */}
       <div
         className={`${compact ? '' : 'flex-1'} overflow-hidden relative bg-neutral-100`}
         style={compact ? { aspectRatio: String(aspect) } : undefined}

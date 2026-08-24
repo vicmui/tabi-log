@@ -15,7 +15,7 @@ import { ConfirmDialog } from '@/components/ui/Dialog'
  * 為何另開一個私人 bucket，而不是沿用放酒店封面那個：
  * 封面是公開的沒問題，證件不是。一條猜不到的公開連結仍然是公開連結 ——
  * 一旦流出（截圖、複製、分享），任何人都看得到護照與簽證。
- * 所以這裡只儲存檔案路徑，每次要看才即場簽發一條一小時失效的連結。
+ * 所以這裡只儲存檔案路徑，每次要檢視時才即時簽發一條一小時後失效的連結。
  *
  * 需要在 Supabase 建立一個名為 trip_docs 的 bucket，並取消勾選 Public。
  */
@@ -31,7 +31,7 @@ const KIND_META: Record<TravelDocKind, { label: string; icon: typeof QrCode; hin
 
 const KIND_ORDER: TravelDocKind[] = ['Entry', 'Visa', 'Insurance', 'Passport', 'Other']
 
-/** 取一條短效連結；舊資料仍是公開連結就直接用返 */
+/** 簽發一條短效連結；舊資料若仍是公開連結則直接沿用 */
 async function resolveUrl(doc: TravelDoc): Promise<string | null> {
   if (doc.path) {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(doc.path, 3600)
@@ -53,7 +53,7 @@ export default function TravelDocs({ trip }: { trip: Trip }) {
       <div className="flex items-end justify-between mb-4">
         <div>
           <h2 className="text-xs tracking-[0.2em] uppercase text-gray-500">旅遊證件</h2>
-          <p className="text-[11px] text-gray-500 mt-1">入境 QR、簽證、保險 —— 過關時一撳就出得到</p>
+          <p className="text-[11px] text-gray-500 mt-1">入境 QR、簽證、保險 —— 過關時一按即可開啟</p>
         </div>
         <button
           onClick={() => setIsFormOpen(true)}
@@ -69,8 +69,8 @@ export default function TravelDocs({ trip }: { trip: Trip }) {
           className="w-full border border-dashed border-gray-300 py-8 flex flex-col items-center gap-2 text-gray-500 hover:border-black hover:text-black transition-colors bg-white"
         >
           <QrCode size={22} />
-          <span className="text-sm">上載入境 QR 或簽證</span>
-          <span className="text-[11px]">去日本用 Visit Japan Web 個 QR；一人一張，記得標明持有人</span>
+          <span className="text-sm">上傳入境 QR 或簽證</span>
+          <span className="text-[11px]">前往日本可存 Visit Japan Web 的 QR；一人一張，記得註明持有人</span>
         </button>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -98,7 +98,7 @@ export default function TravelDocs({ trip }: { trip: Trip }) {
       <ConfirmDialog
         isOpen={!!deletingId}
         title="刪除證件"
-        message="確定要刪除？記錄會移除，已上載的檔案仍會保留在儲存空間。"
+        message="確定要刪除？記錄會移除，已上傳的檔案仍會保留在儲存空間。"
         confirmLabel="刪除"
         cancelLabel="取消"
         danger
@@ -145,8 +145,8 @@ function DocCard({ doc, onOpen, onDelete }: { doc: TravelDoc; onOpen: () => void
 
 /**
  * 全螢幕檢視。
- * 白底、大圖、無其他干擾 —— 過關時遞部電話出去就係咁。
- * QR 掃唔到多數係螢幕光度，唔係解像度，所以背景一定要純白。
+ * 白底、大圖、無其他干擾 —— 過關時把手機遞出去便是這個畫面。
+ * QR 掃不到多數是螢幕亮度所致，而非解像度，因此背景必須純白。
  */
 function DocViewer({ doc, onClose }: { doc: TravelDoc; onClose: () => void }) {
   const [url, setUrl] = useState<string | null>(null)
@@ -197,7 +197,7 @@ function DocViewer({ doc, onClose }: { doc: TravelDoc; onClose: () => void }) {
       </div>
 
       <p className="px-5 py-3 text-[11px] text-gray-500 border-t border-gray-100 leading-relaxed">
-        提示：把螢幕光度校到最亮，QR 才掃得到。連結一小時後失效，屆時重新開啟即可。
+        提示：請把螢幕亮度調至最高，QR 方可順利掃描。連結一小時後失效，屆時重新開啟即可。
       </p>
     </div>
   )
@@ -224,11 +224,11 @@ function DocForm({ trip, onClose, onSave }: { trip: Trip; onClose: () => void; o
       if (upErr) throw upErr
       setPath(filePath)
     } catch (err: any) {
-      // bucket 未建立係最常見嘅原因，直接講清楚點做，唔好淨係彈一句「失敗」
+      // bucket 未建立是最常見的原因，直接說明處理方法，不要只回一句「失敗」
       setError(
         /not found|bucket/i.test(err?.message ?? '')
           ? `找不到儲存空間「${BUCKET}」。請於 Supabase → Storage 新增一個同名 bucket，並取消勾選 Public。`
-          : err?.message || '上載失敗'
+          : err?.message || '上傳失敗'
       )
     } finally {
       setUploading(false)
@@ -298,10 +298,10 @@ function DocForm({ trip, onClose, onSave }: { trip: Trip; onClose: () => void; o
           }`}>
             <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleUpload} />
             {uploading
-              ? <><Loader2 size={16} className="animate-spin" /> 上載中…</>
+              ? <><Loader2 size={16} className="animate-spin" /> 上傳中…</>
               : path
-                ? <><ShieldCheck size={16} /> 已上載（點擊更換）</>
-                : <><Upload size={16} /> 上載圖片或 PDF</>}
+                ? <><ShieldCheck size={16} /> 已上傳（點擊更換）</>
+                : <><Upload size={16} /> 上傳圖片或 PDF</>}
           </label>
 
           {error && (
@@ -311,7 +311,7 @@ function DocForm({ trip, onClose, onSave }: { trip: Trip; onClose: () => void; o
           )}
 
           <p className="text-[11px] text-gray-500 leading-relaxed">
-            證件存放於私人儲存空間，只有登入的成員開啟得到；每次檢視會即場簽發一條一小時後失效的連結。
+            證件存放於私人儲存空間，只有已登入的成員方可開啟；每次檢視均即時簽發一條一小時後失效的連結。
           </p>
         </div>
 

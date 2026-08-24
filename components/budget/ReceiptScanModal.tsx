@@ -101,7 +101,7 @@ export default function ReceiptScanModal({ trip, fallbackDate, onConfirm, onClos
       })
       const data = await res.json()
       if (!res.ok) {
-        // 把伺服器帶返嘅真正原因一齊顯示，唔好淨係得一個冇線索嘅狀態碼
+        // 一併顯示伺服器回報的真正原因，不要只留下一個毫無線索的狀態碼
         const detail = data?.detail ? `　（${data.detail}）` : ''
         throw new Error(`${data?.error || '辨識失敗'}${detail}`)
       }
@@ -150,7 +150,7 @@ export default function ReceiptScanModal({ trip, fallbackDate, onConfirm, onClos
             <label className="border border-dashed border-gray-300 py-12 flex flex-col items-center gap-3 cursor-pointer hover:border-black transition-colors">
               <Camera size={26} className="text-gray-500" />
               <span className="text-sm">拍攝或選擇收據相片</span>
-              <span className="text-[11px] text-gray-500">攤平、對正、光線充足，辨識最準</span>
+              <span className="text-[11px] text-gray-500">請將收據攤平、對正，光線充足辨識最準確</span>
               <input
                 ref={fileRef}
                 type="file"
@@ -257,7 +257,7 @@ export default function ReceiptScanModal({ trip, fallbackDate, onConfirm, onClos
                 onClick={() => { setStage('pick'); setResult(null) }}
                 className="flex-1 border border-gray-300 py-3 text-xs tracking-widest uppercase hover:bg-gray-50 transition-colors"
               >
-                重影
+                重新拍攝
               </button>
               <button
                 onClick={() => result.amount > 0 && onConfirm(result)}

@@ -18,7 +18,7 @@ export default function EditTripModal({ trip, onClose }: any) {
   const [localCurrency, setLocalCurrency] = useState(localOf(trip));
   const [fxRate, setFxRate]               = useState(String(trip.exchangeRate ?? 0.052));
   const [coverImage, setCoverImage] = useState(trip.coverImage || '');
-  // 焦點存喺 trip 資料本身；舊版存喺 localStorage，一併讀返做 fallback
+  // 焦點儲存於 trip 資料本身；舊版存於 localStorage，一併讀取作為後備
   const legacyY = (() => { try { const m = localStorage.getItem(`coverPos-trip-${trip.id}`); return m ? Number(m) : undefined; } catch { return undefined; } })();
   const [focus, setFocus] = useState<CoverFocus>({
     x: trip.coverPosX ?? 50,

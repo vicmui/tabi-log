@@ -15,7 +15,7 @@ export interface Booking { id: string; type: BookingType; title: string; date: s
  *
  * 這裡只存 Storage 的 path，不存 public URL：
  * 證件不同酒店封面，一條猜不到的公開連結仍然是公開的 —— 誰拿到誰看得到。
- * 讀取時才即場簽發一條短效連結，過期自動失效。
+ * 讀取時才即時簽發一條短效連結，逾時自動失效。
  */
 export type TravelDocKind = 'Entry' | 'Visa' | 'Insurance' | 'Passport' | 'Other';
 export interface TravelDoc {

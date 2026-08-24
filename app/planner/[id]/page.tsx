@@ -187,7 +187,7 @@ export default function PlannerPage() {
 
   const currentDay      = trip.dailyItinerary[activeDay];
   const coverSrc        = currentDay?.coverImage || trip.coverImage || "";
-  // 若當日冇自己嘅封面，就沿用旅程封面同佢嘅焦點
+  // 該日若未設專屬封面，即沿用旅程封面及其焦點設定
   const usingTripCover  = !currentDay?.coverImage && !!trip.coverImage;
   const coverFocus: CoverFocus = usingTripCover
     ? { x: trip.coverPosX ?? 50, y: trip.coverPosY ?? 50 }

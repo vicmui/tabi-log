@@ -8,7 +8,7 @@ const SCALE   = 2;
 /**
  * 把封面圖轉成 data URL。
  *
- * 原因：html2canvas 遇上跨網域圖片時會污染 canvas 而整張圖畫唔出，
+ * 原因：html2canvas 遇上跨網域圖片時會污染 canvas，導致整張圖無法繪出，
  * 封面就會變成一大格黑色。先用 fetch 取回並轉成 base64，
  * html2canvas 便當作同源圖片處理。取不到就回傳 null，改用純文字封面。
  */
