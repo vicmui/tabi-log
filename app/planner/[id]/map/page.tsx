@@ -12,6 +12,7 @@ import { useTripStore } from '@/store/useTripStore'
 import Link from 'next/link'
 import { ArrowLeft, SlidersHorizontal, X } from 'lucide-react'
 import { Libraries } from '@react-google-maps/api'
+import { MONO_MAP_STYLE } from '@/lib/mapStyle'
 
 const LIBRARIES: Libraries = ['places', 'marker', 'geometry', 'routes']
 
@@ -58,18 +59,7 @@ const mapOptions: google.maps.MapOptions = {
   zoomControl: true,
   streetViewControl: false,
   mapTypeControl: false,
-  styles: [
-    { elementType: 'geometry',           stylers: [{ color: '#f5f5f5' }] },
-    { elementType: 'labels.icon',        stylers: [{ visibility: 'off' }] },
-    { elementType: 'labels.text.fill',   stylers: [{ color: '#616161' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
-    { featureType: 'poi',      elementType: 'geometry',         stylers: [{ color: '#eeeeee' }] },
-    { featureType: 'poi',      elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-    { featureType: 'poi.park', elementType: 'geometry',         stylers: [{ color: '#e5e5e5' }] },
-    { featureType: 'road',     elementType: 'geometry',         stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road.highway', elementType: 'geometry',     stylers: [{ color: '#dadada' }] },
-    { featureType: 'water',    elementType: 'geometry',         stylers: [{ color: '#c9c9c9' }] },
-  ],
+  styles: MONO_MAP_STYLE,
 }
 
 interface SelectedMarker {

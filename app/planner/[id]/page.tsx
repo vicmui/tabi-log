@@ -398,9 +398,12 @@ export default function PlannerPage() {
             <div className="px-4 md:px-12 py-6 max-w-5xl mx-auto min-h-[500px]">
               <div className="mb-8 border-b border-gray-100 pb-4 sticky top-0 bg-white/95 backdrop-blur z-30 pt-2">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <span className="text-[11px] font-medium tracking-[0.2em] text-black uppercase">行程規劃</span>
-                    <button onClick={handleDeleteDay} className="text-gray-400 hover:text-red-400 p-1"><CalendarX size={16} /></button>
+                  {/*
+                    「行程規劃」標題已移除：桌面版一行放五個掣，標題被擠到只剩一個字寬，
+                    「劃」字掉到第二行。頁面本身已有大標題，這裡再寫一次是重複的。
+                  */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <button onClick={handleDeleteDay} title="刪除此日" className="text-gray-400 hover:text-red-400 p-1"><CalendarX size={16} /></button>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1">
                     {/*

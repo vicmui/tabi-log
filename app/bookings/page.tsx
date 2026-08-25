@@ -112,7 +112,13 @@ function BookingCard({ booking, trip, onEdit, onDelete }: { booking: Booking; tr
         <button onClick={onDelete} aria-label="刪除" className="p-1.5 text-gray-500 hover:text-red-500 bg-white rounded-full border border-gray-100"><Trash2 size={14} /></button>
       </div>
       <div className="p-6">
-        <div className="flex justify-between items-start gap-4 mb-6 pr-16">
+        {/*
+          手機上必須直排（flex-col）。
+          之前橫排時，日期膠囊「2026-09-11 → 2026-09-15」加上右上角按鈕的 pr-16，
+          在 390px 闊的螢幕上只剩幾十像素給標題，於是 break-words 逐個字斷行，
+          「Cross Hotel」變成直排。給標題整行寬度，問題自然消失。
+        */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-6 pr-14">
           <div className="flex items-center gap-4 min-w-0">
             <div className={`p-3 text-white shrink-0 ${booking.type === 'Flight' ? 'bg-neutral-900' : booking.type === 'Hotel' ? 'bg-neutral-700' : booking.type === 'Rental' ? 'bg-neutral-500' : 'bg-neutral-400'}`}>
               {booking.type === "Flight" && <Plane size={24} />}
@@ -122,17 +128,17 @@ function BookingCard({ booking, trip, onEdit, onDelete }: { booking: Booking; tr
             </div>
             <div className="min-w-0">
               <p className="text-xs text-gray-500 uppercase tracking-widest">{typeName[booking.type]}</p>
-              <h3 className="text-xl font-semibold font-serif break-words">{booking.title}</h3>
+              <h3 className="text-xl font-semibold font-serif break-words leading-snug">{booking.title}</h3>
               {isFlight && <p className="text-sm font-mono text-gray-600 mt-1">{details.airline} {details.flightNum}</p>}
             </div>
           </div>
           {/* 日期範圍 —— 住宿不應只有單一日期 */}
-          <div className="shrink-0 text-right">
-            <span className="font-mono text-sm bg-gray-50 border border-gray-100 px-3 py-1 inline-block">
+          <div className="shrink-0 sm:text-right">
+            <span className="font-mono text-xs sm:text-sm bg-gray-50 border border-gray-100 px-3 py-1 inline-block whitespace-nowrap">
               {booking.date || "—"}{hasRange && <> <span className="text-gray-400">→</span> {details.endDate}</>}
             </span>
             {nights > 0 && (
-              <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1 justify-end">
+              <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1 sm:justify-end">
                 <Moon size={10} /> {nights} 晚
               </p>
             )}

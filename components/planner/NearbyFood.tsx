@@ -6,6 +6,7 @@ import {
   List as ListIcon, Map as MapIcon, AlertTriangle, RefreshCw, Check,
 } from 'lucide-react'
 import { Trip, useTripStore } from '@/store/useTripStore'
+import { MONO_MAP_STYLE, MARK_BLACK } from '@/lib/mapStyle'
 
 /**
  * 附近美食。
@@ -40,6 +41,8 @@ interface Spot {
   openNow?: boolean
   googleMapsUri?: string
   distance: number
+  /** 只有日本的店才顯示食べログ連結 —— 其他地方那個站根本沒有收錄 */
+  isJapan: boolean
 }
 
 const tabelogUrl = (name: string) =>
@@ -69,7 +72,8 @@ export default function NearbyFood({ trip, dayIndex, onClose }: Props) {
   const [radius, setRadius]   = useState(500)
   const [goodOnly, setGoodOnly] = useState(true)
   const [openOnly, setOpenOnly] = useState(false)
-  const [view, setView]       = useState<'list' | 'map'>('list')
+  // 預設地圖：在街上找食，先要知道「邊間喺附近」，之後才輪到「邊間高分」
+  const [view, setView]       = useState<'map' | 'list'>('map')
 
   const [spots, setSpots]     = useState<Spot[]>([])
   const [loading, setLoading] = useState(false)
@@ -173,6 +177,7 @@ export default function NearbyFood({ trip, dayIndex, onClose }: Props) {
             openNow,
             googleMapsUri: p.googleMapsURI ?? undefined,
             distance: Math.round(distance),
+            isJapan: /日本|Japan/i.test(p.formattedAddress ?? ''),
           }
         })
       )
@@ -305,24 +310,44 @@ export default function NearbyFood({ trip, dayIndex, onClose }: Props) {
               mapContainerStyle={{ width: '100%', height: '100%' }}
               center={centre}
               zoom={radius <= 500 ? 16 : radius <= 1000 ? 15 : 14}
-              options={{ disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: true,
+                clickableIcons: false,
+                styles: MONO_MAP_STYLE,
+              }}
             >
+              {/* 目前位置：白心黑邊，與下面的黑色店家標記區分開 */}
               <MarkerF
                 position={centre}
+                zIndex={999}
                 icon={{
                   path: (window as any).google?.maps?.SymbolPath?.CIRCLE,
-                  scale: 7, fillColor: '#1a1a1a', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2,
+                  scale: 7, fillColor: '#ffffff', fillOpacity: 1,
+                  strokeColor: MARK_BLACK, strokeWeight: 3,
                 }}
               />
+              {/*
+                預設的紅色水滴標記與全站黑白調子不合，改為黑色圓形 ——
+                跟行程列表上那些黑底白字的序號圓點是同一個語彙。
+              */}
               {visible.map(s => (
                 <MarkerF
                   key={s.id}
                   position={{ lat: s.lat, lng: s.lng }}
                   onClick={() => setSelected(s.id)}
+                  icon={{
+                    path: (window as any).google?.maps?.SymbolPath?.CIRCLE,
+                    scale: 15,
+                    fillColor: selected === s.id ? '#ffffff' : MARK_BLACK,
+                    fillOpacity: 1,
+                    strokeColor: MARK_BLACK,
+                    strokeWeight: selected === s.id ? 2 : 1,
+                  }}
                   label={{
                     text: s.rating ? s.rating.toFixed(1) : '—',
-                    color: '#ffffff',
-                    fontSize: '10px',
+                    color: selected === s.id ? MARK_BLACK : '#ffffff',
+                    fontSize: '11px',
                     fontWeight: '600',
                   }}
                 />
@@ -353,8 +378,9 @@ export default function NearbyFood({ trip, dayIndex, onClose }: Props) {
               </div>
             ))}
             <p className="px-5 py-6 text-[11px] text-gray-500 leading-relaxed">
-              評分來自 Google，與食べログ的評分標準不同 —— 食べログ 3.5 已屬好店，同一間店在 Google 可能是 4.3。
-              兩者面向的食客不一樣，宜互相對照而非直接比較。
+              {visible.some(s => s.isJapan)
+                ? '評分來自 Google，與食べログ的評分標準不同 —— 食べログ 3.5 已屬好店，同一間店在 Google 可能是 4.3。兩者面向的食客不一樣，宜互相對照而非直接比較。'
+                : '評分來自 Google，僅供參考。評論數少的店家，分數未必可靠。'}
             </p>
           </div>
         )}
@@ -405,14 +431,16 @@ function SpotBody({ s, added, onAdd }: { s: Spot; added: boolean; onAdd: () => v
         >
           {added ? <><Check size={12} /> 已加入</> : <><Plus size={12} /> 加入今日行程</>}
         </button>
-        <a
-          href={tabelogUrl(s.name)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-center gap-1.5 text-[11px] tracking-widest uppercase border border-gray-200 px-4 py-2.5 hover:border-black transition-colors whitespace-nowrap"
-        >
-          食べログ <ExternalLink size={11} />
-        </a>
+        {s.isJapan && (
+          <a
+            href={tabelogUrl(s.name)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-1.5 text-[11px] tracking-widest uppercase border border-gray-200 px-4 py-2.5 hover:border-black transition-colors whitespace-nowrap"
+          >
+            食べログ <ExternalLink size={11} />
+          </a>
+        )}
         {s.googleMapsUri && (
           <a
             href={s.googleMapsUri}

@@ -49,8 +49,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <title>Tabi Log by VM</title>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icon-192.png" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        {/*
+          ?v=2 是為了迫 iOS 換圖：主畫面的圖示一經加入就會長期快取，
+          即使檔案已換，不改網址亦會繼續顯示舊圖。
+        */}
+        <link rel="icon" href="/icon-192.png?v=2" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
         <meta name="theme-color" content="#1a1a1a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
