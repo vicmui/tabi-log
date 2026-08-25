@@ -217,6 +217,21 @@ function FormContent({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+/**
+ * 大字金額的字級。
+ *
+ * 之前寫死 text-3xl：手機上「已花費 / 剩餘」兩張卡各佔半行，
+ * 內容闊度只得約 120px，而 HK$50,000.00 在 30px 字級要 200px —— 必然凸出去。
+ * 數字愈長字級愈細，是唯一在任何金額下都不會爆的做法（純 CSS，不需量度）。
+ */
+function amountClass(text: string): string {
+  const n = text.length
+  if (n <= 8)  return 'text-2xl sm:text-3xl'
+  if (n <= 11) return 'text-xl sm:text-2xl md:text-3xl'
+  if (n <= 14) return 'text-lg sm:text-xl md:text-2xl'
+  return 'text-base sm:text-lg md:text-xl'
+}
+
 export default function BudgetPage() {
   const {
     trips, activeTripId,
@@ -473,7 +488,7 @@ export default function BudgetPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-10">
           <div
-            className="col-span-2 md:col-span-1 bg-jp-charcoal text-white p-6 relative group cursor-pointer"
+            className="col-span-2 md:col-span-1 min-w-0 bg-jp-charcoal text-white p-5 md:p-6 relative group cursor-pointer"
             onClick={() => { setTempBudget(trip.budgetTotal.toString()); setIsEditingBudget(true) }}
           >
             <p className="text-xs tracking-widest opacity-60 uppercase">
@@ -502,22 +517,22 @@ export default function BudgetPage() {
                 </button>
               </div>
             ) : (
-              <h2 className="text-3xl font-serif font-semibold">
+              <h2 className={`${amountClass(formatMoney(trip.budgetTotal, home))} font-serif font-semibold tabular-nums leading-tight mt-1 break-all`}>
                 {formatMoney(trip.budgetTotal, home)}
               </h2>
             )}
           </div>
 
-          <div className="bg-white p-6 border border-gray-100">
+          <div className="min-w-0 bg-white p-5 md:p-6 border border-gray-100">
             <p className="text-xs tracking-widest text-gray-500 uppercase">已花費</p>
-            <h2 className="text-3xl font-serif font-semibold text-neutral-900">
+            <h2 className={`${amountClass(formatMoney(totalSpent, home))} font-serif font-semibold text-neutral-900 tabular-nums leading-tight mt-1 break-all`}>
               {formatMoney(totalSpent, home)}
             </h2>
           </div>
 
-          <div className={`p-6 border border-gray-100 ${isOverBudget ? 'bg-red-500 text-white' : 'bg-white'}`}>
+          <div className={`min-w-0 p-5 md:p-6 border border-gray-100 ${isOverBudget ? 'bg-red-500 text-white' : 'bg-white'}`}>
             <p className="text-xs tracking-widest opacity-60 uppercase">剩餘</p>
-            <h2 className="text-3xl font-serif font-semibold">
+            <h2 className={`${amountClass(formatMoney(remaining, home))} font-serif font-semibold tabular-nums leading-tight mt-1 break-all`}>
               {formatMoney(remaining, home)}
             </h2>
           </div>
@@ -589,7 +604,8 @@ export default function BudgetPage() {
           {/* Right: Charts + List */}
           <div className="lg:col-span-2 space-y-8 overflow-hidden">
 
-            {/* Pie Chart */}
+            {/* 未有支出時整塊隱藏 —— 否則只剩一個空白方框，佔位而無資訊 */}
+            {trip.expenses.length > 0 && (
             <div className="flex flex-col md:flex-row gap-8 items-center bg-white p-6 border border-gray-100">
               <div className="w-full md:w-1/2 h-[200px] md:h-[250px] relative z-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -627,6 +643,7 @@ export default function BudgetPage() {
                 })}
               </div>
             </div>
+            )}
 
             {/*
               每日花費 —— 行程頁不再顯示任何金額，這裡是唯一看得到「邊日使幾多」的地方。
