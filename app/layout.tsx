@@ -6,7 +6,7 @@ import AuthGate from "@/components/auth/AuthGate";
 import { useTripStore } from "@/store/useTripStore";
 import { supabase } from "@/lib/supabase";
 import "./globals.css";
-import { WifiOff } from "lucide-react";
+import { WifiOff, CloudOff } from "lucide-react";
 import { useJsApiLoader, Libraries } from "@react-google-maps/api";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -34,7 +34,9 @@ function OfflineBanner() {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const { isSyncing } = useTripStore();
+  const isSyncing   = useTripStore(s => s.isSyncing);
+  const pendingSync = useTripStore(s => s.pendingSync);
+  const pendingCount = Object.keys(pendingSync ?? {}).length;
 
   // Load Google Maps globally so all components (TripMap, TravelStats, PlacesToVisit etc.) can use window.google.maps
   // Non-blocking: UI always renders, Maps loads in background
@@ -63,6 +65,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans bg-white text-[#333333] antialiased font-light`}>
         {isSyncing && <div className="fixed top-0 left-0 right-0 h-1 bg-blue-500 z-[9999] animate-pulse" />}
+
+        {/*
+          有改動未上到雲端就要講出來。
+          從前上傳失敗是完全靜音的：畫面照常，你以為記好了帳，其實只存在這一部手機。
+        */}
+        {pendingCount > 0 && !isSyncing && (
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9998] flex items-center gap-2 bg-amber-50 border border-amber-300 text-amber-900 px-3 py-1.5 text-[11px] whitespace-nowrap shadow-sm">
+            <CloudOff size={12} />
+            {pendingCount} 個旅程未同步，回復連線後會自動上傳
+          </div>
+        )}
         <OfflineBanner />
         {/* 未登入就只見到登入畫面（/share/... 除外） */}
         <AuthGate>

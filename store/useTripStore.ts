@@ -46,6 +46,15 @@ interface TripState {
   trips: Trip[];
   activeTripId: string | null;
   isSyncing: boolean;
+  /**
+   * 尚未確認上傳成功的旅程：tripId → 該次改動的時間戳。
+   *
+   * 沒有這一份紀錄的話，離線時記的帳只存在本機，
+   * 而重新連線時 loadTripsFromCloud 會用雲端的舊版本整份蓋回來 —— 帳就此消失。
+   * 這份紀錄同樣寫入 localStorage，所以中途關掉 app 亦不會遺失。
+   */
+  pendingSync: Record<string, string>;
+  flushPendingSync: () => Promise<void>;
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
   setActiveTrip: (id: string) => void;
@@ -143,26 +152,66 @@ export const useTripStore = create<TripState>()(
       trips: [INITIAL_TRIP],
       activeTripId: null,
       isSyncing: false,
+      pendingSync: {},
       _hasHydrated: false,
       setHasHydrated: (v) => set({ _hasHydrated: v }),
       setActiveTrip: (id) => set({ activeTripId: id }),
 
+      /**
+       * 把仍未上傳的改動推上雲端。恢復連線、或由背景切回前景時呼叫。
+       * 逐個順序上傳而非並發：數量必然很少，順序做易於推理，亦不會撞爆連線。
+       */
+      flushPendingSync: async () => {
+        const ids = Object.keys(get().pendingSync);
+        if (ids.length === 0) return;
+        for (const id of ids) {
+          const trip = get().trips.find(t => t.id === id);
+          if (trip) await get().saveTripToCloud(trip);
+        }
+      },
+
       loadTripsFromCloud: async () => {
+        // 先把本機未上傳的改動推上去，再讀 —— 次序倒轉的話，
+        // 下面即使有保護，雲端與本機亦會多繞一圈才收斂。
+        await get().flushPendingSync();
+
         set({ isSyncing: true });
         try {
           const { data, error } = await supabase.from('trips').select('*');
-          if (!error && data && data.length > 0) {
-            const loadedTrips = sortTrips(data.map(row => normalizeTrip(row.content as Trip)));
-            set({ trips: loadedTrips });
-            // Always validate activeTripId against the loaded trips
-            const currentId = get().activeTripId;
-            const isValid = loadedTrips.some(t => t.id === currentId);
-            if (!isValid) {
-              set({ activeTripId: loadedTrips[0].id });
+          if (error) {
+            console.warn('loadTripsFromCloud failed', error.message);
+          } else if (data) {
+            const pending = get().pendingSync;
+            const local   = get().trips;
+            const cloud   = data.map(row => normalizeTrip(row.content as Trip));
+
+            const seen = new Set<string>();
+            const merged: Trip[] = cloud.map(c => {
+              seen.add(c.id);
+              const localVer = local.find(t => t.id === c.id);
+              // 這個旅程本機仍有未上傳的改動：本機版本才是最新，不可被雲端蓋走
+              return pending[c.id] && localVer ? localVer : c;
+            });
+
+            // 雲端沒有、本機有的旅程：
+            // 有 pending 代表根本未上傳過，要保住；
+            // 沒有 pending 代表曾經同步成功而如今雲端已無 —— 即在另一部裝置刪掉了，應跟著移除。
+            local.forEach(t => {
+              if (!seen.has(t.id) && pending[t.id]) merged.push(t);
+            });
+
+            if (merged.length > 0) {
+              const sorted = sortTrips(merged);
+              set({ trips: sorted });
+              const currentId = get().activeTripId;
+              if (!sorted.some(t => t.id === currentId)) {
+                set({ activeTripId: sorted[0].id });
+              }
             }
           }
         } catch (e) {
-          // silently fail - keep local data
+          // 讀取失敗就保留本機資料，不做任何覆寫
+          console.warn('loadTripsFromCloud threw', e);
         }
         set({ isSyncing: false });
       },
@@ -172,15 +221,39 @@ export const useTripStore = create<TripState>()(
         const stamp = new Date().toISOString();
         ownWrites.add(stamp);
         setTimeout(() => ownWrites.delete(stamp), 60000);
+
+        // 先標記未同步再上傳：即使此刻斷電、關掉 app，重開後仍然知道這個旅程未上到雲端
+        set(state => ({ pendingSync: { ...state.pendingSync, [trip.id]: stamp } }));
+
+        let ok = false;
         try {
-          await supabase.from('trips').upsert({ id: trip.id, title: trip.title, content: trip, updated_at: stamp });
-        } catch (e) {}
-        set({ isSyncing: false });
+          // Supabase 的 upsert 不會 throw，失敗是回傳 { error } ——
+          // 從前只用 try/catch，最常見的失敗（RLS 攔截、4xx）根本進不到 catch，於是靜靜地當作成功。
+          const { error } = await supabase
+            .from('trips')
+            .upsert({ id: trip.id, title: trip.title, content: trip, updated_at: stamp });
+          ok = !error;
+          if (error) console.warn('saveTripToCloud failed', error.message);
+        } catch (e) {
+          ok = false;   // 離線時 fetch 會 throw
+          console.warn('saveTripToCloud threw', e);
+        }
+
+        set(state => {
+          if (!ok) return { isSyncing: false };
+          // 上傳途中若又改過一次，時間戳已被覆蓋 —— 那筆新改動仍未上傳，標記不可清走
+          if (state.pendingSync[trip.id] !== stamp) return { isSyncing: false };
+          const next = { ...state.pendingSync };
+          delete next[trip.id];
+          return { pendingSync: next, isSyncing: false };
+        });
       },
 
       // 由 Realtime 推送而來的改動（即另一部裝置的編輯）
       applyRemoteTrip: (row) => {
         if (row.updated_at && ownWrites.has(row.updated_at)) return; // 本機自己的寫入，略過
+        // 本機仍有未上傳的改動，遠端版本必定較舊，不可套用
+        if (row?.content?.id && get().pendingSync[row.content.id]) return;
         const incoming = row?.content;
         if (!incoming || !incoming.id) return;
         const trip = normalizeTrip(incoming);
@@ -202,7 +275,22 @@ export const useTripStore = create<TripState>()(
       }),
       importData: (newTrips: Trip[]) => { set({ trips: newTrips, activeTripId: newTrips.length > 0 ? newTrips[0].id : null }); if (newTrips.length > 0) get().saveTripToCloud(newTrips[0]); },
       addTrip: (tripData) => { const newTrip: Trip = { ...tripData, id: uuidv4(), exchangeRate: 0.052, members: [], bookings: [], expenses: [], dailyItinerary: [], placesToVisit: [], budgetTotal: 0, plans: DEFAULT_PACKING_LIST.map((text) => ({ id: uuidv4(), category: 'Packing', text, priority: 'High', isCompleted: false })) }; set(state => ({ trips: [...state.trips, newTrip], activeTripId: newTrip.id })); get().saveTripToCloud(newTrip); },
-      deleteTrip: async (tripId) => { set({ isSyncing: true }); try { await supabase.from('trips').delete().eq('id', tripId); } catch(e){} set(state => { const newTrips = state.trips.filter(t => t.id !== tripId); return { trips: newTrips, activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId, isSyncing: false }; }); },
+      deleteTrip: async (tripId) => {
+        set({ isSyncing: true });
+        try { await supabase.from('trips').delete().eq('id', tripId); } catch (e) { console.warn('deleteTrip failed', e); }
+        set(state => {
+          const newTrips = state.trips.filter(t => t.id !== tripId);
+          // 一併清走待同步標記，否則下次讀雲端會把這個已刪的旅程當成「未上傳」再放回來
+          const nextPending = { ...state.pendingSync };
+          delete nextPending[tripId];
+          return {
+            trips: newTrips,
+            pendingSync: nextPending,
+            activeTripId: state.activeTripId === tripId ? (newTrips[0]?.id || null) : state.activeTripId,
+            isSyncing: false,
+          };
+        });
+      },
       updateTrip: (tripId, data) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, ...data } : t) }), tripId),
 
       // 首頁拖曳排序：把新次序寫入每張卡的 sortOrder，逐張存回雲端
@@ -248,6 +336,9 @@ export const useTripStore = create<TripState>()(
       onRehydrateStorage: () => (state) => {
         // Mark hydration complete after localStorage is read
         state?.setHasHydrated(true);
+        // isSyncing 亦會被寫入 localStorage：若在同步途中關掉 app，
+        // 下次開啟就會停在「同步中」那條藍線，實際上什麼都沒有在跑。開機時一律歸零。
+        if (state) state.isSyncing = false;
       },
     }
   )

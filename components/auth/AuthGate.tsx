@@ -25,6 +25,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const loadTripsFromCloud = useTripStore(s => s.loadTripsFromCloud)
   const applyRemoteTrip = useTripStore(s => s.applyRemoteTrip)
   const removeRemoteTrip = useTripStore(s => s.removeRemoteTrip)
+  const flushPendingSync = useTripStore(s => s.flushPendingSync)
 
   useEffect(() => {
     let alive = true
@@ -70,20 +71,24 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return () => { supabase.removeChannel(channel) }
   }, [signedIn, applyRemoteTrip, removeRemoteTrip])
 
-  // 保險機制：由背景切回前景時重新讀取一次
+  // 保險機制：由背景切回前景、或重新連上網絡時，補推一次未上傳的改動再重新讀取。
   // （手機熄屏或 PWA 置於背景期間，WebSocket 很可能已中斷）
+  //
+  // loadTripsFromCloud 內部本身會先 flush 一次；這裡在離線期間結束時額外叫一次，
+  // 是為了讓「回復連線」這個時刻立即開始上傳，而不必等使用者切走再切回來。
   useEffect(() => {
     if (!signedIn) return
     const onVisible = () => {
       if (document.visibilityState === 'visible') loadTripsFromCloud()
     }
+    const onOnline = () => { flushPendingSync().then(() => loadTripsFromCloud()) }
     document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('online', onVisible)
+    window.addEventListener('online', onOnline)
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('online', onVisible)
+      window.removeEventListener('online', onOnline)
     }
-  }, [signedIn, loadTripsFromCloud])
+  }, [signedIn, loadTripsFromCloud, flushPendingSync])
 
   if (isPublicRoute) return <>{children}</>
 

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import {
   ShieldCheck, QrCode, FileText, Plus, X, Trash2, Upload,
-  Loader2, Maximize2, AlertTriangle,
+  Loader2, Maximize2, AlertTriangle, Download,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Trip, TravelDoc, TravelDocKind, useTripStore } from '@/store/useTripStore'
@@ -151,18 +151,69 @@ function DocCard({ doc, onOpen, onDelete }: { doc: TravelDoc; onOpen: () => void
 function DocViewer({ doc, onClose }: { doc: TravelDoc; onClose: () => void }) {
   const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [saveNote, setSaveNote] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
-    resolveUrl(doc).then(u => {
+
+    resolveUrl(doc).then(async u => {
       if (!alive) return
-      if (u) setUrl(u)
-      else setError('讀取不到檔案')
+      if (!u) { setError('讀取不到檔案'); return }
+      setUrl(u)
+
+      // 順帶把檔案本身取回來。
+      //
+      // 為何要預先取：iOS Safari 規定 navigator.share() 必須在使用者手勢的同一個
+      // 執行段落內呼叫。若按下按鈕之後才 await fetch，手勢授權已經過期，分享會被拒絕。
+      // 反正圖片本來就要下載來顯示，順帶保留那份 blob 並無額外成本。
+      try {
+        const res = await fetch(u)
+        const blob = await res.blob()
+        if (!alive) return
+        const ext = (doc.path ?? doc.fileUrl ?? '').split('.').pop()?.toLowerCase() || 'jpg'
+        const safeName = (doc.title || '證件').replace(/[\\/:*?"<>|]/g, '') + '.' + ext
+        setFile(new File([blob], safeName, { type: blob.type || 'image/jpeg' }))
+      } catch {
+        // 取不到亦無妨，畫面仍然顯示得到，只是離線備份按鈕會停用
+      }
     }).catch(() => alive && setError('讀取不到檔案，請檢查網絡'))
+
     return () => { alive = false }
   }, [doc])
 
   const isPdf = (doc.path ?? doc.fileUrl ?? '').toLowerCase().endsWith('.pdf')
+
+  /**
+   * 離線備份。
+   *
+   * 存進手機本身，過關時就算完全沒有訊號都出得到 —— 那正是最有機會沒有訊號的時刻。
+   * iOS 走系統分享表（「儲存影像」存入相簿），其他平台退回一般下載。
+   *
+   * 代價要講清楚：一存落相簿，那層「只有登入成員看得到」的保護就不再適用，
+   * 相簿裡的東西是任何拿到你手機的人都看得到的。所以由你按掣決定，而不是自動做。
+   */
+  const backupOffline = () => {
+    if (!file) return
+    const nav = navigator as any
+    if (nav.canShare?.({ files: [file] })) {
+      nav.share({ files: [file], title: doc.title })
+        .then(() => setSaveNote('已交給系統，選「儲存影像」即存入相簿'))
+        .catch((e: any) => {
+          if (e?.name !== 'AbortError') setSaveNote('分享被拒絕，請改用長按圖片儲存')
+        })
+      return
+    }
+    const objectUrl = URL.createObjectURL(file)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    setSaveNote('已下載到裝置')
+  }
 
   return (
     <div className="fixed inset-0 z-[200] bg-white flex flex-col">
@@ -196,9 +247,20 @@ function DocViewer({ doc, onClose }: { doc: TravelDoc; onClose: () => void }) {
         )}
       </div>
 
-      <p className="px-5 py-3 text-[11px] text-gray-500 border-t border-gray-100 leading-relaxed">
-        提示：請把螢幕亮度調至最高，QR 方可順利掃描。連結一小時後失效，屆時重新開啟即可。
-      </p>
+      <div className="border-t border-gray-100 px-5 py-3 space-y-2.5">
+        <button
+          onClick={backupOffline}
+          disabled={!file}
+          className="w-full flex items-center justify-center gap-2 border border-gray-300 py-3 text-[11px] tracking-widest uppercase hover:bg-black hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-current"
+        >
+          <Download size={13} /> 離線備份到手機
+        </button>
+        {saveNote && <p className="text-[11px] text-gray-700 text-center">{saveNote}</p>}
+        <p className="text-[11px] text-gray-500 leading-relaxed">
+          提示：請把螢幕亮度調至最高，QR 方可順利掃描。連結一小時後失效，屆時重新開啟即可。
+          離線備份會把檔案存入手機相簿，過關無訊號時亦開得到；但相簿沒有登入保護，請自行斟酌。
+        </p>
+      </div>
     </div>
   )
 }
