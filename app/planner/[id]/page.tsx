@@ -17,6 +17,7 @@ import { format, parseISO, differenceInDays } from "date-fns";
 import { RepositionPanel, CoverFocus } from "@/components/ui/RepositionPanel";
 import { downloadIcs } from "@/lib/calendar";
 import NearbyFood from "@/components/planner/NearbyFood";
+import { tripPhase } from "@/lib/tripPhase";
 import { ConfirmDialog, AlertDialog } from "@/components/ui/Dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -325,6 +326,20 @@ export default function PlannerPage() {
 
           {/* Main Content */}
           <div className="flex-1 relative overflow-y-auto bg-white scroll-smooth h-full no-scrollbar pb-32">
+
+            {/*
+              已完成的旅程：在最頂加一條細橫額通往回顧頁。
+              不在行動按鈕列加第六個掣 —— 那一列刻意收窄過，再加會擠。
+            */}
+            {tripPhase(trip) === "completed" && (
+              <Link
+                href={`/recap/${trip.id}`}
+                className="flex items-center justify-between gap-3 px-4 md:px-12 py-3 bg-black text-white text-[11px] tracking-[0.2em] uppercase hover:bg-neutral-800 transition-colors"
+              >
+                <span>此旅程已完成</span>
+                <span className="shrink-0">查看旅程回顧 →</span>
+              </Link>
+            )}
 
             {/* Cover image area */}
             <div className="relative w-full shrink-0">

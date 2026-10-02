@@ -40,7 +40,15 @@ export interface PlanItem { id: string; category: 'Todo' | 'Packing' | 'Shopping
 export interface PlaceToVisit { id: string; name: string; placeId?: string; googleMapsUri?: string; address?: string; note?: string; category?: string; suggestedBy?: string; order?: number; lat?: number; lng?: number; isVisited: boolean; }
 export interface Activity { id: string; time?: string; type: string; location: string; placeId?: string; googleMapsUri?: string; note?: string; rating?: number; comment?: string; isVisited: boolean; photos?: string[]; refPhoto?: string; lat?: number; lng?: number; address?: string; }
 export interface DailyItinerary { day: number; date: string; weather?: string; activities: Activity[]; coverImage?: string; coverPosX?: number; coverPosY?: number; customLocation?: string; }
-export interface Trip { id: string; sortOrder?: number; title: string; startDate: string; endDate: string; coverImage?: string; coverPosX?: number; coverPosY?: number; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; homeCurrency?: string; placesToVisit?: PlaceToVisit[]; documents?: TravelDoc[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
+/**
+ * 一次已完成的還款：from 已付 amount 給 to。
+ *
+ * 以結算貨幣記錄（記錄當刻的 homeCurrency），與「結算建議」所用的貨幣一致。
+ * 結算建議 = 支出產生的欠款 − 已還的款項，所以這裡記一筆，建議就相應減少；
+ * 記錯了刪掉這一筆，建議會原樣回來 —— 不需要另設「撤銷」邏輯。
+ */
+export interface Settlement { id: string; fromId: string; toId: string; amount: number; currency: string; date: string; note?: string; }
+export interface Trip { id: string; sortOrder?: number; title: string; startDate: string; endDate: string; coverImage?: string; coverPosX?: number; coverPosY?: number; destLat?: number; destLng?: number; destLabel?: string; localCurrency?: string; homeCurrency?: string; placesToVisit?: PlaceToVisit[]; documents?: TravelDoc[]; settlements?: Settlement[]; status: 'planning' | 'ongoing' | 'completed'; members: Member[]; bookings: Booking[]; expenses: Expense[]; plans: PlanItem[]; dailyItinerary: DailyItinerary[]; budgetTotal: number; exchangeRate: number; }
 
 interface TripState {
   trips: Trip[];
@@ -76,6 +84,8 @@ interface TripState {
   addDocument: (tripId: string, doc: TravelDoc) => void;
   updateDocument: (tripId: string, docId: string, data: Partial<TravelDoc>) => void;
   deleteDocument: (tripId: string, docId: string) => void;
+  addSettlement: (tripId: string, settlement: Settlement) => void;
+  deleteSettlement: (tripId: string, settlementId: string) => void;
   addExpense: (tripId: string, expense: Expense) => void;
   updateExpense: (tripId: string, expenseId: string, data: Partial<Expense>) => void;
   deleteExpense: (tripId: string, expenseId: string) => void;
@@ -328,6 +338,8 @@ export const useTripStore = create<TripState>()(
       addPlaceToVisit: (tripId, place) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; return { ...trip, placesToVisit: [...(trip.placesToVisit || []), { ...place, id: uuidv4() }] }; }) }), tripId),
       togglePlaceVisited: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; return { ...trip, placesToVisit: (trip.placesToVisit || []).map(p => p.id === placeId ? { ...p, isVisited: !p.isVisited } : p) }; }) }), tripId),
       deletePlaceToVisit: (tripId, placeId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => { if (trip.id !== tripId) return trip; return { ...trip, placesToVisit: (trip.placesToVisit || []).filter(p => p.id !== placeId) }; }) }), tripId),
+      addSettlement: (tripId, settlement) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, settlements: [...(t.settlements ?? []), settlement] } : t) }), tripId),
+      deleteSettlement: (tripId, settlementId) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(t => t.id === tripId ? { ...t, settlements: (t.settlements ?? []).filter(x => x.id !== settlementId) } : t) }), tripId),
       reorderPlacesToVisit: (tripId, newPlaces) => updateStateAndSave(set, get, state => ({ trips: state.trips.map(trip => trip.id !== tripId ? trip : { ...trip, placesToVisit: newPlaces }) }), tripId),
     }),
     {

@@ -40,11 +40,14 @@ label {
   color: #6B7280;
 }
 
-.no-scrollbar::-webkit-scrollbar {
+/* hide-scrollbar 是同一件事的另一個名字：行程頁與附近美食一直用它，卻從未定義過 */
+.no-scrollbar::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-.no-scrollbar {
+.no-scrollbar,
+.hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

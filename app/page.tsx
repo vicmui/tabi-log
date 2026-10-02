@@ -6,7 +6,8 @@ import { NewTripModal, ConfirmDialog } from '@/components/ui/Dialog'
 import { useTripStore, Trip } from '@/store/useTripStore'
 import { Plus, Settings, Trash2, GripVertical } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { differenceInDays, parseISO } from 'date-fns'
+import { localDateKey, phaseLabel, tripPhase, tripRange } from '@/lib/tripPhase'
+import { formatMoney, homeOf, sumHome } from '@/lib/money'
 import Link from 'next/link'
 import {
   DndContext,
@@ -47,17 +48,19 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
     zIndex: isDragging ? 50 : undefined,
   }
 
-  const daysLeft = differenceInDays(parseISO(trip.startDate), new Date())
+  const today = localDateKey()
+  const phase = tripPhase(trip, today)
+  const badgeLabel = phaseLabel(trip, today)
+  const { start, end } = tripRange(trip)
+
   const totalActs = trip.dailyItinerary.reduce(
     (acc, day) => acc + (day.activities?.filter(a => a)?.length ?? 0), 0)
   const visitedActs = trip.dailyItinerary.reduce(
     (acc, day) => acc + (day.activities?.filter(a => a?.isVisited)?.length ?? 0), 0)
   const progress = totalActs > 0 ? Math.round((visitedActs / totalActs) * 100) : 0
 
-  const badgeLabel =
-    daysLeft > 0 ? `尚餘 ${daysLeft} 天` :
-    daysLeft === 0 ? '今日出發' :
-    ''
+  // 已完成的旅程直接開回顧頁 —— 去完之後再打開，想看的是「去過甚麼」，不是「要去甚麼」
+  const href = phase === 'completed' ? `/recap/${trip.id}` : `/planner/${trip.id}`
 
   return (
     <div
@@ -67,12 +70,15 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
       className="relative group cursor-pointer bg-white border border-gray-100 hover:border-gray-200 transition-colors duration-300 overflow-hidden h-[420px] flex flex-col rounded-none"
     >
       {/* 整張卡是連結；拖曳手柄與按鈕的 z-index 都在它之上 */}
-      <Link href={`/planner/${trip.id}`} className="absolute inset-0 z-10" />
+      <Link href={href} className="absolute inset-0 z-10" aria-label={trip.title} />
 
       <div className="h-64 w-full relative overflow-hidden">
+        {/* 已完成的旅程封面轉灰，滑鼠移過才回復彩色：一眼分得出新舊，又不至於看不清 */}
         <img
           src={trip.coverImage}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ${
+            phase === 'completed' ? 'grayscale group-hover:grayscale-0' : ''
+          }`}
           style={{ objectPosition: `${trip.coverPosX ?? 50}% ${trip.coverPosY ?? 50}%` }}
           alt={trip.title}
         />
@@ -91,7 +97,9 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
         </button>
 
         {badgeLabel && (
-          <div className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-xs font-medium rounded-full z-20 whitespace-nowrap">
+          <div className={`absolute top-4 left-4 px-3 py-1 text-xs font-medium rounded-full z-20 whitespace-nowrap ${
+            phase === 'ongoing' ? 'bg-black text-white' : 'bg-white/90 text-black'
+          }`}>
             {badgeLabel}
           </div>
         )}
@@ -118,18 +126,28 @@ function SortableTripCard({ trip, onEdit, onDeleteRequest, onSelect }: CardProps
         <div className="min-w-0">
           <h3 className="text-xl font-medium mb-1 tracking-wide truncate">{trip.title}</h3>
           <p className="text-xs text-gray-500 font-light tracking-widest">
-            {trip.startDate} → {trip.endDate}
+            {start} → {end}
           </p>
         </div>
-        <div>
-          <div className="flex justify-between text-xs text-gray-500 mb-1 uppercase tracking-widest">
-            <span>完成進度</span>
-            <span>{progress}%</span>
+        {phase === 'completed' ? (
+          // 去完之後「完成進度」已無意義，改為一句總結，並提示點擊會開回顧
+          <div className="flex items-end justify-between gap-3 text-xs text-gray-500 tracking-widest">
+            <span className="min-w-0 truncate">
+              {totalActs} 個地點 · {formatMoney(sumHome(trip.expenses ?? [], trip), homeOf(trip))}
+            </span>
+            <span className="shrink-0 text-black uppercase">旅程回顧 →</span>
           </div>
-          <div className="h-1 bg-gray-100 w-full">
-            <div className="h-full bg-black transition-all duration-500" style={{ width: `${progress}%` }} />
+        ) : (
+          <div>
+            <div className="flex justify-between text-xs text-gray-500 mb-1 uppercase tracking-widest">
+              <span>完成進度</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-1 bg-gray-100 w-full">
+              <div className="h-full bg-black transition-all duration-500" style={{ width: `${progress}%` }} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

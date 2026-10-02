@@ -9,8 +9,10 @@ import { supabase } from '@/lib/supabase'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import {
   Utensils, Camera, Train, Bed, ShoppingBag, MapPin,
-  ArrowRight, Settings2, Edit, Trash2, Upload, Paperclip, ArrowRightLeft,
+  ArrowRight, Settings2, Edit, Trash2, Upload, Paperclip, ArrowRightLeft, Check, Undo2,
 } from 'lucide-react'
+import { computeBalances, suggestTransfers, settlementState } from '@/lib/settle'
+import { localDateKey } from '@/lib/tripPhase'
 import { v4 as uuidv4 } from 'uuid'
 import { ConfirmDialog, AlertDialog } from '@/components/ui/Dialog'
 import { COMMON_CURRENCIES, formatMoney, toHome, sumHome, homeOf, localOf, dailySpend } from '@/lib/money'
@@ -236,6 +238,7 @@ export default function BudgetPage() {
   const {
     trips, activeTripId,
     addExpense, updateExpense, deleteExpense, updateBudgetTotal,
+    addSettlement, deleteSettlement,
   } = useTripStore()
 
   const trip = trips.find(t => t.id === activeTripId) ?? null
@@ -391,43 +394,26 @@ export default function BudgetPage() {
     setCustomAmounts(newMap)
   }
 
-  const debts = useMemo(() => {
-    const balances: Record<string, number> = {}
-    trip.members.forEach(m => { balances[m.id] = 0 })
-    trip.expenses.forEach(exp => {
-      const paidBy = exp.payerId
-      // 全部先折算成基準貨幣，否則 JPY 同 GBP 會被當成同一種錢直接相加
-      const inHome = toHome(exp, trip)
-      const ratio  = exp.amount ? inHome / exp.amount : 1
-      if (exp.customSplit) {
-        balances[paidBy] = (balances[paidBy] ?? 0) + inHome
-        Object.entries(exp.customSplit).forEach(([mid, amt]) => {
-          balances[mid] = (balances[mid] ?? 0) - amt * ratio
-        })
-      } else {
-        const splitCount = exp.splitWithIds.length
-        if (splitCount === 0) return
-        const splitAmount = inHome / splitCount
-        balances[paidBy] = (balances[paidBy] ?? 0) + inHome
-        exp.splitWithIds.forEach(uid => {
-          balances[uid] = (balances[uid] ?? 0) - splitAmount
-        })
-      }
+  // 分帳計算已抽到 lib/settle.ts，回顧頁亦共用同一套。
+  // 已記錄的還款會先扣減，所以這裡顯示的永遠是「仍然未還」的部分。
+  const debts = useMemo(
+    () => suggestTransfers(computeBalances(trip)),
+    [trip.expenses, trip.members, trip.settlements] // eslint-disable-line react-hooks/exhaustive-deps
+  )
+  const settleState = settlementState(trip)
+  const settlements = [...(trip.settlements ?? [])].sort((a, b) => b.date.localeCompare(a.date))
+
+  /** 把一條結算建議記為已付 */
+  const markPaid = (d: { from: string; to: string; amount: number }) => {
+    addSettlement(trip.id, {
+      id: uuidv4(),
+      fromId: d.from,
+      toId: d.to,
+      amount: d.amount,
+      currency: home,
+      date: localDateKey(),
     })
-    const result: { from: string; to: string; amount: number }[] = []
-    const debtors   = Object.entries(balances).filter(([, val]) => val < -0.1).sort((a, b) => a[1] - b[1])
-    const creditors = Object.entries(balances).filter(([, val]) => val > 0.1).sort((a, b) => b[1] - a[1])
-    let i = 0, j = 0
-    while (i < debtors.length && j < creditors.length) {
-      const amount = Math.min(Math.abs(debtors[i][1]), creditors[j][1])
-      result.push({ from: debtors[i][0], to: creditors[j][0], amount })
-      debtors[i][1]   += amount
-      creditors[j][1] -= amount
-      if (Math.abs(debtors[i][1])   < 0.1) i++
-      if (Math.abs(creditors[j][1]) < 0.1) j++
-    }
-    return result
-  }, [trip.expenses, trip.members])
+  }
 
   const catStats = trip.expenses.reduce((acc, cur) => {
     acc[cur.category] = (acc[cur.category] ?? 0) + toHome(cur, trip)
@@ -464,24 +450,74 @@ export default function BudgetPage() {
           <div className="flex items-center gap-4"><TripSwitcher /></div>
         </header>
 
-        {/* Settlement */}
-        {debts.length > 0 && (
+        {/* ── 結算 ─────────────────────────────────────────
+            還款記錄下來之後，建議會即時減少；全部還清就換成「已結清」。
+            記錯了在下面的紀錄撤銷即可，建議會原樣回來。 */}
+        {settleState !== 'none' && (
           <div className="mb-10">
-            <h2 className="text-xs font-medium tracking-[0.2em] text-gray-500 uppercase mb-4">結算建議</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {debts.map((d, idx) => (
-                <div key={idx} className="bg-white p-6 border-l-4 border-jp-charcoal flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold">{getMemberName(d.from)}</span>
-                    <ArrowRight size={14} className="text-gray-500" />
-                    <span className="font-semibold">{getMemberName(d.to)}</span>
+            <h2 className="text-xs font-medium tracking-[0.2em] text-gray-500 uppercase mb-4">結算</h2>
+
+            {debts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {debts.map(d => (
+                  <div key={`${d.from}-${d.to}`} className="bg-white p-5 md:p-6 border-l-4 border-jp-charcoal min-w-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-sm min-w-0">
+                        <span className="font-semibold truncate">{getMemberName(d.from)}</span>
+                        <ArrowRight size={14} className="text-gray-500 shrink-0" />
+                        <span className="font-semibold truncate">{getMemberName(d.to)}</span>
+                      </div>
+                      <span className="font-serif text-lg md:text-xl font-semibold tabular-nums shrink-0">
+                        {formatMoney(d.amount, home)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => markPaid(d)}
+                      className="mt-4 w-full flex items-center justify-center gap-1.5 border border-gray-200 py-2 text-[11px] tracking-widest uppercase hover:bg-black hover:text-white hover:border-black transition-colors"
+                    >
+                      <Check size={12} /> 標記已付
+                    </button>
                   </div>
-                  <span className="font-serif text-xl font-semibold">
-                    {formatMoney(d.amount, home)}
-                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white p-5 md:p-6 border border-gray-100 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+                  <Check size={15} />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <p className="text-sm font-medium">帳目已全部結清</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">之後若再新增支出，結算建議會重新出現</p>
+                </div>
+              </div>
+            )}
+
+            {settlements.length > 0 && (
+              <div className="mt-6">
+                <p className="text-[11px] tracking-widest uppercase text-gray-500 mb-2">還款紀錄</p>
+                <ul className="bg-white border border-gray-100 divide-y divide-gray-100">
+                  {settlements.map(st => (
+                    <li key={st.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                      <span className="text-[11px] font-mono text-gray-500 shrink-0 w-20">{st.date}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {getMemberName(st.fromId)} → {getMemberName(st.toId)}
+                      </span>
+                      <span className="tabular-nums shrink-0">{formatMoney(st.amount, st.currency || home)}</span>
+                      <button
+                        type="button"
+                        onClick={() => deleteSettlement(trip.id, st.id)}
+                        aria-label="撤銷此筆還款"
+                        title="撤銷"
+                        className="p-1 text-gray-400 hover:text-black shrink-0"
+                      >
+                        <Undo2 size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

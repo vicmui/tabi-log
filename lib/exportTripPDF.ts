@@ -12,7 +12,7 @@ const SCALE   = 2;
  * 封面就會變成一大格黑色。先用 fetch 取回並轉成 base64，
  * html2canvas 便當作同源圖片處理。取不到就回傳 null，改用純文字封面。
  */
-async function toDataUrl(url?: string): Promise<string | null> {
+export async function toDataUrl(url?: string): Promise<string | null> {
   if (!url) return null;
   try {
     const res = await fetch(url, { mode: "cors", cache: "force-cache" });
