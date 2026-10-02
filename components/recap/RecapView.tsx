@@ -98,7 +98,13 @@ export default function RecapView({ trip, recap }: { trip: Trip; recap: Recap })
               value={recap.km >= 1 ? `${recap.km.toFixed(1)}` : "—"}
               sub={recap.km >= 1 ? "公里（直線）" : "地點未有座標"}
             />
-            <Stat label="總開支" value={formatMoney(recap.totalSpend, recap.home)} small />
+            {/* 沒有記帳時顯示「—」而非 HK$0.00：零元會被誤讀成「沒有花錢」 */}
+            <Stat
+              label="總開支"
+              value={recap.totalSpend > 0 ? formatMoney(recap.totalSpend, recap.home) : "—"}
+              sub={recap.totalSpend > 0 ? undefined : "未有記帳"}
+              small
+            />
             <Stat
               label="平均每日"
               value={recap.avgDailySpend > 0 ? formatMoney(recap.avgDailySpend, recap.home) : "—"}
@@ -422,7 +428,7 @@ function ShareButton({ trip, recap }: { trip: Trip; recap: Recap }) {
               {[
                 [recap.usedCheckIn ? "到訪地點" : "行程地點", String(recap.usedCheckIn ? recap.visitedPlaces : recap.totalPlaces)],
                 ["移動距離", recap.km >= 1 ? `${recap.km.toFixed(1)} km` : "—"],
-                ["總開支", formatMoney(recap.totalSpend, recap.home)],
+                ["總開支", recap.totalSpend > 0 ? formatMoney(recap.totalSpend, recap.home) : "—"],
               ].map(([k, v]) => (
                 <div key={k} style={{ flex: 1, paddingTop: 28 }}>
                   <div style={{ fontSize: 18, letterSpacing: 4, color: "#888" }}>{k}</div>
